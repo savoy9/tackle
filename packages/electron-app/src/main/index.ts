@@ -5,7 +5,6 @@ import { execSync } from 'child_process';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
-declare const MAIN_WINDOW_PRELOAD_VITE_ENTRY: string;
 
 // Catch-all for unhandled errors
 process.on('uncaughtException', (err) => {
@@ -124,7 +123,7 @@ async function main() {
       height: 900,
       title: 'Chartroom',
       webPreferences: {
-        preload: MAIN_WINDOW_PRELOAD_VITE_ENTRY,
+        preload: path.join(__dirname, 'preload.js'),
         contextIsolation: true,
         nodeIntegration: false,
       },
