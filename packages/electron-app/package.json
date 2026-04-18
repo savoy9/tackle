@@ -10,6 +10,7 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "typecheck": "tsc --noEmit",
+    "rebuild": "npx @electron/rebuild -m ../../node_modules/better-sqlite3",
     "test": "bun --bun vitest run",
     "test:watch": "bun --bun vitest"
   },
