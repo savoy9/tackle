@@ -1,8 +1,11 @@
 import { app, BrowserWindow } from 'electron';
 import path from 'path';
+import fs from 'fs';
 import { createDatabase } from './db';
 import { TaskRepository } from './task-repository';
-import { registerTaskHandlers } from './ipc-handlers';
+import { registerTaskHandlers, registerSyncHandlers } from './ipc-handlers';
+import { GitHubSyncService } from './github-sync';
+import { Octokit } from '@octokit/rest';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -12,61 +15,54 @@ const dbPath = path.join(app.getPath('userData'), 'chartroom.db');
 const db = createDatabase(dbPath);
 const taskRepo = new TaskRepository(db);
 
-// Seed dev data if tasks table is empty
-const count = db.prepare<{ count: number }>('SELECT COUNT(*) as count FROM tasks').get();
-if (count && count.count === 0) {
-  const seed = [
-    {
-      id: '1',
-      title: 'Phase 1: Scaffold monorepo',
-      desc: 'Bootstrap the monorepo and Electron app',
-      status: 'open',
-    },
-    {
-      id: '2',
-      title: 'Phase 2: SQLite + task list',
-      desc: 'Wire up SQLite and task panel',
-      status: 'open',
-    },
-    {
-      id: '3',
-      title: 'Phase 3: GitHub Issues sync',
-      desc: 'Connect to GitHub API',
-      status: 'open',
-    },
-    {
-      id: '4',
-      title: 'Phase 4: Terminal session',
-      desc: 'Embed xterm.js with psmux',
-      status: 'open',
-    },
-    {
-      id: '5',
-      title: 'Phase 5: Agent session lifecycle',
-      desc: 'Spawn and manage Claude Code sessions',
-      status: 'open',
-    },
-    {
-      id: '6',
-      title: 'Phase 6: Tasks + sessions linked',
-      desc: 'Connect tasks and sessions',
-      status: 'open',
-    },
-  ];
-  for (const s of seed) {
-    taskRepo.upsert({
-      external_id: s.id,
-      external_system: 'github',
-      title: s.title,
-      description: s.desc,
-      status: s.status,
-      assignee: null,
-    });
+// Load GitHub config
+interface GitHubConfig {
+  owner: string;
+  repo: string;
+  token?: string;
+}
+
+function loadGitHubConfig(): GitHubConfig | null {
+  // Check env vars first
+  const owner = process.env.CHARTROOM_GITHUB_OWNER;
+  const repo = process.env.CHARTROOM_GITHUB_REPO;
+  if (owner && repo) {
+    return { owner, repo, token: process.env.CHARTROOM_GITHUB_TOKEN };
   }
+
+  // Check config file
+  const configPath = path.join(app.getPath('userData'), 'config.json');
+  if (fs.existsSync(configPath)) {
+    try {
+      const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
+      if (config.github?.owner && config.github?.repo) {
+        return {
+          owner: config.github.owner,
+          repo: config.github.repo,
+          token: config.github.token,
+        };
+      }
+    } catch {
+      // Ignore malformed config
+    }
+  }
+
+  // Default: dogfood with this repo
+  return { owner: 'savoy9', repo: 'chartroom', token: process.env.GITHUB_TOKEN };
+}
+
+// Create sync service
+const ghConfig = loadGitHubConfig();
+let syncService: GitHubSyncService | null = null;
+
+if (ghConfig) {
+  const octokit = new Octokit(ghConfig.token ? { auth: ghConfig.token } : {});
+  syncService = new GitHubSyncService(octokit, taskRepo, ghConfig.owner, ghConfig.repo);
 }
 
 // Register IPC handlers
 registerTaskHandlers(taskRepo);
+registerSyncHandlers(syncService);
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -84,6 +80,11 @@ function createWindow() {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
   } else {
     mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
+  }
+
+  // Auto-sync on launch
+  if (syncService) {
+    syncService.sync().catch(console.error);
   }
 }
 

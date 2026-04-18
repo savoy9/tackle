@@ -6,4 +6,7 @@ contextBridge.exposeInMainWorld('chartroom', {
     list: () => ipcRenderer.invoke('tasks:list'),
     get: (id: number) => ipcRenderer.invoke('tasks:get', id),
   },
+  sync: {
+    refresh: () => ipcRenderer.invoke('sync:refresh'),
+  },
 });

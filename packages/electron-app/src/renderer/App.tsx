@@ -14,11 +14,22 @@ export default function App() {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
+  const loadTasks = useCallback(() => {
     if (window.chartroom?.tasks) {
       window.chartroom.tasks.list().then(setTasks);
     }
   }, []);
+
+  useEffect(() => {
+    loadTasks();
+  }, [loadTasks]);
+
+  const handleRefresh = useCallback(async () => {
+    if (window.chartroom?.sync) {
+      await window.chartroom.sync.refresh();
+      loadTasks();
+    }
+  }, [loadTasks]);
 
   const handleTaskClick = useCallback((task: Task) => {
     setSelectedTask(task);
@@ -81,7 +92,14 @@ export default function App() {
           borderRight: '1px solid #2a2a2e',
         }}
       >
-        <PanelHeader title="Tasks" />
+        <PanelHeader
+          title="Tasks"
+          action={
+            <button onClick={handleRefresh} style={collapseButtonStyle} title="Refresh tasks">
+              ↻
+            </button>
+          }
+        />
         <div style={{ flex: 1, overflow: 'auto', padding: '8px 12px' }}>
           <TaskList
             tasks={tasks}

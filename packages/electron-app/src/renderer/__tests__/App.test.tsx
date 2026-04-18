@@ -39,6 +39,9 @@ beforeEach(() => {
         .fn()
         .mockImplementation((id: number) => Promise.resolve(mockTasks.find((t) => t.id === id))),
     },
+    sync: {
+      refresh: vi.fn().mockResolvedValue({ success: true, synced: 2 }),
+    },
   };
 });
 
@@ -109,5 +112,21 @@ describe('task list from DB', () => {
     // open task and closed task should both be present
     expect(screen.getByText('Build the scaffold')).toBeInTheDocument();
     expect(screen.getByText('Wire up SQLite')).toBeInTheDocument();
+  });
+
+  it('has a refresh button that triggers sync and reloads tasks', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Build the scaffold')).toBeInTheDocument();
+    });
+
+    const refreshBtn = screen.getByTitle('Refresh tasks');
+    await user.click(refreshBtn);
+
+    expect(window.chartroom.sync.refresh).toHaveBeenCalled();
+    // After refresh, tasks:list should be called again
+    expect(window.chartroom.tasks.list).toHaveBeenCalledTimes(2);
   });
 });
