@@ -7,5 +7,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Main process tests don't need jsdom — override per-file
+    environmentMatchGlobs: [
+      ['src/main/**/*.test.ts', 'node'],
+    ],
   },
 });

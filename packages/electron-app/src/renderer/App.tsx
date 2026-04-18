@@ -1,4 +1,6 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import type { Task } from '@chartroom/shared';
+import './types'; // ensure window.chartroom types are loaded
 
 const MIN_PANEL_WIDTH = 200;
 const DEFAULT_TASK_WIDTH = 300;
@@ -8,7 +10,19 @@ export default function App() {
   const [taskWidth, setTaskWidth] = useState(DEFAULT_TASK_WIDTH);
   const [reviewWidth, setReviewWidth] = useState(DEFAULT_REVIEW_WIDTH);
   const [reviewCollapsed, setReviewCollapsed] = useState(false);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (window.chartroom?.tasks) {
+      window.chartroom.tasks.list().then(setTasks);
+    }
+  }, []);
+
+  const handleTaskClick = useCallback((task: Task) => {
+    setSelectedTask(task);
+  }, []);
 
   const startResize = useCallback(
     (panel: 'task' | 'review') => (e: React.MouseEvent) => {
@@ -70,7 +84,14 @@ export default function App() {
       >
         <PanelHeader title="Tasks" />
         <div style={{ flex: 1, overflow: 'auto', padding: '8px 12px' }}>
-          <TaskPlaceholder />
+          <TaskList
+            tasks={tasks}
+            selectedId={selectedTask?.id ?? null}
+            onSelect={handleTaskClick}
+          />
+          {selectedTask && (
+            <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
+          )}
         </div>
       </div>
 
@@ -216,21 +237,21 @@ function Divider({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }
   );
 }
 
-function TaskPlaceholder() {
-  const items = [
-    { title: 'Phase 1: Scaffold monorepo', status: 'open' },
-    { title: 'Phase 2: SQLite + task list', status: 'open' },
-    { title: 'Phase 3: GitHub Issues sync', status: 'open' },
-    { title: 'Phase 4: Terminal session', status: 'open' },
-    { title: 'Phase 5: Agent session lifecycle', status: 'open' },
-    { title: 'Phase 6: Tasks + sessions linked', status: 'open' },
-  ];
-
+function TaskList({
+  tasks,
+  selectedId,
+  onSelect,
+}: {
+  tasks: Task[];
+  selectedId: number | null;
+  onSelect: (task: Task) => void;
+}) {
   return (
     <div>
-      {items.map((item, i) => (
+      {tasks.map((task) => (
         <div
-          key={i}
+          key={task.id}
+          onClick={() => onSelect(task)}
           style={{
             padding: '8px 10px',
             borderRadius: 6,
@@ -240,26 +261,79 @@ function TaskPlaceholder() {
             display: 'flex',
             alignItems: 'center',
             gap: 8,
+            background: selectedId === task.id ? '#22222a' : 'transparent',
           }}
-          onMouseEnter={(e) =>
-            ((e.currentTarget as HTMLElement).style.background = '#22222a')
-          }
-          onMouseLeave={(e) =>
-            ((e.currentTarget as HTMLElement).style.background = 'transparent')
-          }
+          onMouseEnter={(e) => {
+            if (selectedId !== task.id)
+              (e.currentTarget as HTMLElement).style.background = '#22222a';
+          }}
+          onMouseLeave={(e) => {
+            if (selectedId !== task.id)
+              (e.currentTarget as HTMLElement).style.background = 'transparent';
+          }}
         >
           <span
             style={{
               width: 8,
               height: 8,
               borderRadius: '50%',
-              background: '#3fb950',
+              background: task.status === 'closed' ? '#8b949e' : '#3fb950',
               flexShrink: 0,
             }}
           />
-          {item.title}
+          {task.title}
         </div>
       ))}
+    </div>
+  );
+}
+
+function TaskDetail({
+  task,
+  onClose,
+}: {
+  task: Task;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      style={{
+        marginTop: 12,
+        padding: 12,
+        background: '#1a1a20',
+        borderRadius: 8,
+        fontSize: 13,
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
+        <span style={{ fontWeight: 600 }}>{task.title}</span>
+        <button
+          onClick={onClose}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: '#666',
+            cursor: 'pointer',
+            fontSize: 16,
+          }}
+          title="Close details"
+        >
+          ×
+        </button>
+      </div>
+      <div style={{ color: '#999', marginBottom: 6 }}>
+        Status: <span style={{ color: task.status === 'open' ? '#3fb950' : '#8b949e' }}>{task.status}</span>
+      </div>
+      {task.assignee && (
+        <div style={{ color: '#999', marginBottom: 6 }}>
+          Assignee: <span style={{ color: '#ccc' }}>{task.assignee}</span>
+        </div>
+      )}
+      {task.description && (
+        <div style={{ color: '#bbb', marginTop: 8, lineHeight: 1.5 }}>
+          {task.description}
+        </div>
+      )}
     </div>
   );
 }
