@@ -1,0 +1,16 @@
+{
+  "name": "@chartroom/shared",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "bun --bun vitest run",
+    "test:watch": "bun --bun vitest"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.0",
+    "vitest": "^4.1.4"
+  }
+}

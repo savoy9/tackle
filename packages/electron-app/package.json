@@ -1,0 +1,38 @@
+{
+  "name": "electron-app",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chartroom Electron application",
+  "main": ".vite/build/main.js",
+  "scripts": {
+    "dev": "electron-forge start",
+    "build": "electron-forge make",
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "typecheck": "tsc --noEmit",
+    "test": "bun --bun vitest run",
+    "test:watch": "bun --bun vitest"
+  },
+  "dependencies": {
+    "@chartroom/shared": "workspace:*",
+    "react": "^19.1.0",
+    "react-dom": "^19.1.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^7.6.0",
+    "@electron-forge/maker-squirrel": "^7.6.0",
+    "@electron-forge/maker-zip": "^7.6.0",
+    "@electron-forge/plugin-vite": "^7.6.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "@vitejs/plugin-react": "^4.4.0",
+    "electron": "^35.0.0",
+    "jsdom": "^29.0.2",
+    "typescript": "^5.7.0",
+    "vite": "^6.3.0",
+    "vitest": "^4.1.4"
+  }
+}
