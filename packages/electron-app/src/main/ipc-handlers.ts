@@ -6,7 +6,9 @@ import type { SessionManager } from './session-manager';
 
 export function registerTaskHandlers(repo: TaskRepository): void {
   ipcMain.handle('tasks:list', () => {
-    return repo.list();
+    const tasks = repo.list();
+    console.log('tasks:list IPC called, returning', tasks.length, 'tasks');
+    return tasks;
   });
 
   ipcMain.handle('tasks:get', (_event, id: number) => {

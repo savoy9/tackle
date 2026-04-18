@@ -19,7 +19,12 @@ export default function App() {
 
   const loadTasks = useCallback(() => {
     if (window.chartroom?.tasks) {
-      window.chartroom.tasks.list().then(setTasks);
+      window.chartroom.tasks.list().then((t) => {
+        console.log('Renderer received tasks:', t);
+        setTasks(t);
+      });
+    } else {
+      console.log('window.chartroom.tasks not available');
     }
   }, []);
 
