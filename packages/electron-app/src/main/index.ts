@@ -7,9 +7,11 @@ import {
   registerTaskHandlers,
   registerSyncHandlers,
   registerTerminalHandlers,
+  registerSessionHandlers,
 } from './ipc-handlers';
 import { GitHubSyncService } from './github-sync';
 import { TerminalManager } from './terminal-manager';
+import { SessionManager } from './session-manager';
 import { Octokit } from '@octokit/rest';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -68,10 +70,14 @@ if (ghConfig) {
 // Terminal manager
 const terminalManager = new TerminalManager();
 
+// Session manager
+const sessionManager = new SessionManager(db, terminalManager);
+
 // Register IPC handlers
 registerTaskHandlers(taskRepo);
 registerSyncHandlers(syncService);
 registerTerminalHandlers(terminalManager);
+registerSessionHandlers(sessionManager);
 
 function createWindow() {
   const mainWindow = new BrowserWindow({

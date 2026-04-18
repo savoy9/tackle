@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type { Task } from '@chartroom/shared';
+import type { ManagedSessionInfo } from './types';
 import './types'; // ensure window.chartroom types are loaded
 
 const MIN_PANEL_WIDTH = 200;
@@ -12,6 +13,8 @@ export default function App() {
   const [reviewCollapsed, setReviewCollapsed] = useState(false);
   const [tasks, setTasks] = useState<Task[]>([]);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [sessions, setSessions] = useState<ManagedSessionInfo[]>([]);
+  const [activeSessionId, setActiveSessionId] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const loadTasks = useCallback(() => {
@@ -20,9 +23,24 @@ export default function App() {
     }
   }, []);
 
+  const loadSessions = useCallback(() => {
+    if (window.chartroom?.sessions) {
+      window.chartroom.sessions.list().then(setSessions);
+    }
+  }, []);
+
   useEffect(() => {
     loadTasks();
-  }, [loadTasks]);
+    loadSessions();
+  }, [loadTasks, loadSessions]);
+
+  const handleNewSession = useCallback(async () => {
+    if (window.chartroom?.sessions) {
+      const session = await window.chartroom.sessions.create();
+      setActiveSessionId(session.id);
+      loadSessions();
+    }
+  }, [loadSessions]);
 
   const handleRefresh = useCallback(async () => {
     if (window.chartroom?.sync) {
@@ -123,7 +141,45 @@ export default function App() {
           minWidth: MIN_PANEL_WIDTH,
         }}
       >
-        <PanelHeader title="Terminal" />
+        <PanelHeader
+          title="Terminal"
+          action={
+            <button onClick={handleNewSession} style={collapseButtonStyle} title="New session">
+              +
+            </button>
+          }
+        />
+        {/* Session tab bar */}
+        {sessions.length > 0 && (
+          <div
+            style={{
+              display: 'flex',
+              gap: 2,
+              padding: '4px 8px',
+              borderBottom: '1px solid #2a2a2e',
+              overflowX: 'auto',
+            }}
+          >
+            {sessions.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => setActiveSessionId(s.id)}
+                style={{
+                  padding: '4px 12px',
+                  borderRadius: 4,
+                  border: 'none',
+                  background: activeSessionId === s.id ? '#2a2a3a' : 'transparent',
+                  color: s.status === 'running' ? '#e0e0e0' : '#666',
+                  cursor: 'pointer',
+                  fontSize: 12,
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div
           data-testid="terminal-container"
           style={{
@@ -135,7 +191,7 @@ export default function App() {
             fontSize: 14,
           }}
         >
-          Terminal will be connected in Phase 4
+          {sessions.length === 0 ? 'Click + to start a session' : 'Terminal active'}
         </div>
       </div>
 

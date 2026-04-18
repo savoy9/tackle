@@ -12,6 +12,14 @@ export interface TerminalSessionInfo {
   pid: number;
 }
 
+export interface ManagedSessionInfo {
+  id: number;
+  name: string;
+  status: 'running' | 'completed' | 'stopped';
+  task_id: number | null;
+  terminal_id: string;
+}
+
 export interface ChartroomAPI {
   version: string;
   tasks: {
@@ -28,6 +36,11 @@ export interface ChartroomAPI {
     resize: (id: string, cols: number, rows: number) => void;
     destroy: (id: string) => void;
     onData: (callback: (data: string) => void) => void;
+  };
+  sessions: {
+    create: (options?: { name?: string; taskId?: number }) => Promise<ManagedSessionInfo>;
+    list: () => Promise<ManagedSessionInfo[]>;
+    stop: (id: number) => Promise<void>;
   };
 }
 

@@ -50,6 +50,17 @@ beforeEach(() => {
       destroy: vi.fn(),
       onData: vi.fn(),
     },
+    sessions: {
+      create: vi.fn().mockResolvedValue({
+        id: 1,
+        name: 'Session 1',
+        status: 'running',
+        task_id: null,
+        terminal_id: 'term-1',
+      }),
+      list: vi.fn().mockResolvedValue([]),
+      stop: vi.fn(),
+    },
   };
 });
 
@@ -146,5 +157,31 @@ describe('terminal panel', () => {
     expect(screen.getByText('Terminal')).toBeInTheDocument();
     // The terminal panel should have a div with data-testid for xterm mounting
     expect(screen.getByTestId('terminal-container')).toBeInTheDocument();
+  });
+
+  it('has a New Session button that creates a session', async () => {
+    const user = userEvent.setup();
+    render(<App />);
+
+    const newSessionBtn = screen.getByTitle('New session');
+    await user.click(newSessionBtn);
+
+    expect(window.chartroom.sessions.create).toHaveBeenCalled();
+  });
+
+  it('shows session tabs after creating sessions', async () => {
+    // Mock sessions.list to return sessions after creation
+    (window.chartroom.sessions.list as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: 1, name: 'Session 1', status: 'running', task_id: null, terminal_id: 'term-1' },
+    ]);
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await user.click(screen.getByTitle('New session'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Session 1')).toBeInTheDocument();
+    });
   });
 });

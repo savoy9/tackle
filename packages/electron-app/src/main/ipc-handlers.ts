@@ -2,6 +2,7 @@ import { ipcMain, type BrowserWindow } from 'electron';
 import { TaskRepository } from './task-repository';
 import type { GitHubSyncService, SyncResult } from './github-sync';
 import type { TerminalManager } from './terminal-manager';
+import type { SessionManager } from './session-manager';
 
 export function registerTaskHandlers(repo: TaskRepository): void {
   ipcMain.handle('tasks:list', () => {
@@ -56,5 +57,20 @@ export function registerTerminalHandlers(
 
   ipcMain.handle('terminal:destroy', (_event, id: string) => {
     manager.destroy(id);
+  });
+}
+
+export function registerSessionHandlers(sessionManager: SessionManager): void {
+  ipcMain.handle('sessions:create', (_event, options?: { name?: string; taskId?: number }) => {
+    const name = options?.name || `Session ${Date.now()}`;
+    return sessionManager.create({ name, taskId: options?.taskId });
+  });
+
+  ipcMain.handle('sessions:list', () => {
+    return sessionManager.list();
+  });
+
+  ipcMain.handle('sessions:stop', (_event, id: number) => {
+    sessionManager.stop(id);
   });
 }

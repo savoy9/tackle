@@ -20,4 +20,10 @@ contextBridge.exposeInMainWorld('chartroom', {
       ipcRenderer.on('terminal:data', (_event, data: string) => callback(data));
     },
   },
+  sessions: {
+    create: (options?: { name?: string; taskId?: number }) =>
+      ipcRenderer.invoke('sessions:create', options),
+    list: () => ipcRenderer.invoke('sessions:list'),
+    stop: (id: number) => ipcRenderer.invoke('sessions:stop', id),
+  },
 });
