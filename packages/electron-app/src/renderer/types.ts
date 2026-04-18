@@ -6,6 +6,12 @@ export interface SyncResult {
   error?: string;
 }
 
+export interface TerminalSessionInfo {
+  id: string;
+  status: 'running' | 'exited';
+  pid: number;
+}
+
 export interface ChartroomAPI {
   version: string;
   tasks: {
@@ -14,6 +20,14 @@ export interface ChartroomAPI {
   };
   sync: {
     refresh: () => Promise<SyncResult>;
+  };
+  terminal: {
+    create: () => Promise<TerminalSessionInfo>;
+    list: () => Promise<TerminalSessionInfo[]>;
+    write: (id: string, data: string) => void;
+    resize: (id: string, cols: number, rows: number) => void;
+    destroy: (id: string) => void;
+    onData: (callback: (data: string) => void) => void;
   };
 }
 

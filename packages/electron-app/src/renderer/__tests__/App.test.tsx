@@ -42,6 +42,14 @@ beforeEach(() => {
     sync: {
       refresh: vi.fn().mockResolvedValue({ success: true, synced: 2 }),
     },
+    terminal: {
+      create: vi.fn().mockResolvedValue({ id: 'term-1', status: 'running', pid: 999 }),
+      list: vi.fn().mockResolvedValue([]),
+      write: vi.fn(),
+      resize: vi.fn(),
+      destroy: vi.fn(),
+      onData: vi.fn(),
+    },
   };
 });
 
@@ -128,5 +136,15 @@ describe('task list from DB', () => {
     expect(window.chartroom.sync.refresh).toHaveBeenCalled();
     // After refresh, tasks:list should be called again
     expect(window.chartroom.tasks.list).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('terminal panel', () => {
+  it('renders the terminal panel with a container for xterm', () => {
+    render(<App />);
+
+    expect(screen.getByText('Terminal')).toBeInTheDocument();
+    // The terminal panel should have a div with data-testid for xterm mounting
+    expect(screen.getByTestId('terminal-container')).toBeInTheDocument();
   });
 });

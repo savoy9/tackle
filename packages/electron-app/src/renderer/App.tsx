@@ -125,6 +125,7 @@ export default function App() {
       >
         <PanelHeader title="Terminal" />
         <div
+          data-testid="terminal-container"
           style={{
             flex: 1,
             display: 'flex',

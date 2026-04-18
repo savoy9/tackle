@@ -3,8 +3,13 @@ import path from 'path';
 import fs from 'fs';
 import { createDatabase } from './db';
 import { TaskRepository } from './task-repository';
-import { registerTaskHandlers, registerSyncHandlers } from './ipc-handlers';
+import {
+  registerTaskHandlers,
+  registerSyncHandlers,
+  registerTerminalHandlers,
+} from './ipc-handlers';
 import { GitHubSyncService } from './github-sync';
+import { TerminalManager } from './terminal-manager';
 import { Octokit } from '@octokit/rest';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -60,9 +65,13 @@ if (ghConfig) {
   syncService = new GitHubSyncService(octokit, taskRepo, ghConfig.owner, ghConfig.repo);
 }
 
+// Terminal manager
+const terminalManager = new TerminalManager();
+
 // Register IPC handlers
 registerTaskHandlers(taskRepo);
 registerSyncHandlers(syncService);
+registerTerminalHandlers(terminalManager);
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
