@@ -8,6 +8,9 @@ contextBridge.exposeInMainWorld('chartroom', {
   },
   sync: {
     refresh: () => ipcRenderer.invoke('sync:refresh'),
+    onCompleted: (callback: () => void) => {
+      ipcRenderer.on('sync:completed', () => callback());
+    },
   },
   terminal: {
     create: () => ipcRenderer.invoke('terminal:create'),

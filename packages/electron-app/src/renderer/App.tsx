@@ -32,6 +32,13 @@ export default function App() {
   useEffect(() => {
     loadTasks();
     loadSessions();
+
+    // Reload tasks when background sync completes
+    if (window.chartroom?.sync?.onCompleted) {
+      window.chartroom.sync.onCompleted(() => {
+        loadTasks();
+      });
+    }
   }, [loadTasks, loadSessions]);
 
   const handleNewSession = useCallback(async () => {

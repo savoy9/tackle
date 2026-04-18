@@ -135,15 +135,12 @@ async function main() {
       mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
     }
 
-    // Open dev tools to see errors
-    mainWindow.webContents.openDevTools();
-
-    // Auto-sync on launch
+    // Auto-sync on launch — notify renderer when done
     if (syncService) {
       syncService.sync().then((result) => {
         console.log('GitHub sync result:', result);
-        if (!result.success) {
-          console.error('Sync failed:', result.error);
+        if (result.success) {
+          mainWindow.webContents.send('sync:completed');
         }
       });
     }

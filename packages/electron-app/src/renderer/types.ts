@@ -28,6 +28,7 @@ export interface ChartroomAPI {
   };
   sync: {
     refresh: () => Promise<SyncResult>;
+    onCompleted: (callback: () => void) => void;
   };
   terminal: {
     create: () => Promise<TerminalSessionInfo>;
