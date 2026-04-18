@@ -42,6 +42,20 @@ export default function App() {
     }
   }, [loadSessions]);
 
+  const handleNewSessionForTask = useCallback(
+    async (taskId: number) => {
+      if (window.chartroom?.sessions) {
+        const session = await window.chartroom.sessions.create({
+          name: `Task ${taskId} session`,
+          taskId,
+        });
+        setActiveSessionId(session.id);
+        loadSessions();
+      }
+    },
+    [loadSessions],
+  );
+
   const handleRefresh = useCallback(async () => {
     if (window.chartroom?.sync) {
       await window.chartroom.sync.refresh();
@@ -124,7 +138,13 @@ export default function App() {
             selectedId={selectedTask?.id ?? null}
             onSelect={handleTaskClick}
           />
-          {selectedTask && <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />}
+          {selectedTask && (
+            <TaskDetail
+              task={selectedTask}
+              onClose={() => setSelectedTask(null)}
+              onNewSession={handleNewSessionForTask}
+            />
+          )}
         </div>
       </div>
 
@@ -350,7 +370,23 @@ function TaskList({
   );
 }
 
-function TaskDetail({ task, onClose }: { task: Task; onClose: () => void }) {
+function TaskDetail({
+  task,
+  onClose,
+  onNewSession,
+}: {
+  task: Task;
+  onClose: () => void;
+  onNewSession: (taskId: number) => void;
+}) {
+  const [taskSessions, setTaskSessions] = useState<ManagedSessionInfo[]>([]);
+
+  useEffect(() => {
+    if (window.chartroom?.sessions?.listForTask) {
+      window.chartroom.sessions.listForTask(task.id).then(setTaskSessions);
+    }
+  }, [task.id]);
+
   return (
     <div
       style={{
@@ -389,6 +425,53 @@ function TaskDetail({ task, onClose }: { task: Task; onClose: () => void }) {
       {task.description && (
         <div style={{ color: '#bbb', marginTop: 8, lineHeight: 1.5 }}>{task.description}</div>
       )}
+      {/* Sessions section */}
+      <div style={{ marginTop: 12, borderTop: '1px solid #2a2a2e', paddingTop: 8 }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: 6,
+          }}
+        >
+          <span style={{ color: '#999', fontSize: 12, textTransform: 'uppercase' }}>Sessions</span>
+          <button
+            onClick={() => onNewSession(task.id)}
+            style={{
+              background: 'none',
+              border: '1px solid #333',
+              color: '#aaa',
+              cursor: 'pointer',
+              borderRadius: 4,
+              padding: '2px 8px',
+              fontSize: 11,
+            }}
+            title="New session for task"
+          >
+            +
+          </button>
+        </div>
+        {taskSessions.length === 0 ? (
+          <div style={{ color: '#555', fontSize: 12 }}>No sessions yet</div>
+        ) : (
+          taskSessions.map((s) => (
+            <div
+              key={s.id}
+              style={{
+                padding: '4px 8px',
+                borderRadius: 4,
+                marginBottom: 2,
+                fontSize: 12,
+                color: s.status === 'running' ? '#e0e0e0' : '#666',
+                cursor: 'pointer',
+              }}
+            >
+              {s.name}
+            </div>
+          ))
+        )}
+      </div>
     </div>
   );
 }

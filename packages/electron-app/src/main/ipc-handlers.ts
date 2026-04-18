@@ -70,6 +70,10 @@ export function registerSessionHandlers(sessionManager: SessionManager): void {
     return sessionManager.list();
   });
 
+  ipcMain.handle('sessions:listForTask', (_event, taskId: number) => {
+    return sessionManager.listForTask(taskId);
+  });
+
   ipcMain.handle('sessions:stop', (_event, id: number) => {
     sessionManager.stop(id);
   });

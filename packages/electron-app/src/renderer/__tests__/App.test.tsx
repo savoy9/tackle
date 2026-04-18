@@ -59,6 +59,7 @@ beforeEach(() => {
         terminal_id: 'term-1',
       }),
       list: vi.fn().mockResolvedValue([]),
+      listForTask: vi.fn().mockResolvedValue([]),
       stop: vi.fn(),
     },
   };
@@ -183,5 +184,54 @@ describe('terminal panel', () => {
     await waitFor(() => {
       expect(screen.getByText('Session 1')).toBeInTheDocument();
     });
+  });
+});
+
+describe('tasks + sessions linked', () => {
+  it('shows sessions under task detail when task is selected', async () => {
+    // Mock listForTask to return sessions for task 1
+    (window.chartroom.sessions.listForTask as ReturnType<typeof vi.fn>).mockResolvedValue([
+      { id: 10, name: 'impl-session', status: 'running', task_id: 1, terminal_id: 'term-10' },
+      { id: 11, name: 'debug-session', status: 'completed', task_id: 1, terminal_id: 'term-11' },
+    ]);
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    // Wait for tasks to load, then click one
+    await waitFor(() => {
+      expect(screen.getByText('Build the scaffold')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Build the scaffold'));
+
+    // Should show sessions section in task detail
+    await waitFor(() => {
+      expect(screen.getByText('impl-session')).toBeInTheDocument();
+      expect(screen.getByText('debug-session')).toBeInTheDocument();
+    });
+  });
+
+  it('has a new session button on task detail that auto-associates', async () => {
+    (window.chartroom.sessions.listForTask as ReturnType<typeof vi.fn>).mockResolvedValue([]);
+
+    const user = userEvent.setup();
+    render(<App />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Build the scaffold')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByText('Build the scaffold'));
+
+    await waitFor(() => {
+      expect(screen.getByTitle('New session for task')).toBeInTheDocument();
+    });
+
+    await user.click(screen.getByTitle('New session for task'));
+
+    expect(window.chartroom.sessions.create).toHaveBeenCalledWith(
+      expect.objectContaining({ taskId: 1 }),
+    );
   });
 });

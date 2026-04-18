@@ -24,6 +24,7 @@ contextBridge.exposeInMainWorld('chartroom', {
     create: (options?: { name?: string; taskId?: number }) =>
       ipcRenderer.invoke('sessions:create', options),
     list: () => ipcRenderer.invoke('sessions:list'),
+    listForTask: (taskId: number) => ipcRenderer.invoke('sessions:listForTask', taskId),
     stop: (id: number) => ipcRenderer.invoke('sessions:stop', id),
   },
 });

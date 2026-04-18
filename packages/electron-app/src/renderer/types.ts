@@ -40,6 +40,7 @@ export interface ChartroomAPI {
   sessions: {
     create: (options?: { name?: string; taskId?: number }) => Promise<ManagedSessionInfo>;
     list: () => Promise<ManagedSessionInfo[]>;
+    listForTask: (taskId: number) => Promise<ManagedSessionInfo[]>;
     stop: (id: number) => Promise<void>;
   };
 }
