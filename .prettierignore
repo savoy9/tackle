@@ -1,0 +1,6 @@
+node_modules
+dist
+out
+.vite
+bun.lock
+package-lock.json

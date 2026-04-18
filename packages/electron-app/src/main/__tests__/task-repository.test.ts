@@ -13,12 +13,12 @@ describe('TaskRepository', () => {
     // Seed test data
     db.prepare(
       `INSERT INTO tasks (external_id, external_system, title, description, status, assignee)
-       VALUES (?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?)`,
     ).run('1', 'github', 'Build the thing', 'A description', 'open', 'alice');
 
     db.prepare(
       `INSERT INTO tasks (external_id, external_system, title, description, status, assignee)
-       VALUES (?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?)`,
     ).run('2', 'github', 'Fix the bug', 'Bug details', 'closed', null);
   });
 

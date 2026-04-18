@@ -23,7 +23,9 @@ describe('database', () => {
   it('tasks table has the expected columns', () => {
     db = createDatabase(':memory:');
 
-    const columns = db.prepare<{ name: string }>('PRAGMA table_info(tasks)').all() as { name: string }[];
+    const columns = db.prepare<{ name: string }>('PRAGMA table_info(tasks)').all() as {
+      name: string;
+    }[];
     const colNames = columns.map((c) => c.name);
 
     expect(colNames).toContain('id');
@@ -40,7 +42,9 @@ describe('database', () => {
   it('sessions table has the expected columns', () => {
     db = createDatabase(':memory:');
 
-    const columns = db.prepare<{ name: string }>('PRAGMA table_info(sessions)').all() as { name: string }[];
+    const columns = db.prepare<{ name: string }>('PRAGMA table_info(sessions)').all() as {
+      name: string;
+    }[];
     const colNames = columns.map((c) => c.name);
 
     expect(colNames).toContain('id');

@@ -35,9 +35,9 @@ beforeEach(() => {
     version: '0.1.0',
     tasks: {
       list: vi.fn().mockResolvedValue(mockTasks),
-      get: vi.fn().mockImplementation((id: number) =>
-        Promise.resolve(mockTasks.find((t) => t.id === id))
-      ),
+      get: vi
+        .fn()
+        .mockImplementation((id: number) => Promise.resolve(mockTasks.find((t) => t.id === id))),
     },
   };
 });

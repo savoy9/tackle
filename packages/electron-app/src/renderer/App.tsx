@@ -52,7 +52,7 @@ export default function App() {
       document.body.style.cursor = 'col-resize';
       document.body.style.userSelect = 'none';
     },
-    [taskWidth, reviewWidth]
+    [taskWidth, reviewWidth],
   );
 
   const effectiveReviewWidth = reviewCollapsed ? 0 : reviewWidth;
@@ -67,8 +67,7 @@ export default function App() {
         overflow: 'hidden',
         background: '#0e0e10',
         color: '#e0e0e0',
-        fontFamily:
-          '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+        fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
       }}
     >
       {/* Task Panel */}
@@ -89,9 +88,7 @@ export default function App() {
             selectedId={selectedTask?.id ?? null}
             onSelect={handleTaskClick}
           />
-          {selectedTask && (
-            <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />
-          )}
+          {selectedTask && <TaskDetail task={selectedTask} onClose={() => setSelectedTask(null)} />}
         </div>
       </div>
 
@@ -187,13 +184,7 @@ export default function App() {
   );
 }
 
-function PanelHeader({
-  title,
-  action,
-}: {
-  title: string;
-  action?: React.ReactNode;
-}) {
+function PanelHeader({ title, action }: { title: string; action?: React.ReactNode }) {
   return (
     <div
       style={{
@@ -227,12 +218,8 @@ function Divider({ onMouseDown }: { onMouseDown: (e: React.MouseEvent) => void }
         background: 'transparent',
         flexShrink: 0,
       }}
-      onMouseEnter={(e) =>
-        ((e.target as HTMLElement).style.background = '#3a3a4a')
-      }
-      onMouseLeave={(e) =>
-        ((e.target as HTMLElement).style.background = 'transparent')
-      }
+      onMouseEnter={(e) => ((e.target as HTMLElement).style.background = '#3a3a4a')}
+      onMouseLeave={(e) => ((e.target as HTMLElement).style.background = 'transparent')}
     />
   );
 }
@@ -288,13 +275,7 @@ function TaskList({
   );
 }
 
-function TaskDetail({
-  task,
-  onClose,
-}: {
-  task: Task;
-  onClose: () => void;
-}) {
+function TaskDetail({ task, onClose }: { task: Task; onClose: () => void }) {
   return (
     <div
       style={{
@@ -322,7 +303,8 @@ function TaskDetail({
         </button>
       </div>
       <div style={{ color: '#999', marginBottom: 6 }}>
-        Status: <span style={{ color: task.status === 'open' ? '#3fb950' : '#8b949e' }}>{task.status}</span>
+        Status:{' '}
+        <span style={{ color: task.status === 'open' ? '#3fb950' : '#8b949e' }}>{task.status}</span>
       </div>
       {task.assignee && (
         <div style={{ color: '#999', marginBottom: 6 }}>
@@ -330,9 +312,7 @@ function TaskDetail({
         </div>
       )}
       {task.description && (
-        <div style={{ color: '#bbb', marginTop: 8, lineHeight: 1.5 }}>
-          {task.description}
-        </div>
+        <div style={{ color: '#bbb', marginTop: 8, lineHeight: 1.5 }}>{task.description}</div>
       )}
     </div>
   );

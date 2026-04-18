@@ -37,7 +37,7 @@ export function openDatabase(dbPath: string): Database {
     };
   } catch {
     // Fall back to better-sqlite3 (Node/Electron)
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
+
     const BetterSqlite3 = require('better-sqlite3');
     const db = new BetterSqlite3(dbPath);
     db.pragma('journal_mode = WAL');
