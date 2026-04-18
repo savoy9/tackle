@@ -1,6 +1,7 @@
 import { app, BrowserWindow, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
+import { execSync } from 'child_process';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
@@ -10,6 +11,19 @@ process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION:', err);
   dialog.showErrorBox('Chartroom Error', err.stack || err.message);
 });
+
+function getGhCliToken(): string | undefined {
+  try {
+    const token = execSync('gh auth token', {
+      encoding: 'utf-8',
+      timeout: 5000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    }).trim();
+    return token || undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 async function main() {
   // Dynamic imports so errors are catchable
@@ -72,7 +86,9 @@ async function main() {
       }
     }
 
-    return { owner: 'savoy9', repo: 'chartroom', token: process.env.GITHUB_TOKEN };
+    // Try to get token from gh CLI, env vars, etc.
+    const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || getGhCliToken();
+    return { owner: 'savoy9', repo: 'chartroom', token };
   }
 
   const ghConfig = loadGitHubConfig();
@@ -124,7 +140,12 @@ async function main() {
 
     // Auto-sync on launch
     if (syncService) {
-      syncService.sync().catch(console.error);
+      syncService.sync().then((result) => {
+        console.log('GitHub sync result:', result);
+        if (!result.success) {
+          console.error('Sync failed:', result.error);
+        }
+      });
     }
   }
 
