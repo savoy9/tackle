@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "description": "Chartroom Electron application",
-  "main": ".vite/build/main.js",
+  "main": ".vite/build/index.js",
   "scripts": {
     "dev": "electron-forge start",
     "build": "electron-forge make",
