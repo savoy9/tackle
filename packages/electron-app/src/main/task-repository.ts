@@ -42,4 +42,17 @@ export class TaskRepository {
         task.assignee,
       );
   }
+
+  upsertBatch(tasks: UpsertTask[]): void {
+    this.db.exec('BEGIN');
+    try {
+      for (const task of tasks) {
+        this.upsert(task);
+      }
+      this.db.exec('COMMIT');
+    } catch (err) {
+      this.db.exec('ROLLBACK');
+      throw err;
+    }
+  }
 }

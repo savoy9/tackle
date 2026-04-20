@@ -16,7 +16,7 @@ export interface Statement<T = unknown> {
 export function openDatabase(dbPath: string): Database {
   // Try bun:sqlite first (available when running under Bun)
   try {
-    // @ts-expect-error bun:sqlite is only available in Bun runtime
+    // bun:sqlite is only available in Bun runtime
     const { Database: BunDB } = require('bun:sqlite');
     const db = new BunDB(dbPath);
     db.run('PRAGMA journal_mode = WAL');
@@ -72,7 +72,9 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER REFERENCES tasks(id),
+    phase_id INTEGER REFERENCES phases(id),
     name TEXT NOT NULL,
+    kind TEXT NOT NULL DEFAULT 'agent' CHECK(kind IN ('agent', 'terminal')),
     status TEXT NOT NULL DEFAULT 'running' CHECK(status IN ('running', 'completed', 'stopped')),
     psmux_session TEXT NOT NULL,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),
@@ -81,6 +83,28 @@ const SCHEMA = `
 
   CREATE UNIQUE INDEX IF NOT EXISTS idx_tasks_external
     ON tasks(external_system, external_id);
+
+  CREATE TABLE IF NOT EXISTS plans (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    task_id INTEGER NOT NULL REFERENCES tasks(id),
+    source_path TEXT NOT NULL,
+    extracted_at TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
+
+  CREATE UNIQUE INDEX IF NOT EXISTS idx_plans_task
+    ON plans(task_id);
+
+  CREATE TABLE IF NOT EXISTS phases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    plan_id INTEGER NOT NULL REFERENCES plans(id),
+    task_id INTEGER NOT NULL REFERENCES tasks(id),
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'in_progress', 'done', 'failed')),
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+  );
 `;
 
 export function createDatabase(dbPath: string): Database {

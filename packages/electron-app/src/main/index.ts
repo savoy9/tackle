@@ -1,121 +1,121 @@
 import { app, BrowserWindow, dialog } from 'electron';
 import path from 'path';
 import fs from 'fs';
-import { execSync } from 'child_process';
+import { execFile } from 'child_process';
 
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
-// Catch-all for unhandled errors
 process.on('uncaughtException', (err) => {
   console.error('UNCAUGHT EXCEPTION:', err);
   dialog.showErrorBox('Chartroom Error', err.stack || err.message);
 });
 
-function getGhCliToken(): string | undefined {
-  try {
-    const token = execSync('gh auth token', {
-      encoding: 'utf-8',
-      timeout: 5000,
-      stdio: ['pipe', 'pipe', 'pipe'],
-    }).trim();
-    return token || undefined;
-  } catch {
-    return undefined;
+interface GitHubConfig {
+  owner: string;
+  repo: string;
+  token?: string;
+}
+
+function getGhCliToken(): Promise<string | undefined> {
+  return new Promise((resolve) => {
+    execFile('gh', ['auth', 'token'], { timeout: 5000 }, (err, stdout) => {
+      if (err) return resolve(undefined);
+      const token = stdout.trim();
+      resolve(token || undefined);
+    });
+  });
+}
+
+async function loadGitHubConfig(): Promise<GitHubConfig | null> {
+  const owner = process.env.CHARTROOM_GITHUB_OWNER;
+  const repo = process.env.CHARTROOM_GITHUB_REPO;
+  if (owner && repo) {
+    return { owner, repo, token: process.env.CHARTROOM_GITHUB_TOKEN };
   }
+
+  const configPath = path.join(app.getPath('userData'), 'config.json');
+  try {
+    const raw = fs.readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(raw);
+    if (config.github?.owner && config.github?.repo) {
+      return {
+        owner: config.github.owner,
+        repo: config.github.repo,
+        token: config.github.token,
+      };
+    }
+  } catch {
+    // No config file or malformed — fall through
+  }
+
+  const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || (await getGhCliToken());
+  if (!token) return null;
+  return { owner: 'savoy9', repo: 'chartroom', token };
 }
 
 async function main() {
-  // Dynamic imports so errors are catchable
-  const { createDatabase } = await import('./db');
-  const { TaskRepository } = await import('./task-repository');
-  const {
-    registerTaskHandlers,
-    registerSyncHandlers,
-    registerTerminalHandlers,
-    registerSessionHandlers,
-  } = await import('./ipc-handlers');
-  const { GitHubSyncService } = await import('./github-sync');
-  const { Octokit } = await import('@octokit/rest');
+  const [
+    { createDatabase },
+    { TaskRepository },
+    { registerTaskHandlers, registerSyncHandlers, registerSessionHandlers, registerTerminalHandlers, registerWorkspaceHandlers, registerPlanHandlers, registerFileHandlers },
+    { GitHubSyncService },
+    { Octokit },
+    { PsmuxManager },
+    { PsmuxAttachment },
+    { WorkspaceManager },
+    { PlanRepository },
+    { PhaseRepository },
+    { PlanService },
+    { FileService },
+  ] = await Promise.all([
+    import('./db'),
+    import('./task-repository'),
+    import('./ipc-handlers'),
+    import('./github-sync'),
+    import('@octokit/rest'),
+    import('./psmux-manager'),
+    import('./psmux-attachment'),
+    import('./workspace-manager'),
+    import('./plan-repository'),
+    import('./phase-repository'),
+    import('./plan-service'),
+    import('./file-service'),
+  ]);
 
-  // These may fail if native modules aren't built for Electron's Node version
-  let TerminalManager: any = null;
-  let SessionManager: any = null;
-  try {
-    const termMod = await import('./terminal-manager');
-    TerminalManager = termMod.TerminalManager;
-    const sessMod = await import('./session-manager');
-    SessionManager = sessMod.SessionManager;
-  } catch (err) {
-    console.warn('Terminal/session modules unavailable (native module ABI mismatch?):', err);
-  }
-
-  // Initialize database
   const dbPath = path.join(app.getPath('userData'), 'chartroom.db');
-  console.log('DB path:', dbPath);
   const db = createDatabase(dbPath);
   const taskRepo = new TaskRepository(db);
 
-  // Load GitHub config
-  interface GitHubConfig {
-    owner: string;
-    repo: string;
-    token?: string;
-  }
-
-  function loadGitHubConfig(): GitHubConfig | null {
-    const owner = process.env.CHARTROOM_GITHUB_OWNER;
-    const repo = process.env.CHARTROOM_GITHUB_REPO;
-    if (owner && repo) {
-      return { owner, repo, token: process.env.CHARTROOM_GITHUB_TOKEN };
-    }
-
-    const configPath = path.join(app.getPath('userData'), 'config.json');
-    if (fs.existsSync(configPath)) {
-      try {
-        const config = JSON.parse(fs.readFileSync(configPath, 'utf-8'));
-        if (config.github?.owner && config.github?.repo) {
-          return {
-            owner: config.github.owner,
-            repo: config.github.repo,
-            token: config.github.token,
-          };
-        }
-      } catch {
-        // Ignore malformed config
-      }
-    }
-
-    // Try to get token from gh CLI, env vars, etc.
-    const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || getGhCliToken();
-    return { owner: 'savoy9', repo: 'chartroom', token };
-  }
-
-  const ghConfig = loadGitHubConfig();
-  let syncService: GitHubSyncService | null = null;
+  const ghConfig = await loadGitHubConfig();
+  let syncService: InstanceType<typeof GitHubSyncService> | null = null;
 
   if (ghConfig) {
     const octokit = new Octokit(ghConfig.token ? { auth: ghConfig.token } : {});
     syncService = new GitHubSyncService(octokit, taskRepo, ghConfig.owner, ghConfig.repo);
   }
 
-  // Terminal manager (may fail if node-pty ABI mismatch)
-  let terminalManager: any = null;
-  let sessionManager: any = null;
-  if (TerminalManager) {
-    try {
-      terminalManager = new TerminalManager();
-      sessionManager = new SessionManager(db, terminalManager);
-    } catch (err) {
-      console.warn('Terminal manager unavailable:', err);
-    }
+  const psmuxManager = new PsmuxManager();
+  const attachment = new PsmuxAttachment();
+  const workspace = new WorkspaceManager(db, psmuxManager);
+  const planRepo = new PlanRepository(db);
+  const phaseRepo = new PhaseRepository(db);
+  const planService = new PlanService(planRepo, phaseRepo);
+  const fileService = new FileService(process.cwd());
+
+  // Default psmux session — used until a task is selected
+  const defaultSessionName = 'chartroom-default';
+  if (!psmuxManager.hasSession(defaultSessionName)) {
+    psmuxManager.createSession(defaultSessionName);
   }
 
-  // Register IPC handlers
   registerTaskHandlers(taskRepo);
   registerSyncHandlers(syncService);
-  if (terminalManager) registerTerminalHandlers(terminalManager);
-  if (sessionManager) registerSessionHandlers(sessionManager);
+  registerSessionHandlers(workspace);
+  registerTerminalHandlers(attachment, psmuxManager, defaultSessionName);
+  registerWorkspaceHandlers(workspace, attachment);
+  registerPlanHandlers(planService, phaseRepo);
+  registerFileHandlers(fileService);
 
   function createWindow() {
     const mainWindow = new BrowserWindow({
@@ -135,10 +135,8 @@ async function main() {
       mainWindow.loadFile(path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`));
     }
 
-    // Auto-sync on launch — notify renderer when done
     if (syncService) {
-      syncService.sync().then((result) => {
-        console.log('GitHub sync result:', result);
+      void syncService.sync().then((result: { success: boolean }) => {
         if (result.success) {
           mainWindow.webContents.send('sync:completed');
         }

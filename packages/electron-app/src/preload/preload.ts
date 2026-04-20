@@ -9,25 +9,50 @@ contextBridge.exposeInMainWorld('chartroom', {
   sync: {
     refresh: () => ipcRenderer.invoke('sync:refresh'),
     onCompleted: (callback: () => void) => {
-      ipcRenderer.on('sync:completed', () => callback());
+      const handler = () => callback();
+      ipcRenderer.on('sync:completed', handler);
+      return () => ipcRenderer.removeListener('sync:completed', handler);
     },
   },
   terminal: {
-    create: () => ipcRenderer.invoke('terminal:create'),
-    list: () => ipcRenderer.invoke('terminal:list'),
-    write: (id: string, data: string) => ipcRenderer.invoke('terminal:write', id, data),
-    resize: (id: string, cols: number, rows: number) =>
-      ipcRenderer.invoke('terminal:resize', id, cols, rows),
-    destroy: (id: string) => ipcRenderer.invoke('terminal:destroy', id),
+    write: (data: string) => ipcRenderer.invoke('terminal:write', data),
+    resize: (cols: number, rows: number) => ipcRenderer.invoke('terminal:resize', cols, rows),
+    switchSession: (sessionName: string) =>
+      ipcRenderer.invoke('terminal:switchSession', sessionName),
+    currentSession: () => ipcRenderer.invoke('terminal:currentSession'),
     onData: (callback: (data: string) => void) => {
-      ipcRenderer.on('terminal:data', (_event, data: string) => callback(data));
+      const handler = (_event: Electron.IpcRendererEvent, data: string) => callback(data);
+      ipcRenderer.on('terminal:data', handler);
+      return () => ipcRenderer.removeListener('terminal:data', handler);
     },
   },
   sessions: {
-    create: (options?: { name?: string; taskId?: number }) =>
+    create: (options?: { name?: string; taskId?: number; kind?: 'agent' | 'terminal' }) =>
       ipcRenderer.invoke('sessions:create', options),
     list: () => ipcRenderer.invoke('sessions:list'),
     listForTask: (taskId: number) => ipcRenderer.invoke('sessions:listForTask', taskId),
     stop: (id: number) => ipcRenderer.invoke('sessions:stop', id),
+  },
+  workspace: {
+    switchTask: (taskId: number) => ipcRenderer.invoke('workspace:switchTask', taskId),
+    currentTaskId: () => ipcRenderer.invoke('workspace:currentTaskId'),
+    selectPhase: (phaseId: number | null) => ipcRenderer.invoke('workspace:selectPhase', phaseId),
+    ensurePhaseWindow: (phaseId: number) => ipcRenderer.invoke('workspace:ensurePhaseWindow', phaseId),
+  },
+  plans: {
+    link: (taskId: number, sourcePath: string, content: string) =>
+      ipcRenderer.invoke('plan:link', taskId, sourcePath, content),
+    getForTask: (taskId: number) => ipcRenderer.invoke('plan:getForTask', taskId),
+  },
+  phases: {
+    listForTask: (taskId: number) => ipcRenderer.invoke('phases:listForTask', taskId),
+    updateStatus: (phaseId: number, status: string) =>
+      ipcRenderer.invoke('phases:updateStatus', phaseId, status),
+  },
+  files: {
+    read: (relativePath: string) => ipcRenderer.invoke('file:read', relativePath),
+    write: (relativePath: string, content: string) =>
+      ipcRenderer.invoke('file:write', relativePath, content),
+    list: (relativePath: string) => ipcRenderer.invoke('file:list', relativePath),
   },
 });

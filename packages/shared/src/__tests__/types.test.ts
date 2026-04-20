@@ -25,7 +25,9 @@ describe('shared types', () => {
     const session: Session = {
       id: 1,
       task_id: null,
+      phase_id: null,
       name: 'impl-session-1',
+      kind: 'agent',
       status: 'running',
       psmux_session: 'chartroom-1',
       started_at: '2026-04-18T00:00:00Z',
@@ -33,6 +35,7 @@ describe('shared types', () => {
     };
 
     expect(session.task_id).toBeNull();
+    expect(session.kind).toBe('agent');
     expect(session.status).toBe('running');
     expect(session.ended_at).toBeNull();
   });
@@ -41,7 +44,9 @@ describe('shared types', () => {
     const session: Session = {
       id: 2,
       task_id: 42,
+      phase_id: null,
       name: 'debug-session',
+      kind: 'agent',
       status: 'completed',
       psmux_session: 'chartroom-2',
       started_at: '2026-04-18T00:00:00Z',

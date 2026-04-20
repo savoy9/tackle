@@ -41,6 +41,7 @@ beforeEach(() => {
     },
     sync: {
       refresh: vi.fn().mockResolvedValue({ success: true, synced: 2 }),
+      onCompleted: vi.fn().mockReturnValue(() => {}),
     },
     terminal: {
       create: vi.fn().mockResolvedValue({ id: 'term-1', status: 'running', pid: 999 }),
@@ -48,7 +49,7 @@ beforeEach(() => {
       write: vi.fn(),
       resize: vi.fn(),
       destroy: vi.fn(),
-      onData: vi.fn(),
+      onData: vi.fn().mockReturnValue(() => {}),
     },
     sessions: {
       create: vi.fn().mockResolvedValue({

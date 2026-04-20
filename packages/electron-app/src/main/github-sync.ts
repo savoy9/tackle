@@ -1,11 +1,8 @@
+import type { SyncResult } from '@chartroom/shared';
 import type { Octokit } from '@octokit/rest';
-import type { TaskRepository } from './task-repository';
+import type { TaskRepository, UpsertTask } from './task-repository';
 
-export interface SyncResult {
-  success: boolean;
-  synced?: number;
-  error?: string;
-}
+export type { SyncResult };
 
 export class GitHubSyncService {
   constructor(
@@ -18,8 +15,8 @@ export class GitHubSyncService {
   async sync(): Promise<SyncResult> {
     try {
       let page = 1;
-      let synced = 0;
       let hasMore = true;
+      const batch: UpsertTask[] = [];
 
       while (hasMore) {
         const response = await this.octokit.rest.issues.listForRepo({
@@ -35,7 +32,7 @@ export class GitHubSyncService {
         );
 
         for (const issue of issues) {
-          this.repo.upsert({
+          batch.push({
             external_id: String(issue.number),
             external_system: 'github',
             title: issue.title,
@@ -43,16 +40,15 @@ export class GitHubSyncService {
             status: issue.state ?? 'open',
             assignee: issue.assignee?.login ?? null,
           });
-          synced++;
         }
 
-        // Check for next page via link header
         const link = response.headers?.link;
         hasMore = typeof link === 'string' && link.includes('rel="next"');
         page++;
       }
 
-      return { success: true, synced };
+      this.repo.upsertBatch(batch);
+      return { success: true, synced: batch.length };
     } catch (err) {
       return {
         success: false,
