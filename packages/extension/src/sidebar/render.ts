@@ -2,6 +2,7 @@ import type { Task, Session, SessionKind } from '@tackle/shared';
 import type { SidebarState } from './sidebar-state';
 import { rollupGlyph, sessionGlyph } from './glyph';
 import { sortTasks } from './sort';
+import { partitionTasks } from './closed';
 
 function escapeHtml(s: string): string {
   return s
@@ -51,6 +52,15 @@ const STYLE = `
   .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
   .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
   .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
+  .list-header { padding: 6px 12px; color: var(--vscode-descriptionForeground); font-size: 0.9em; }
+  .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--vscode-descriptionForeground); user-select: none; }
+  .closed-folder:hover { background: var(--vscode-list-hoverBackground); }
+  .closed-rows { padding: 0 12px 6px 24px; }
+  .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .closed-row:hover { background: var(--vscode-list-hoverBackground); }
+  .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+  .closed-row .id { color: var(--vscode-descriptionForeground); }
+  .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
   .tackle-detail { padding: 8px 12px; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
   .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
@@ -147,12 +157,49 @@ function renderCard(task: Task, sessions: Session[], active: boolean, expanded: 
 </li>${expanded ? renderSessionRows(sessions) : ''}`;
 }
 
+function closedDate(t: Task): string {
+  // Task has no dedicated `closed_at`; use synced_at (most recently observed state)
+  // as a proxy. If unavailable, fall back to created_at. Empty string if neither.
+  return t.synced_at || t.created_at || '';
+}
+
+function renderClosedRow(t: Task): string {
+  const title = escapeHtml(t.title);
+  const extId = escapeHtml(t.external_id);
+  const date = escapeHtml(closedDate(t));
+  return `<div class="closed-row" data-action="enterDetail" data-task-id="${t.id}">
+  <span class="title">${title}</span>
+  <span class="id">#${extId}</span>
+  <span class="date">${date}</span>
+</div>`;
+}
+
+function renderClosedFolder(closed: Task[], open: boolean): string {
+  if (closed.length === 0) return '';
+  const caret = open ? '▾' : '▸';
+  const folder = `<div class="closed-folder" data-action="toggleClosedFolder">${caret} Closed (${closed.length})</div>`;
+  if (!open) return folder;
+  // Sort closed tasks by updated_at (synced_at) desc.
+  const sorted = closed
+    .slice()
+    .sort((a, b) => {
+      const ka = closedDate(a);
+      const kb = closedDate(b);
+      if (ka !== kb) return ka < kb ? 1 : -1;
+      return a.id - b.id;
+    });
+  const rows = sorted.map(renderClosedRow).join('');
+  return `${folder}<div class="closed-rows">${rows}</div>`;
+}
+
 function renderList(state: SidebarState): string {
   if (state.tasks.length === 0) {
     return `<div class="tackle-empty">No tasks.</div>`;
   }
+  const { open, closed } = partitionTasks(state.tasks);
+  const header = `<div class="list-header">${open.length} open · ${closed.length} closed</div>`;
   const byTask = sessionsByTask(state.sessions);
-  const sorted = sortTasks(state.tasks, byTask);
+  const sorted = sortTasks(open, byTask);
   const items = sorted
     .map((t) =>
       renderCard(
@@ -163,7 +210,9 @@ function renderList(state: SidebarState): string {
       ),
     )
     .join('');
-  return `<ul class="card-list">${items}</ul>`;
+  const list = `<ul class="card-list">${items}</ul>`;
+  const folder = renderClosedFolder(closed, state.closedFolderOpen);
+  return `${header}${list}${folder}`;
 }
 
 function renderDetail(state: SidebarState, taskId: number): string {

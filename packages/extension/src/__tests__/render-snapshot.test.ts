@@ -78,4 +78,32 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
     };
     expect(render(state)).toMatchSnapshot();
   });
+
+  it('mixed open+closed tasks, closed folder collapsed', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [
+        task(1, 'Open A', { synced_at: '2026-04-10' }),
+        task(2, 'Closed A', { status: 'closed', synced_at: '2026-03-20' }),
+        task(3, 'Open B', { synced_at: '2026-04-05' }),
+        task(4, 'Closed B', { status: 'done', synced_at: '2026-03-15' }),
+      ],
+      closedFolderOpen: false,
+    };
+    expect(render(state)).toMatchSnapshot();
+  });
+
+  it('mixed open+closed tasks, closed folder expanded', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [
+        task(1, 'Open A', { synced_at: '2026-04-10' }),
+        task(2, 'Closed A', { status: 'closed', synced_at: '2026-03-20' }),
+        task(3, 'Open B', { synced_at: '2026-04-05' }),
+        task(4, 'Closed B', { status: 'done', synced_at: '2026-03-15' }),
+      ],
+      closedFolderOpen: true,
+    };
+    expect(render(state)).toMatchSnapshot();
+  });
 });
