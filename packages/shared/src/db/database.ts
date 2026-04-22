@@ -116,7 +116,8 @@ const SCHEMA = `
     agent_state TEXT NOT NULL DEFAULT 'idle' CHECK(agent_state IN ('idle','working','waiting')),
     prior_claude_session_ids TEXT,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),
-    ended_at TEXT
+    ended_at TEXT,
+    deleted_at TEXT
   );
 
   CREATE TABLE IF NOT EXISTS plans (
@@ -188,6 +189,9 @@ function migrate(db: Database): void {
     }
     if (!columnExists('sessions', 'prior_claude_session_ids')) {
       db.exec('ALTER TABLE sessions ADD COLUMN prior_claude_session_ids TEXT');
+    }
+    if (!columnExists('sessions', 'deleted_at')) {
+      db.exec('ALTER TABLE sessions ADD COLUMN deleted_at TEXT');
     }
   }
   if (tableExists('tasks')) {

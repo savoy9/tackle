@@ -53,6 +53,7 @@ export interface SessionRepository {
   create(session: CreateSession): Promise<Session>;
   update(id: number, fields: UpdateSession): Promise<void>;
   complete(id: number): Promise<void>;
+  softDelete(id: number): Promise<void>;
 }
 
 export interface LayoutStateRepository {
