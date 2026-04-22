@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import type { Task } from '@tackle/shared';
+import type { Task, Session } from '@tackle/shared';
 import { render } from '../sidebar/render';
 import { initialState, type SidebarState } from '../sidebar/sidebar-state';
 
-const task = (id: number, title: string): Task => ({
+const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   id,
   external_id: String(id),
   external_system: 'github',
@@ -14,77 +14,225 @@ const task = (id: number, title: string): Task => ({
   parent_external_id: null,
   synced_at: '',
   created_at: '',
+  ...over,
 });
 
-describe('render', () => {
+const session = (id: number, task_id: number, over: Partial<Session> = {}): Session => ({
+  id,
+  task_id,
+  phase_id: null,
+  name: `s${id}`,
+  kind: 'implement',
+  status: 'running',
+  psmux_name: `p${id}`,
+  tab_label: `session-${id}`,
+  agent: null,
+  worktree_path: null,
+  sort_order: 0,
+  claude_session_id: null,
+  agent_state: 'idle',
+  prior_claude_session_ids: null,
+  started_at: '',
+  ended_at: null,
+  ...over,
+});
+
+describe('render — general', () => {
   it('returns a string', () => {
     expect(typeof render(initialState)).toBe('string');
   });
 
-  it('renders empty list state (no tasks)', () => {
-    expect(render(initialState)).toMatchSnapshot();
+  it('uses VS Code theme CSS vars', () => {
+    expect(render(initialState)).toMatch(/var\(--vscode-/);
   });
 
-  it('renders list mode with several tasks (titles only)', () => {
-    const state: SidebarState = {
-      ...initialState,
-      tasks: [task(1, 'Fix bug'), task(2, 'Add feature'), task(3, 'Write docs')],
-      activeTaskId: 2,
-    };
-    const html = render(state);
-    expect(html).toContain('Fix bug');
-    expect(html).toContain('Add feature');
-    expect(html).toContain('Write docs');
-    // titles only — must NOT contain status or external_id markers
-    expect(html).not.toContain('#1');
-    expect(html).not.toContain('#2');
-    expect(html).toMatchSnapshot();
-  });
-
-  it('renders detail mode with title + Back', () => {
-    const state: SidebarState = {
-      ...initialState,
-      tasks: [task(1, 'Fix bug'), task(2, 'Add feature')],
-      mode: { kind: 'detail', taskId: 2 },
-    };
-    const html = render(state);
-    expect(html).toContain('Detail');
-    expect(html).toContain('Add feature');
-    expect(html).toContain('Back');
-    expect(html).toMatchSnapshot();
+  it('renders an empty list', () => {
+    expect(render(initialState)).toContain('No tasks');
   });
 
   it('escapes HTML in task titles', () => {
-    const state: SidebarState = {
-      ...initialState,
-      tasks: [task(1, '<script>alert(1)</script>')],
-    };
+    const state: SidebarState = { ...initialState, tasks: [task(1, '<script>alert(1)</script>')] };
     const html = render(state);
     expect(html).not.toContain('<script>alert(1)</script>');
     expect(html).toContain('&lt;script&gt;');
   });
+});
 
-  it('uses VS Code theme CSS vars', () => {
-    const html = render(initialState);
-    expect(html).toMatch(/var\(--vscode-/);
+describe('render — Card Line 1 (glyph + title + activate + overflow)', () => {
+  it('renders activity glyph span for the task', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'T')],
+      sessions: [session(10, 1, { agent_state: 'waiting' })],
+    };
+    const html = render(state);
+    expect(html).toContain('class="glyph"');
+    expect(html).toContain('✳️');
   });
 
-  it('marks the active task', () => {
+  it('renders task title as a click target that enters detail', () => {
+    const state: SidebarState = { ...initialState, tasks: [task(1, 'Hello')] };
+    const html = render(state);
+    expect(html).toMatch(/data-action="enterDetail"[^>]*data-task-id="1"|data-task-id="1"[^>]*data-action="enterDetail"/);
+    expect(html).toContain('Hello');
+  });
+
+  it('renders Activate button on non-Active cards', () => {
+    const state: SidebarState = { ...initialState, tasks: [task(1, 'A'), task(2, 'B')], activeTaskId: 2 };
+    const html = render(state);
+    // Card 1 non-active: Activate button present with data-action=activateTask data-task-id=1
+    expect(html).toMatch(/data-action="activateTask"[^>]*data-task-id="1"/);
+    // Card 2 active: no activate button for id=2
+    expect(html).not.toMatch(/data-action="activateTask"[^>]*data-task-id="2"/);
+  });
+
+  it('renders ⋯ overflow button on every card', () => {
+    const state: SidebarState = { ...initialState, tasks: [task(1, 'A')] };
+    const html = render(state);
+    expect(html).toMatch(/data-action="taskOverflow"[^>]*data-task-id="1"/);
+  });
+});
+
+describe('render — Card Line 2 (ext icon + #id + parent)', () => {
+  it('shows external-system marker and #external_id', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'T', { external_id: '42', external_system: 'github' })],
+    };
+    const html = render(state);
+    expect(html).toContain('#42');
+    expect(html).toContain('class="ext-icon"');
+  });
+
+  it('renders parent label when parent_external_id is set', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'T', { parent_external_id: '99' })],
+    };
+    const html = render(state);
+    expect(html).toContain('class="parent"');
+    expect(html).toContain('#99');
+  });
+
+  it('omits parent label when parent_external_id is null', () => {
+    const state: SidebarState = { ...initialState, tasks: [task(1, 'T')] };
+    const html = render(state);
+    expect(html).not.toContain('class="parent"');
+  });
+});
+
+describe('render — Card Line 3 (session rollup + branch | + New session)', () => {
+  it('renders session-rollup counts when sessions exist', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'T')],
+      sessions: [
+        session(10, 1, { status: 'running', agent_state: 'idle' }),
+        session(11, 1, { status: 'completed' }),
+      ],
+    };
+    const html = render(state);
+    expect(html).toContain('class="rollup"');
+  });
+
+  it('shows + New session affordance when a task has zero sessions', () => {
+    const state: SidebarState = { ...initialState, tasks: [task(1, 'T')] };
+    const html = render(state);
+    expect(html).toContain('+ New session');
+    expect(html).toMatch(/data-action="newSession"[^>]*data-task-id="1"/);
+  });
+});
+
+describe('render — Active accent bar', () => {
+  it('active task has .active class', () => {
+    const state: SidebarState = { ...initialState, tasks: [task(1, 'A')], activeTaskId: 1 };
+    const html = render(state);
+    expect(html).toMatch(/class="card active"[^>]*data-task-id="1"/);
+  });
+
+  it('non-active task does not have .active class', () => {
+    const state: SidebarState = { ...initialState, tasks: [task(1, 'A'), task(2, 'B')], activeTaskId: 1 };
+    const html = render(state);
+    expect(html).toMatch(/class="card"[^>]*data-task-id="2"/);
+  });
+
+  it('CSS defines accent bar on .card.active via --vscode-focusBorder', () => {
+    const html = render(initialState);
+    expect(html).toMatch(/\.card\.active\b[^}]*border-left:\s*3px\s+solid\s+var\(--vscode-focusBorder\)/);
+  });
+});
+
+describe('render — expansion with Session Rows', () => {
+  it('does not render session rows for a collapsed card', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'T')],
+      sessions: [session(10, 1)],
+    };
+    const html = render(state);
+    expect(html).not.toContain('class="session-row"');
+  });
+
+  it('renders session rows beneath the card when expanded', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'T')],
+      sessions: [session(10, 1)],
+      expandedCardIds: new Set([1]),
+    };
+    const html = render(state);
+    expect(html).toContain('class="session-row"');
+    expect(html).toContain('data-session-id="10"');
+    expect(html).toContain('session-10');
+  });
+
+  it('session row has Stop and Mark-done icons', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'T')],
+      sessions: [session(10, 1)],
+      expandedCardIds: new Set([1]),
+    };
+    const html = render(state);
+    expect(html).toMatch(/data-action="stopSession"[^>]*data-session-id="10"/);
+    expect(html).toMatch(/data-action="markSessionDone"[^>]*data-session-id="10"/);
+    expect(html).toMatch(/data-action="sessionOverflow"[^>]*data-session-id="10"/);
+  });
+
+  it('groups active sessions above divider and stopped/completed below', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'T')],
+      sessions: [
+        session(10, 1, { status: 'running' }),
+        session(11, 1, { status: 'stopped' }),
+        session(12, 1, { status: 'completed' }),
+      ],
+      expandedCardIds: new Set([1]),
+    };
+    const html = render(state);
+    // The row for id=10 (running) must appear before the divider; 11 and 12 after.
+    const idx10 = html.indexOf('data-session-id="10"');
+    const div = html.indexOf('class="session-divider"');
+    const idx11 = html.indexOf('data-session-id="11"');
+    const idx12 = html.indexOf('data-session-id="12"');
+    expect(idx10).toBeGreaterThan(0);
+    expect(div).toBeGreaterThan(idx10);
+    expect(idx11).toBeGreaterThan(div);
+    expect(idx12).toBeGreaterThan(div);
+  });
+});
+
+describe('render — detail mode (unchanged)', () => {
+  it('renders detail with title and Back', () => {
     const state: SidebarState = {
       ...initialState,
       tasks: [task(1, 'A'), task(2, 'B')],
-      activeTaskId: 2,
+      mode: { kind: 'detail', taskId: 2 },
     };
     const html = render(state);
-    expect(html).toMatch(/data-task-id="2"[^>]*\bactive\b|active[^>]*data-task-id="2"/);
-  });
-
-  it('click targets carry data-task-id for delegation', () => {
-    const state: SidebarState = {
-      ...initialState,
-      tasks: [task(11, 'Eleven')],
-    };
-    const html = render(state);
-    expect(html).toContain('data-task-id="11"');
+    expect(html).toContain('Detail');
+    expect(html).toContain('B');
+    expect(html).toContain('Back');
   });
 });

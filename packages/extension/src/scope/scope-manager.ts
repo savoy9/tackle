@@ -8,7 +8,6 @@ export interface ScopeWorkspaceState {
 
 export interface ScopeManagerDeps {
   terminalOrchestrator: TerminalOrchestrator;
-  sessionTreeProvider?: { setActiveTask(id: number | undefined): void; refresh(): void };
   layoutManager: LayoutManager;
   workspaceState?: ScopeWorkspaceState;
 }
@@ -35,7 +34,6 @@ export class ScopeManager {
     await this.deps.terminalOrchestrator.reattachForTask(newTaskId);
 
     this.activeTaskId = newTaskId;
-    this.deps.sessionTreeProvider?.setActiveTask(newTaskId);
 
     if (this.deps.workspaceState) {
       await this.deps.workspaceState.update(KEY_ACTIVE_TASK, newTaskId);
@@ -47,7 +45,6 @@ export class ScopeManager {
     const stored = this.deps.workspaceState?.get<number>(KEY_ACTIVE_TASK);
     if (stored !== undefined) {
       this.activeTaskId = stored;
-      this.deps.sessionTreeProvider?.setActiveTask(stored);
       this.emit(stored);
     }
   }

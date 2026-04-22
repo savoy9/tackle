@@ -1,0 +1,226 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`render snapshots — canonical List Mode states (#29) > List with Active + idle + waiting-for-input tasks 1`] = `
+"<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
+  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+  .card-list { list-style: none; margin: 0; padding: 0; }
+  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
+  .card:hover { background: var(--vscode-list-hoverBackground); }
+  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
+  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+  .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
+  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .id { color: var(--vscode-descriptionForeground); }
+  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .rollup { color: var(--vscode-descriptionForeground); }
+  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .session-rows { padding: 0 10px 6px 24px; }
+  .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .session-row:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
+  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
+  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
+  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
+  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+</style></head><body><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="3">
+  <div class="line line1">
+    <span class="glyph">✳️</span>
+    <span class="title" data-action="enterDetail" data-task-id="3">Waiting task</span>
+    <button class="activate" title="Activate" data-action="activateTask" data-task-id="3">▶</button>
+    <button class="overflow" title="More" data-action="taskOverflow" data-task-id="3">⋯</button>
+  </div>
+  <div class="line line2">
+    <span class="ext-icon">GH</span>
+    <span class="id">#3</span>
+    
+  </div>
+  <div class="line line3"><span class="rollup"><span>✳️1</span></span></div>
+</li><li class="card active" data-action="toggleExpanded" data-task-id="1">
+  <div class="line line1">
+    <span class="glyph">●</span>
+    <span class="title" data-action="enterDetail" data-task-id="1">Active task</span>
+    
+    <button class="overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
+  </div>
+  <div class="line line2">
+    <span class="ext-icon">GH</span>
+    <span class="id">#1</span>
+    
+  </div>
+  <div class="line line3"><span class="rollup"><span>●1</span></span></div>
+</li><li class="card" data-action="toggleExpanded" data-task-id="2">
+  <div class="line line1">
+    <span class="glyph">○</span>
+    <span class="title" data-action="enterDetail" data-task-id="2">Idle task</span>
+    <button class="activate" title="Activate" data-action="activateTask" data-task-id="2">▶</button>
+    <button class="overflow" title="More" data-action="taskOverflow" data-task-id="2">⋯</button>
+  </div>
+  <div class="line line2">
+    <span class="ext-icon">GH</span>
+    <span class="id">#2</span>
+    
+  </div>
+  <div class="line line3"><span class="new-session" data-action="newSession" data-task-id="2">+ New session</span></div>
+</li></ul></body></html>"
+`;
+
+exports[`render snapshots — canonical List Mode states (#29) > card with zero sessions shows + New session affordance 1`] = `
+"<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
+  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+  .card-list { list-style: none; margin: 0; padding: 0; }
+  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
+  .card:hover { background: var(--vscode-list-hoverBackground); }
+  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
+  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+  .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
+  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .id { color: var(--vscode-descriptionForeground); }
+  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .rollup { color: var(--vscode-descriptionForeground); }
+  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .session-rows { padding: 0 10px 6px 24px; }
+  .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .session-row:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
+  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
+  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
+  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
+  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+</style></head><body><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+  <div class="line line1">
+    <span class="glyph">○</span>
+    <span class="title" data-action="enterDetail" data-task-id="1">Fresh task</span>
+    <button class="activate" title="Activate" data-action="activateTask" data-task-id="1">▶</button>
+    <button class="overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
+  </div>
+  <div class="line line2">
+    <span class="ext-icon">GH</span>
+    <span class="id">#1</span>
+    
+  </div>
+  <div class="line line3"><span class="new-session" data-action="newSession" data-task-id="1">+ New session</span></div>
+</li></ul></body></html>"
+`;
+
+exports[`render snapshots — canonical List Mode states (#29) > empty list 1`] = `
+"<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
+  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+  .card-list { list-style: none; margin: 0; padding: 0; }
+  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
+  .card:hover { background: var(--vscode-list-hoverBackground); }
+  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
+  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+  .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
+  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .id { color: var(--vscode-descriptionForeground); }
+  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .rollup { color: var(--vscode-descriptionForeground); }
+  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .session-rows { padding: 0 10px 6px 24px; }
+  .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .session-row:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
+  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
+  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
+  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
+  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+</style></head><body><div class="tackle-empty">No tasks.</div></body></html>"
+`;
+
+exports[`render snapshots — canonical List Mode states (#29) > expanded card with mixed-state sessions 1`] = `
+"<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
+  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+  .card-list { list-style: none; margin: 0; padding: 0; }
+  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
+  .card:hover { background: var(--vscode-list-hoverBackground); }
+  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
+  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+  .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
+  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .id { color: var(--vscode-descriptionForeground); }
+  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .rollup { color: var(--vscode-descriptionForeground); }
+  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .session-rows { padding: 0 10px 6px 24px; }
+  .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .session-row:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
+  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
+  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
+  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
+  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+</style></head><body><ul class="card-list"><li class="card active" data-action="toggleExpanded" data-task-id="1">
+  <div class="line line1">
+    <span class="glyph">✳️</span>
+    <span class="title" data-action="enterDetail" data-task-id="1">Big task</span>
+    
+    <button class="overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
+  </div>
+  <div class="line line2">
+    <span class="ext-icon">GH</span>
+    <span class="id">#1</span>
+    
+  </div>
+  <div class="line line3"><span class="rollup"><span>✳️1</span> <span>⏳1</span> <span>✔️1</span> <span>🚫1</span></span></div>
+</li><div class="session-rows"><div class="session-row" data-action="focusSession" data-session-id="10">
+  <span class="kind">⌨️</span>
+  <span class="label">impl-1</span>
+  <span class="glyph">⏳</span>
+  <button class="icon-btn stop" title="Stop" data-action="stopSession" data-session-id="10">⏹</button>
+  <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="10">✓</button>
+  <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="10">⋯</button>
+</div><div class="session-row" data-action="focusSession" data-session-id="11">
+  <span class="kind">⌨️</span>
+  <span class="label">impl-2</span>
+  <span class="glyph">✳️</span>
+  <button class="icon-btn stop" title="Stop" data-action="stopSession" data-session-id="11">⏹</button>
+  <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="11">✓</button>
+  <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="11">⋯</button>
+</div><div class="session-divider"></div><div class="session-row" data-action="focusSession" data-session-id="12">
+  <span class="kind">⌨️</span>
+  <span class="label">old</span>
+  <span class="glyph">🚫</span>
+  <button class="icon-btn stop" title="Stop" data-action="stopSession" data-session-id="12">⏹</button>
+  <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="12">✓</button>
+  <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="12">⋯</button>
+</div><div class="session-row" data-action="focusSession" data-session-id="13">
+  <span class="kind">⌨️</span>
+  <span class="label">done</span>
+  <span class="glyph">✔️</span>
+  <button class="icon-btn stop" title="Stop" data-action="stopSession" data-session-id="13">⏹</button>
+  <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="13">✓</button>
+  <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="13">⋯</button>
+</div></div></ul></body></html>"
+`;
