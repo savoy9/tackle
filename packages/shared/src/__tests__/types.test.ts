@@ -13,6 +13,7 @@ describe('shared types', () => {
       assignee: 'alice',
       synced_at: '2026-04-18T00:00:00Z',
       created_at: '2026-04-18T00:00:00Z',
+      parent_external_id: null,
     };
 
     expect(task.id).toBe(1);
@@ -34,6 +35,8 @@ describe('shared types', () => {
       worktree_path: null,
       sort_order: 0,
       claude_session_id: null,
+      agent_state: 'idle',
+      prior_claude_session_ids: null,
       started_at: '2026-04-18T00:00:00Z',
       ended_at: null,
     };
@@ -60,6 +63,8 @@ describe('shared types', () => {
         worktree_path: null,
         sort_order: 0,
         claude_session_id: null,
+        agent_state: 'idle',
+        prior_claude_session_ids: null,
         started_at: '2026-04-18T00:00:00Z',
         ended_at: null,
       };

@@ -30,13 +30,14 @@ function buildDynamicUpdate(
   db.prepare(`UPDATE ${table} SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
 }
 
-const UPSERT_TASK_SQL = `INSERT INTO tasks (external_id, external_system, title, description, status, assignee, synced_at)
-     VALUES (?, ?, ?, ?, ?, ?, datetime('now'))
+const UPSERT_TASK_SQL = `INSERT INTO tasks (external_id, external_system, title, description, status, assignee, parent_external_id, synced_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(external_system, external_id) DO UPDATE SET
        title = excluded.title,
        description = excluded.description,
        status = excluded.status,
        assignee = excluded.assignee,
+       parent_external_id = excluded.parent_external_id,
        synced_at = datetime('now')`;
 
 export class SqliteTaskRepository implements TaskRepository {
@@ -52,7 +53,7 @@ export class SqliteTaskRepository implements TaskRepository {
 
   upsert(task: UpsertTask): Promise<void> {
     this.db.prepare(UPSERT_TASK_SQL)
-      .run(task.external_id, task.external_system, task.title, task.description, task.status, task.assignee);
+      .run(task.external_id, task.external_system, task.title, task.description, task.status, task.assignee, task.parent_external_id ?? null);
     return Promise.resolve();
   }
 
@@ -61,7 +62,7 @@ export class SqliteTaskRepository implements TaskRepository {
     try {
       const stmt = this.db.prepare(UPSERT_TASK_SQL);
       for (const task of tasks) {
-        stmt.run(task.external_id, task.external_system, task.title, task.description, task.status, task.assignee);
+        stmt.run(task.external_id, task.external_system, task.title, task.description, task.status, task.assignee, task.parent_external_id ?? null);
       }
       this.db.exec('COMMIT');
     } catch (err) {
@@ -75,25 +76,33 @@ export class SqliteTaskRepository implements TaskRepository {
 export class SqliteSessionRepository implements SessionRepository {
   constructor(private db: Database) {}
 
+  private mapSession(row: any): Session {
+    return {
+      ...row,
+      prior_claude_session_ids: row.prior_claude_session_ids ? JSON.parse(row.prior_claude_session_ids) : null,
+    };
+  }
+
   list(): Promise<Session[]> {
-    return Promise.resolve(this.db.prepare<Session>('SELECT * FROM sessions ORDER BY id').all());
+    const rows = this.db.prepare<any>('SELECT * FROM sessions ORDER BY id').all();
+    return Promise.resolve(rows.map((r) => this.mapSession(r)));
   }
 
   get(id: number): Promise<Session | undefined> {
-    return Promise.resolve(this.db.prepare<Session>('SELECT * FROM sessions WHERE id = ?').get(id));
+    const row = this.db.prepare<any>('SELECT * FROM sessions WHERE id = ?').get(id);
+    return Promise.resolve(row ? this.mapSession(row) : undefined);
   }
 
   listForTask(taskId: number): Promise<Session[]> {
-    return Promise.resolve(
-      this.db.prepare<Session>('SELECT * FROM sessions WHERE task_id = ? ORDER BY sort_order, id').all(taskId),
-    );
+    const rows = this.db.prepare<any>('SELECT * FROM sessions WHERE task_id = ? ORDER BY sort_order, id').all(taskId);
+    return Promise.resolve(rows.map((r) => this.mapSession(r)));
   }
 
   create(session: CreateSession): Promise<Session> {
     const result = this.db
       .prepare(
-        `INSERT INTO sessions (task_id, phase_id, name, kind, psmux_name, tab_label, agent, worktree_path, sort_order, claude_session_id)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO sessions (task_id, phase_id, name, kind, psmux_name, tab_label, agent, worktree_path, sort_order, claude_session_id, agent_state, prior_claude_session_ids)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       .run(
         session.task_id,
@@ -106,13 +115,22 @@ export class SqliteSessionRepository implements SessionRepository {
         session.worktree_path ?? null,
         session.sort_order ?? 0,
         session.claude_session_id ?? null,
+        session.agent_state ?? 'idle',
+        session.prior_claude_session_ids ? JSON.stringify(session.prior_claude_session_ids) : null,
       );
     const id = Number(result.lastInsertRowid);
-    return Promise.resolve(this.db.prepare<Session>('SELECT * FROM sessions WHERE id = ?').get(id)!);
+    const row = this.db.prepare<any>('SELECT * FROM sessions WHERE id = ?').get(id)!;
+    return Promise.resolve(this.mapSession(row));
   }
 
   update(id: number, fields: UpdateSession): Promise<void> {
-    buildDynamicUpdate(this.db, 'sessions', id, fields as Record<string, unknown>);
+    const mapped: Record<string, unknown> = { ...fields };
+    if ('prior_claude_session_ids' in fields) {
+      mapped.prior_claude_session_ids = fields.prior_claude_session_ids
+        ? JSON.stringify(fields.prior_claude_session_ids)
+        : null;
+    }
+    buildDynamicUpdate(this.db, 'sessions', id, mapped);
     return Promise.resolve();
   }
 
