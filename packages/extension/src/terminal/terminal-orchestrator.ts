@@ -28,6 +28,8 @@ export class TerminalOrchestrator {
     kind: SessionKind;
     source?: string;
     label?: string;
+    /** Explicit tab_label override; bypasses generated psmux tab label. */
+    tabLabel?: string;
     agent?: string | null;
     worktreePath?: string | null;
   }): Promise<Session> {
@@ -37,7 +39,8 @@ export class TerminalOrchestrator {
     const n = existing.filter(s => s.kind === opts.kind).length + 1;
 
     const psmuxName = PsmuxBridge.generateSessionName(source, String(opts.taskId), opts.kind, n);
-    const tabLabel = PsmuxBridge.generateTabLabel(String(opts.taskId), opts.taskSlug, opts.kind, n, opts.label);
+    const tabLabel = opts.tabLabel
+      ?? PsmuxBridge.generateTabLabel(String(opts.taskId), opts.taskSlug, opts.kind, n, opts.label);
 
     this.psmux.createSession(psmuxName);
 

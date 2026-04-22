@@ -1,10 +1,11 @@
 import * as vscode from 'vscode';
 import { ModeManager } from './mode';
 import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateRepository, PsmuxBridge } from '@tackle/shared';
+import type { SessionKind } from '@tackle/shared';
 import { TaskService } from './task';
 import { TerminalOrchestrator } from './terminal';
 import { createVscodeAgentRegistry } from './agent';
-import { SessionActions, ObservableSessionRepository } from './session';
+import { SessionActions, ObservableSessionRepository, NewSessionFlow } from './session';
 import { LayoutManager } from './layout';
 import { ScopeManager } from './scope';
 import { SidebarController, SidebarViewProvider } from './sidebar';
@@ -164,37 +165,35 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  const newSessionCmd = vscode.commands.registerCommand('tackle.newSession', async () => {
-    if (!terminalOrchestrator || !scopeManager) {
+  const newSessionCmd = vscode.commands.registerCommand('tackle.newSession', async (arg?: { taskId?: number }) => {
+    if (!terminalOrchestrator || !scopeManager || !sessionRepoRef) {
       vscode.window.showErrorMessage('Tackle must be activated first.');
       return;
     }
-    const activeTaskId = scopeManager.getActiveTaskId();
-    if (activeTaskId === undefined) {
-      vscode.window.showErrorMessage('Select a task in the Tackle sidebar first.');
+    const targetTaskId = arg?.taskId ?? scopeManager.getActiveTaskId();
+    if (targetTaskId === undefined) {
+      vscode.window.showErrorMessage('No active task. Select a task in the Tackle sidebar first.');
       return;
     }
 
-    const kind = await vscode.window.showQuickPick(
-      ['pilot', 'implement', 'plan', 'review', 'debug', 'test', 'shell'],
-      { placeHolder: 'Session kind' },
-    );
-    if (!kind) return;
-
-    const task = sidebarController?.getState().tasks.find((t) => t.id === activeTaskId);
-    const slug = (task?.title ?? 'task')
-      .toLowerCase()
-      .replace(/[^a-z0-9]+/g, '-')
-      .replace(/^-+|-+$/g, '')
-      .slice(0, 20);
+    const flow = new NewSessionFlow({
+      sessions: sessionRepoRef,
+      orchestrator: terminalOrchestrator,
+      scope: scopeManager,
+      pickKind: async () =>
+        (await vscode.window.showQuickPick(
+          ['plan', 'implement', 'review', 'debug', 'test', 'pilot', 'shell'],
+          { placeHolder: 'Session kind' },
+        )) as SessionKind | undefined,
+    });
 
     try {
-      await terminalOrchestrator.createTerminal({
-        taskId: activeTaskId,
-        taskSlug: slug,
-        kind: kind as any,
-      });
-      sessionRepoRef?.fire();
+      const created = await flow.start(targetTaskId);
+      if (created) {
+        sessionRepoRef.fire();
+        const term = terminalOrchestrator.getTerminalForSession(created.id);
+        term?.show();
+      }
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       vscode.window.showErrorMessage(`Failed to create session: ${message}`);

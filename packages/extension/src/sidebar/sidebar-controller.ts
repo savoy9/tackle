@@ -204,7 +204,10 @@ export class SidebarController {
         await this.deps.workspaceState.update(KEY_CLOSED, this.state.closedFolderOpen);
         return;
       case 'newSession':
-        if (exec) await exec('tackle.newSession');
+        if (exec) {
+          const taskId = msg.taskId ?? this.state.activeTaskId;
+          await exec('tackle.newSession', taskId !== undefined ? { taskId } : undefined);
+        }
         return;
       case 'focusSession':
         if (exec) {
