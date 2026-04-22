@@ -1,0 +1,22 @@
+// Typed message protocol between sidebar webview and host controller.
+// Inbound: webview → host. Outbound: host → webview.
+
+export type InboundMessage =
+  | { type: 'activateTask'; id: number }
+  | { type: 'enterDetail'; id: number }
+  | { type: 'exitDetail' }
+  | { type: 'toggleExpanded'; id: number }
+  | { type: 'toggleClosedFolder' };
+
+export type OutboundMessage =
+  | { type: 'render'; html: string };
+
+// Minimal shape of the object returned by `acquireVsCodeApi()` that we care about.
+export interface WebviewPoster {
+  postMessage: (msg: unknown) => void;
+}
+
+/** Helper used by the webview side to post a strongly-typed inbound message. */
+export function post(api: WebviewPoster, msg: InboundMessage): void {
+  api.postMessage(msg);
+}

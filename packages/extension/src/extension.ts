@@ -1,11 +1,12 @@
 import * as vscode from 'vscode';
 import { ModeManager } from './mode';
 import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateRepository, PsmuxBridge } from '@tackle/shared';
-import { TaskService, TaskTreeProvider } from './task';
+import { TaskService } from './task';
 import { TerminalOrchestrator } from './terminal';
 import { SessionTreeProvider } from './session';
 import { LayoutManager } from './layout';
 import { ScopeManager } from './scope';
+import { SidebarController, SidebarViewProvider } from './sidebar';
 import { checkSingleRootWorkspace, ensureTackleDir } from './guards';
 import { runLatencyBenchmark, formatResult } from './bench';
 
@@ -15,13 +16,36 @@ export function activate(context: vscode.ExtensionContext): void {
   let taskService: TaskService | undefined;
   let terminalOrchestrator: TerminalOrchestrator | undefined;
   let scopeManager: ScopeManager | undefined;
+  let sidebarController: SidebarController | undefined;
 
-  // Register tree views immediately so VS Code doesn't show "no data provider"
-  const taskTreeProvider = new TaskTreeProvider({ list: async () => [], get: async () => undefined, upsert: async () => {}, upsertBatch: async () => {} });
+  // Placeholder session tree provider so VS Code has a data provider immediately.
   const sessionTreeProvider = new SessionTreeProvider({ list: async () => [], get: async () => undefined, listForTask: async () => [], create: async () => ({} as any), update: async () => {}, complete: async () => {} }, () => false);
-
-  vscode.window.createTreeView('tackleTaskView', { treeDataProvider: taskTreeProvider });
   vscode.window.createTreeView('tackleSessionView', { treeDataProvider: sessionTreeProvider });
+
+  // Placeholder task repo for the sidebar until activation fills it in.
+  const placeholderTaskRepo = { list: async () => [], get: async () => undefined, upsert: async () => {}, upsertBatch: async () => {} };
+
+  // The sidebar needs a scope-like object even before activation; build a stub
+  // that the real ScopeManager replaces on activation.
+  const scopeStub = {
+    getActiveTaskId: () => undefined,
+    onDidChangeActiveTask: (_listener: (id: number | undefined) => void) => ({ dispose: () => {} }),
+  };
+
+  sidebarController = new SidebarController({
+    taskRepo: placeholderTaskRepo,
+    scope: scopeStub,
+    workspaceState: context.workspaceState,
+  });
+  // Best-effort initial render with empty state.
+  void sidebarController.start();
+
+  const sidebarProvider = new SidebarViewProvider(context.extensionUri, sidebarController);
+  context.subscriptions.push(
+    vscode.window.registerWebviewViewProvider(SidebarViewProvider.viewType, sidebarProvider, {
+      webviewOptions: { retainContextWhenHidden: true },
+    }),
+  );
 
   const activateCmd = vscode.commands.registerCommand('tackle.activate', async () => {
     console.log('Tackle: tackle.activate command fired');
@@ -48,7 +72,6 @@ export function activate(context: vscode.ExtensionContext): void {
       const layoutRepo = new SqliteLayoutStateRepository(db);
       const psmux = new PsmuxBridge();
 
-      taskTreeProvider.setRepository(taskRepo);
       sessionTreeProvider.setRepository(sessionRepo);
 
       taskService = new TaskService(taskRepo);
@@ -58,10 +81,24 @@ export function activate(context: vscode.ExtensionContext): void {
       const layoutManager = new LayoutManager(layoutRepo);
       scopeManager = new ScopeManager({
         terminalOrchestrator,
-        taskTreeProvider,
         sessionTreeProvider,
         layoutManager,
+        workspaceState: context.workspaceState,
       });
+
+      // Rebuild controller with live deps.
+      const prevController = sidebarController;
+      sidebarController = new SidebarController({
+        taskRepo,
+        scope: scopeManager,
+        workspaceState: context.workspaceState,
+      });
+      await sidebarController.start();
+      // Swap the webview poster onto the new controller.
+      sidebarProvider.setController(sidebarController);
+      prevController?.dispose();
+
+      scopeManager.restoreActiveTask();
 
       context.subscriptions.push(
         vscode.window.onDidCloseTerminal((t) => terminalOrchestrator?.handleTerminalClose(t)),
@@ -87,7 +124,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     try {
       const count = await taskService.syncFromGitHub();
-      taskTreeProvider.refresh();
+      await sidebarController?.refresh();
       vscode.window.showInformationMessage(`Synced ${count} tasks from GitHub.`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
@@ -108,7 +145,6 @@ export function activate(context: vscode.ExtensionContext): void {
       existing.show();
       return;
     }
-    // Detached: reattach by session id
     try {
       await terminalOrchestrator.reattachSession(sessionId);
       sessionTreeProvider.refresh();
@@ -135,7 +171,7 @@ export function activate(context: vscode.ExtensionContext): void {
     );
     if (!kind) return;
 
-    const task = await taskTreeProvider.getTask(activeTaskId);
+    const task = sidebarController?.getState().tasks.find((t) => t.id === activeTaskId);
     const slug = (task?.title ?? 'task')
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
