@@ -10,6 +10,7 @@ import type { SessionKind } from '@tackle/shared';
  * uniform contract.
  */
 export interface AgentAdapter {
+  name: string;
   command: string;
   resumeFlag(sessionId: string): string[];
 }
@@ -41,10 +42,12 @@ export interface AgentRegistry {
 
 const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
   'agency-cc': {
+    name: 'agency-cc',
     command: 'agency-cc',
     resumeFlag: (sessionId: string) => ['-r', sessionId],
   },
   claude: {
+    name: 'claude',
     command: 'claude',
     resumeFlag: (sessionId: string) => ['-r', sessionId],
   },

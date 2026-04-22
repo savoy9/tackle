@@ -4,7 +4,20 @@ vi.mock('vscode', () => vscodeModule);
 
 import { PsmuxBridge } from '@tackle/shared';
 import type { Session, SessionRepository } from '@tackle/shared';
-import { TerminalOrchestrator } from '../terminal/terminal-orchestrator';
+import { TerminalOrchestrator, resolveCwd } from '../terminal/terminal-orchestrator';
+import type { AgentRegistry } from '../agent/agent-registry';
+
+function createAgentRegistry(overrides: Partial<AgentRegistry> = {}): AgentRegistry {
+  return {
+    resolve: vi.fn((name?: string | null) => ({
+      name: name ?? 'agency-cc',
+      command: name ?? 'agency-cc',
+      resumeFlag: (id: string) => ['-r', id],
+    })),
+    shouldLaunch: vi.fn((kind: string) => kind !== 'shell'),
+    ...overrides,
+  } as AgentRegistry;
+}
 
 function createMocks() {
   const sessions: Session[] = [];
@@ -24,13 +37,13 @@ function createMocks() {
     create: vi.fn(async (input: any) => {
       const s = {
         id: sessions.length + 1,
-        ...input,
         status: 'running',
         agent: null,
         worktree_path: null,
         claude_session_id: null,
         started_at: new Date().toISOString(),
         ended_at: null,
+        ...input,
       } as Session;
       sessions.push(s);
       return s;
@@ -47,6 +60,7 @@ describe('TerminalOrchestrator', () => {
   let mockPsmux: ReturnType<typeof createMocks>['mockPsmux'];
   let mockSessionRepo: SessionRepository;
   let sessions: Session[];
+  let mockAgentRegistry: AgentRegistry;
 
   beforeEach(() => {
     resetMocks();
@@ -54,7 +68,20 @@ describe('TerminalOrchestrator', () => {
     mockPsmux = mocks.mockPsmux;
     mockSessionRepo = mocks.mockSessionRepo;
     sessions = mocks.sessions;
-    orchestrator = new TerminalOrchestrator(mockSessionRepo, mockPsmux);
+    mockAgentRegistry = createAgentRegistry();
+    orchestrator = new TerminalOrchestrator(mockSessionRepo, mockPsmux, mockAgentRegistry);
+  });
+
+  describe('resolveCwd', () => {
+    it('picks worktree_path when present', () => {
+      const session = { worktree_path: '/wt/foo' } as Session;
+      expect(resolveCwd(session, '/workspace')).toBe('/wt/foo');
+    });
+
+    it('falls back to workspaceRoot when worktree_path is null', () => {
+      const session = { worktree_path: null } as Session;
+      expect(resolveCwd(session, '/workspace')).toBe('/workspace');
+    });
   });
 
   describe('createTerminal', () => {
@@ -101,6 +128,35 @@ describe('TerminalOrchestrator', () => {
       const expectedName2 = PsmuxBridge.generateSessionName('gh', '42', 'implement', 2);
       expect(mockPsmux.createSession).toHaveBeenCalledWith(expectedName2);
     });
+
+    it('populates Session.agent with resolved agent name on insert', async () => {
+      await orchestrator.createTerminal(baseOpts);
+      expect(mockSessionRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ agent: 'agency-cc' }),
+      );
+    });
+
+    it('respects agent name override from opts', async () => {
+      await orchestrator.createTerminal({ ...baseOpts, agent: 'claude' });
+      expect(mockAgentRegistry.resolve).toHaveBeenCalledWith('claude');
+      expect(mockSessionRepo.create).toHaveBeenCalledWith(
+        expect.objectContaining({ agent: 'claude' }),
+      );
+    });
+
+    it('sends cd + agent command to psmux for non-shell kind', async () => {
+      await orchestrator.createTerminal({ ...baseOpts, worktreePath: '/wt/foo' });
+      const psmuxName = PsmuxBridge.generateSessionName('gh', '42', 'implement', 1);
+      expect(mockPsmux.sendKeys).toHaveBeenCalledWith(
+        psmuxName,
+        'cd /wt/foo && agency-cc',
+      );
+    });
+
+    it('does not send agent keys for shell kind', async () => {
+      await orchestrator.createTerminal({ taskId: 1, taskSlug: 'x', kind: 'shell' });
+      expect(mockPsmux.sendKeys).not.toHaveBeenCalled();
+    });
   });
 
   describe('disposeAll', () => {
@@ -140,6 +196,57 @@ describe('TerminalOrchestrator', () => {
 
       expect(orchestrator.getTerminalForSession(session.id)).toBeUndefined();
       expect(mockSessionRepo.update).toHaveBeenCalledWith(session.id, { status: 'stopped' });
+    });
+  });
+
+  describe('stopSession', () => {
+    it('kills psmux session and marks status stopped', async () => {
+      const session = await orchestrator.createTerminal({ taskId: 1, taskSlug: 'x', kind: 'shell' });
+      await orchestrator.stopSession(session.id);
+      expect(mockPsmux.killSession).toHaveBeenCalledWith(session.psmux_name);
+      expect(mockSessionRepo.update).toHaveBeenCalledWith(
+        session.id,
+        expect.objectContaining({ status: 'stopped' }),
+      );
+    });
+  });
+
+  describe('restartSession', () => {
+    it('kills old psmux, respawns, and preserves DB id with status running', async () => {
+      const session = await orchestrator.createTerminal({ taskId: 7, taskSlug: 's', kind: 'implement', worktreePath: '/wt/s' });
+      const originalId = session.id;
+      (mockPsmux.sendKeys as any).mockClear();
+
+      await orchestrator.restartSession(originalId);
+
+      expect(mockPsmux.killSession).toHaveBeenCalledWith(session.psmux_name);
+      expect(mockPsmux.createSession).toHaveBeenCalledWith(session.psmux_name);
+      expect(mockSessionRepo.update).toHaveBeenCalledWith(
+        originalId,
+        expect.objectContaining({ status: 'running', ended_at: null }),
+      );
+    });
+
+    it('forwards --resume flag when claude_session_id is set', async () => {
+      const session = await orchestrator.createTerminal({ taskId: 7, taskSlug: 's', kind: 'implement', worktreePath: '/wt/s' });
+      // Simulate claude_session_id being set externally
+      sessions[0].claude_session_id = 'claude-xyz';
+      (mockPsmux.sendKeys as any).mockClear();
+
+      await orchestrator.restartSession(session.id);
+
+      const sent = (mockPsmux.sendKeys as any).mock.calls[0][1] as string;
+      expect(sent).toContain('-r claude-xyz');
+      expect(sent).toContain('cd /wt/s');
+    });
+
+    it('does not launch agent on restart for shell kind', async () => {
+      const session = await orchestrator.createTerminal({ taskId: 7, taskSlug: 's', kind: 'shell' });
+      (mockPsmux.sendKeys as any).mockClear();
+
+      await orchestrator.restartSession(session.id);
+
+      expect(mockPsmux.sendKeys).not.toHaveBeenCalled();
     });
   });
 });

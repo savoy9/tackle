@@ -1,6 +1,15 @@
 import * as vscode from 'vscode';
 import { PsmuxBridge } from '@tackle/shared';
 import type { SessionRepository, Session, SessionKind } from '@tackle/shared';
+import type { AgentRegistry } from '../agent/agent-registry';
+
+/**
+ * Pure helper: resolve cwd for a session, preferring its worktree_path
+ * over the workspace root. Exported for standalone testing.
+ */
+export function resolveCwd(session: Pick<Session, 'worktree_path'>, workspaceRoot: string): string {
+  return session.worktree_path ?? workspaceRoot;
+}
 
 export class TerminalOrchestrator {
   private terminalMap = new Map<number, vscode.Terminal>();
@@ -10,6 +19,7 @@ export class TerminalOrchestrator {
   constructor(
     private sessionRepo: SessionRepository,
     private psmux: PsmuxBridge,
+    private agentRegistry: AgentRegistry,
   ) {}
 
   async createTerminal(opts: {
@@ -18,6 +28,8 @@ export class TerminalOrchestrator {
     kind: SessionKind;
     source?: string;
     label?: string;
+    agent?: string | null;
+    worktreePath?: string | null;
   }): Promise<Session> {
     const source = opts.source ?? 'gh';
 
@@ -28,6 +40,8 @@ export class TerminalOrchestrator {
     const tabLabel = PsmuxBridge.generateTabLabel(String(opts.taskId), opts.taskSlug, opts.kind, n, opts.label);
 
     this.psmux.createSession(psmuxName);
+
+    const adapter = this.agentRegistry.resolve(opts.agent);
 
     const terminal = vscode.window.createTerminal({
       name: tabLabel,
@@ -44,7 +58,15 @@ export class TerminalOrchestrator {
       psmux_name: psmuxName,
       tab_label: tabLabel,
       sort_order: n,
+      agent: adapter.name,
+      worktree_path: opts.worktreePath ?? null,
     });
+
+    if (this.agentRegistry.shouldLaunch(opts.kind)) {
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+      const cwd = resolveCwd(session, workspaceRoot);
+      this.psmux.sendKeys(psmuxName, `cd ${cwd} && ${adapter.command}`);
+    }
 
     this.trackTerminal(session.id, terminal);
     return session;
@@ -97,6 +119,68 @@ export class TerminalOrchestrator {
     // Voluntary dispose during task switch: keep session 'running' so it reattaches next time.
     if (this.disposingTerminals.has(closedTerminal)) return;
     await this.sessionRepo.update(sessionId, { status: 'stopped' });
+  }
+
+  /**
+   * Restart a session in place: kill the old psmux session, spawn a new
+   * one with the same psmux name/tab-label/kind, and re-launch the Agent
+   * (with `--resume <claude_session_id>` if previously captured). The
+   * DB row id is preserved; status flips back to 'running' and
+   * ended_at is cleared.
+   */
+  async restartSession(sessionId: number): Promise<void> {
+    const session = await this.sessionRepo.get(sessionId);
+    if (!session) throw new Error(`Session ${sessionId} not found`);
+
+    const existing = this.terminalMap.get(sessionId);
+    if (existing) {
+      this.disposingTerminals.add(existing);
+      this.terminalMap.delete(sessionId);
+      existing.dispose();
+    }
+    this.psmux.killSession(session.psmux_name);
+    this.psmux.createSession(session.psmux_name);
+
+    const terminal = vscode.window.createTerminal({
+      name: session.tab_label,
+      location: vscode.TerminalLocation.Editor,
+      shellPath: this.psmux.binary,
+      shellArgs: ['attach', '-t', session.psmux_name],
+    });
+    this.trackTerminal(session.id, terminal);
+
+    if (this.agentRegistry.shouldLaunch(session.kind)) {
+      const adapter = this.agentRegistry.resolve(session.agent);
+      const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
+      const cwd = resolveCwd(session, workspaceRoot);
+      const resumeArgs = session.claude_session_id
+        ? ' ' + adapter.resumeFlag(session.claude_session_id).join(' ')
+        : '';
+      this.psmux.sendKeys(session.psmux_name, `cd ${cwd} && ${adapter.command}${resumeArgs}`);
+    }
+
+    await this.sessionRepo.update(sessionId, { status: 'running', ended_at: null });
+  }
+
+  /**
+   * Stop a running session: kill the psmux session and mark the row
+   * 'stopped'. Reserved for upcoming session-row actions (#27 will wire
+   * this into the UI).
+   */
+  async stopSession(sessionId: number): Promise<void> {
+    const session = await this.sessionRepo.get(sessionId);
+    if (!session) throw new Error(`Session ${sessionId} not found`);
+    const terminal = this.terminalMap.get(sessionId);
+    if (terminal) {
+      this.disposingTerminals.add(terminal);
+      this.terminalMap.delete(sessionId);
+      terminal.dispose();
+    }
+    this.psmux.killSession(session.psmux_name);
+    await this.sessionRepo.update(sessionId, {
+      status: 'stopped',
+      ended_at: new Date().toISOString(),
+    });
   }
 
   getTerminalForSession(sessionId: number): vscode.Terminal | undefined {
