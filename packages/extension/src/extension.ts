@@ -4,7 +4,7 @@ import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateReposit
 import { TaskService } from './task';
 import { TerminalOrchestrator } from './terminal';
 import { createVscodeAgentRegistry } from './agent';
-import { SessionTreeProvider } from './session';
+import { SessionTreeProvider, SessionActions } from './session';
 import { LayoutManager } from './layout';
 import { ScopeManager } from './scope';
 import { SidebarController, SidebarViewProvider } from './sidebar';
@@ -16,11 +16,13 @@ export function activate(context: vscode.ExtensionContext): void {
   const modeManager = new ModeManager(context);
   let taskService: TaskService | undefined;
   let terminalOrchestrator: TerminalOrchestrator | undefined;
+  let sessionRepoRef: import('@tackle/shared').SessionRepository | undefined;
+  let sessionActions: SessionActions | undefined;
   let scopeManager: ScopeManager | undefined;
   let sidebarController: SidebarController | undefined;
 
   // Placeholder session tree provider so VS Code has a data provider immediately.
-  const sessionTreeProvider = new SessionTreeProvider({ list: async () => [], get: async () => undefined, listForTask: async () => [], create: async () => ({} as any), update: async () => {}, complete: async () => {} }, () => false);
+  const sessionTreeProvider = new SessionTreeProvider({ list: async () => [], get: async () => undefined, listForTask: async () => [], create: async () => ({} as any), update: async () => {}, complete: async () => {}, softDelete: async () => {} }, () => false);
   vscode.window.createTreeView('tackleSessionView', { treeDataProvider: sessionTreeProvider });
 
   // Placeholder task repo for the sidebar until activation fills it in.
@@ -78,6 +80,16 @@ export function activate(context: vscode.ExtensionContext): void {
       taskService = new TaskService(taskRepo);
       terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry());
       sessionTreeProvider.setHasTerminalFn((id) => terminalOrchestrator!.getTerminalForSession(id) !== undefined);
+
+      sessionRepoRef = sessionRepo;
+      sessionActions = new SessionActions({
+        sessions: sessionRepo,
+        orchestrator: terminalOrchestrator,
+        confirm: async (msg: string) => {
+          const pick = await vscode.window.showWarningMessage(msg, { modal: true }, 'Remove');
+          return pick === 'Remove';
+        },
+      });
 
       const layoutManager = new LayoutManager(layoutRepo);
       scopeManager = new ScopeManager({
@@ -193,6 +205,97 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   context.subscriptions.push(activateCmd, deactivateCmd, syncTasksCmd, selectTaskCmd, focusSessionCmd, newSessionCmd);
+
+  async function pickSessionId(placeHolder: string): Promise<number | undefined> {
+    if (!sessionRepoRef) {
+      vscode.window.showErrorMessage('Tackle must be activated first.');
+      return undefined;
+    }
+    const sessions = await sessionRepoRef.list();
+    const visible = sessions.filter((s) => !s.deleted_at);
+    if (visible.length === 0) {
+      vscode.window.showInformationMessage('No sessions available.');
+      return undefined;
+    }
+    const items = visible.map((s) => ({
+      label: s.tab_label || s.name,
+      description: `#${s.id} · ${s.status}`,
+      id: s.id,
+    }));
+    const pick = await vscode.window.showQuickPick(items, { placeHolder });
+    return pick?.id;
+  }
+
+  async function resolveId(arg: unknown, placeHolder: string): Promise<number | undefined> {
+    if (typeof arg === 'number') return arg;
+    if (arg && typeof arg === 'object' && 'id' in (arg as any) && typeof (arg as any).id === 'number') {
+      return (arg as any).id;
+    }
+    return pickSessionId(placeHolder);
+  }
+
+  function ensureActions(): SessionActions | undefined {
+    if (!sessionActions) {
+      vscode.window.showErrorMessage('Tackle must be activated first.');
+      return undefined;
+    }
+    return sessionActions;
+  }
+
+  const stopSessionCmd = vscode.commands.registerCommand('tackle.stopSession', async (arg?: unknown) => {
+    const actions = ensureActions(); if (!actions) return;
+    const id = await resolveId(arg, 'Select a session to stop'); if (id === undefined) return;
+    await actions.stop(id);
+    sessionTreeProvider.refresh();
+  });
+
+  const restartSessionCmd = vscode.commands.registerCommand('tackle.restartSession', async (arg?: unknown) => {
+    const actions = ensureActions(); if (!actions) return;
+    const id = await resolveId(arg, 'Select a session to restart'); if (id === undefined) return;
+    await actions.restart(id);
+    sessionTreeProvider.refresh();
+  });
+
+  const removeSessionCmd = vscode.commands.registerCommand('tackle.removeSession', async (arg?: unknown) => {
+    const actions = ensureActions(); if (!actions) return;
+    const id = await resolveId(arg, 'Select a session to remove'); if (id === undefined) return;
+    await actions.remove(id);
+    sessionTreeProvider.refresh();
+  });
+
+  const markSessionDoneCmd = vscode.commands.registerCommand('tackle.markSessionDone', async (arg?: unknown) => {
+    const actions = ensureActions(); if (!actions) return;
+    const id = await resolveId(arg, 'Select a session to mark done'); if (id === undefined) return;
+    await actions.markDone(id);
+    sessionTreeProvider.refresh();
+  });
+
+  const renameSessionCmd = vscode.commands.registerCommand(
+    'tackle.renameSession',
+    async (arg?: unknown, newLabelArg?: string) => {
+      const actions = ensureActions(); if (!actions) return;
+      const id = await resolveId(arg, 'Select a session to rename'); if (id === undefined) return;
+      let label = newLabelArg;
+      if (!label) {
+        const current = await sessionRepoRef?.get(id);
+        label = await vscode.window.showInputBox({
+          prompt: 'New session label',
+          value: current?.tab_label ?? '',
+        });
+        if (!label) return;
+      }
+      await actions.rename(id, label);
+      sessionTreeProvider.refresh();
+    },
+  );
+
+  context.subscriptions.push(
+    stopSessionCmd,
+    restartSessionCmd,
+    removeSessionCmd,
+    markSessionDoneCmd,
+    renameSessionCmd,
+  );
 
   const benchCmd = vscode.commands.registerCommand('tackle.benchmark', async () => {
     const out = vscode.window.createOutputChannel('Tackle Bench');

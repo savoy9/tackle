@@ -78,6 +78,26 @@
       {
         "command": "tackle.benchmark",
         "title": "Tackle: Run Terminal Latency Benchmark"
+      },
+      {
+        "command": "tackle.stopSession",
+        "title": "Tackle: Stop Session"
+      },
+      {
+        "command": "tackle.restartSession",
+        "title": "Tackle: Restart Session"
+      },
+      {
+        "command": "tackle.removeSession",
+        "title": "Tackle: Remove Session"
+      },
+      {
+        "command": "tackle.renameSession",
+        "title": "Tackle: Rename Session"
+      },
+      {
+        "command": "tackle.markSessionDone",
+        "title": "Tackle: Mark Session Done"
       }
     ],
     "menus": {

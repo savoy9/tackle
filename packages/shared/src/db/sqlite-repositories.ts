@@ -138,6 +138,11 @@ export class SqliteSessionRepository implements SessionRepository {
     this.db.prepare(`UPDATE sessions SET status = 'completed', ended_at = datetime('now') WHERE id = ?`).run(id);
     return Promise.resolve();
   }
+
+  softDelete(id: number): Promise<void> {
+    this.db.prepare(`UPDATE sessions SET deleted_at = datetime('now') WHERE id = ?`).run(id);
+    return Promise.resolve();
+  }
 }
 
 interface LayoutStateRow {

@@ -32,6 +32,7 @@ export interface Session {
   prior_claude_session_ids: string[] | null;
   started_at: string;
   ended_at: string | null;
+  deleted_at?: string | null;
 }
 
 export interface Plan {

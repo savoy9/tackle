@@ -19,6 +19,7 @@ function createMockSessionRepo(sessions: Session[]): SessionRepository {
     create: async () => ({} as Session),
     update: async () => {},
     complete: async () => {},
+    softDelete: async () => {},
   };
 }
 
