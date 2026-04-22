@@ -6,3 +6,4 @@ out/
 .tackle/
 .env
 .env.local
+.claude/

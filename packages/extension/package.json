@@ -59,8 +59,8 @@
         "icon": "$(sync)"
       },
       {
-        "command": "tackle.selectTask",
-        "title": "Tackle: Select Task"
+        "command": "tackle.activateTask",
+        "title": "Tackle: Activate Task"
       },
       {
         "command": "tackle.focusSession",

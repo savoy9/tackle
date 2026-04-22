@@ -143,7 +143,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  const selectTaskCmd = vscode.commands.registerCommand('tackle.selectTask', async (taskId: number) => {
+  const activateTaskCmd = vscode.commands.registerCommand('tackle.activateTask', async (taskId: number) => {
     if (!scopeManager) return;
     await scopeManager.switchTask(taskId);
     await vscode.commands.executeCommand('setContext', 'tackle.activeTaskId', taskId);
@@ -200,7 +200,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  context.subscriptions.push(activateCmd, deactivateCmd, syncTasksCmd, selectTaskCmd, focusSessionCmd, newSessionCmd);
+  context.subscriptions.push(activateCmd, deactivateCmd, syncTasksCmd, activateTaskCmd, focusSessionCmd, newSessionCmd);
 
   async function pickSessionId(placeHolder: string): Promise<number | undefined> {
     if (!sessionRepoRef) {
