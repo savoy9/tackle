@@ -16,9 +16,8 @@ function renderDescriptions(tasks: Task[]): Record<number, string> {
 
 /**
  * Best-effort external URL for a task's issue tracker.
- * Repo context is not yet stored on Task (#31 accepts stubs for partial external info).
- * For GitHub we can at least link to github.com/<external_id> as the issue number; if
- * external_id looks like owner/repo#N we unpack it; otherwise return null.
+ * Repo context is not yet stored on Task; falls back to a search URL when
+ * external_id is bare.
  */
 function buildExternalUrl(task: Task): string | null {
   const id = task.external_id;
@@ -90,10 +89,11 @@ export class SidebarController {
     const expandedArr = ws.get<number[]>(KEY_EXPANDED) ?? [];
     const closed = ws.get<boolean>(KEY_CLOSED) ?? false;
 
-    const tasks = await this.deps.taskRepo.list();
-    const sessions = this.deps.sessionRepo
-      ? (await this.deps.sessionRepo.list()).filter((s) => !s.deleted_at)
-      : [];
+    const [tasks, rawSessions] = await Promise.all([
+      this.deps.taskRepo.list(),
+      this.deps.sessionRepo ? this.deps.sessionRepo.list() : Promise.resolve([]),
+    ]);
+    const sessions = rawSessions.filter((s) => !s.deleted_at);
     this.state = {
       ...initialState,
       mode,
@@ -103,7 +103,6 @@ export class SidebarController {
       expandedCardIds: new Set(expandedArr),
       closedFolderOpen: closed,
       descriptionsByTaskId: renderDescriptions(tasks),
-      hasPlanByTaskId: {},
     };
 
     this.scopeSub = this.deps.scope.onDidChangeActiveTask((id) => {
@@ -220,19 +219,11 @@ export class SidebarController {
         }
         return;
       case 'stopSession':
-        if (exec) await exec('tackle.stopSession', msg.sessionId);
-        return;
       case 'markSessionDone':
-        if (exec) await exec('tackle.markSessionDone', msg.sessionId);
-        return;
       case 'restartSession':
-        if (exec) await exec('tackle.restartSession', msg.sessionId);
-        return;
       case 'renameSession':
-        if (exec) await exec('tackle.renameSession', msg.sessionId);
-        return;
       case 'removeSession':
-        if (exec) await exec('tackle.removeSession', msg.sessionId);
+        if (exec) await exec(`tackle.${msg.type}`, msg.sessionId);
         return;
       case 'taskOverflow':
       case 'sessionOverflow':

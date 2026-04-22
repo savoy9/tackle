@@ -11,8 +11,6 @@ export interface SidebarState {
   closedFolderOpen: boolean;
   /** Precomputed markdown HTML for Task.description, keyed by task id. */
   descriptionsByTaskId: Record<number, string>;
-  /** Reserved for future plan tracker rendering in Detail Mode (#31). MVP: always false. */
-  hasPlanByTaskId: Record<number, boolean>;
 }
 
 export type SidebarAction =
@@ -33,7 +31,6 @@ export const initialState: SidebarState = {
   expandedCardIds: new Set<number>(),
   closedFolderOpen: false,
   descriptionsByTaskId: {},
-  hasPlanByTaskId: {},
 };
 
 export function reducer(state: SidebarState, action: SidebarAction): SidebarState {

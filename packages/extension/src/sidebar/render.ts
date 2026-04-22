@@ -2,7 +2,7 @@ import type { Task, Session, SessionKind } from '@tackle/shared';
 import type { SidebarState } from './sidebar-state';
 import { rollupGlyph, sessionGlyph } from './glyph';
 import { sortTasks } from './sort';
-import { partitionTasks } from './closed';
+import { partitionTasks, isClosedStatus } from './closed';
 
 function escapeHtml(s: string): string {
   return s
@@ -83,7 +83,6 @@ const STYLE = `
   .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
   .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
   .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .detail-sessions-body { }
   .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
   .detail-footer { margin-top: 8px; }
   .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
@@ -108,7 +107,7 @@ function sessionsByTask(sessions: Session[]): Map<number, Session[]> {
 
 export function renderSessionRow(sess: Session): string {
   const glyph = sessionGlyph(sess);
-  const kind = KIND_ICON[sess.kind] ?? '●';
+  const kind = KIND_ICON[sess.kind];
   const label = escapeHtml(sess.tab_label || sess.name);
   return `<div class="session-row" data-action="focusSession" data-session-id="${sess.id}">
   <span class="kind">${kind}</span>
@@ -126,10 +125,7 @@ function renderSessionRows(sessions: Session[]): string {
   const parts: string[] = [];
   parts.push(`<div class="session-rows">`);
   for (const s of active) parts.push(renderSessionRow(s));
-  if (active.length > 0 && inactive.length > 0) {
-    parts.push(`<div class="session-divider"></div>`);
-  } else if (inactive.length > 0) {
-    // still render a divider so layout is predictable when only inactive exist
+  if (inactive.length > 0) {
     parts.push(`<div class="session-divider"></div>`);
   }
   for (const s of inactive) parts.push(renderSessionRow(s));
@@ -140,7 +136,7 @@ function renderSessionRows(sessions: Session[]): string {
 function renderCard(task: Task, sessions: Session[], active: boolean, expanded: boolean): string {
   const glyph = rollupGlyph(sessions);
   const title = escapeHtml(task.title);
-  const extIcon = EXT_ICON[task.external_system] ?? '?';
+  const extIcon = EXT_ICON[task.external_system];
   const extId = escapeHtml(task.external_id);
   const parentHtml = task.parent_external_id
     ? `<span class="parent">↳ #${escapeHtml(task.parent_external_id)}</span>`
@@ -242,12 +238,6 @@ function renderList(state: SidebarState): string {
   return `${header}${list}${folder}`;
 }
 
-function isClosedStatus(status: string): boolean {
-  // Inline predicate for #31. #30 may extract a shared helper; resolver on merge.
-  const s = status.toLowerCase();
-  return s === 'closed' || s === 'done' || s === 'resolved' || s === 'completed';
-}
-
 function mostRecentWorktreePath(sessions: Session[]): string | null {
   // Pick worktree_path from the most-recently-active session (started_at desc), null-safe.
   const withPath = sessions.filter((s) => s.worktree_path);
@@ -279,7 +269,7 @@ function renderDetail(state: SidebarState, taskId: number): string {
   }
 
   const title = escapeHtml(task.title);
-  const extIcon = EXT_ICON[task.external_system] ?? '?';
+  const extIcon = EXT_ICON[task.external_system];
   const extId = escapeHtml(task.external_id);
   const status = escapeHtml(task.status);
   const assignee = task.assignee ? escapeHtml(task.assignee) : '';

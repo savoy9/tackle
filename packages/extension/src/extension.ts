@@ -93,7 +93,6 @@ export function activate(context: vscode.ExtensionContext): void {
         workspaceState: context.workspaceState,
       });
 
-      // Rebuild controller with live deps.
       const prevController = sidebarController;
       sidebarController = new SidebarController({
         taskRepo,
@@ -111,7 +110,6 @@ export function activate(context: vscode.ExtensionContext): void {
       context.subscriptions.push(
         vscode.window.onDidCloseTerminal((t) => {
           terminalOrchestrator?.handleTerminalClose(t);
-          sessionRepo.fire();
         }),
       );
 
@@ -158,7 +156,6 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     try {
       await terminalOrchestrator.reattachSession(sessionId);
-      sessionRepoRef?.fire();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       vscode.window.showErrorMessage(`Failed to reattach session: ${message}`);
@@ -190,7 +187,6 @@ export function activate(context: vscode.ExtensionContext): void {
     try {
       const created = await flow.start(targetTaskId);
       if (created) {
-        sessionRepoRef.fire();
         const term = terminalOrchestrator.getTerminalForSession(created.id);
         term?.show();
       }
@@ -242,28 +238,24 @@ export function activate(context: vscode.ExtensionContext): void {
     const actions = ensureActions(); if (!actions) return;
     const id = await resolveId(arg, 'Select a session to stop'); if (id === undefined) return;
     await actions.stop(id);
-    sessionRepoRef?.fire();
   });
 
   const restartSessionCmd = vscode.commands.registerCommand('tackle.restartSession', async (arg?: unknown) => {
     const actions = ensureActions(); if (!actions) return;
     const id = await resolveId(arg, 'Select a session to restart'); if (id === undefined) return;
     await actions.restart(id);
-    sessionRepoRef?.fire();
   });
 
   const removeSessionCmd = vscode.commands.registerCommand('tackle.removeSession', async (arg?: unknown) => {
     const actions = ensureActions(); if (!actions) return;
     const id = await resolveId(arg, 'Select a session to remove'); if (id === undefined) return;
     await actions.remove(id);
-    sessionRepoRef?.fire();
   });
 
   const markSessionDoneCmd = vscode.commands.registerCommand('tackle.markSessionDone', async (arg?: unknown) => {
     const actions = ensureActions(); if (!actions) return;
     const id = await resolveId(arg, 'Select a session to mark done'); if (id === undefined) return;
     await actions.markDone(id);
-    sessionRepoRef?.fire();
   });
 
   const renameSessionCmd = vscode.commands.registerCommand(
@@ -281,7 +273,6 @@ export function activate(context: vscode.ExtensionContext): void {
         if (!label) return;
       }
       await actions.rename(id, label);
-      sessionRepoRef?.fire();
     },
   );
 

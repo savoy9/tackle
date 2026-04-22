@@ -45,7 +45,6 @@ describe('sidebar reducer', () => {
       expandedCardIds: new Set<number>(),
       closedFolderOpen: false,
       descriptionsByTaskId: {},
-      hasPlanByTaskId: {},
     });
   });
 

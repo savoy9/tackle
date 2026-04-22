@@ -165,11 +165,7 @@ export class TerminalOrchestrator {
     await this.sessionRepo.update(sessionId, { status: 'running', ended_at: null });
   }
 
-  /**
-   * Stop a running session: kill the psmux session and mark the row
-   * 'stopped'. Reserved for upcoming session-row actions (#27 will wire
-   * this into the UI).
-   */
+  /** Stop a running session: kill the psmux session and mark the row 'stopped'. */
   async stopSession(sessionId: number): Promise<void> {
     const session = await this.sessionRepo.get(sessionId);
     if (!session) throw new Error(`Session ${sessionId} not found`);
