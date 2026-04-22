@@ -1,0 +1,289 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`render snapshots — canonical Detail Mode states (#31) > Detail with externally-closed indicator 1`] = `
+"<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
+  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+  .card-list { list-style: none; margin: 0; padding: 0; }
+  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
+  .card:hover { background: var(--vscode-list-hoverBackground); }
+  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
+  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+  .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
+  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .id { color: var(--vscode-descriptionForeground); }
+  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .rollup { color: var(--vscode-descriptionForeground); }
+  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .session-rows { padding: 0 10px 6px 24px; }
+  .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .session-row:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
+  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+  .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
+  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
+  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-sessions-body { }
+  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+</style></head><body><div class="tackle-detail">
+  <div class="detail-header">
+    <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
+    <span class="detail-title">Closed task</span>
+    <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
+  </div>
+  
+  <div class="detail-identity">
+    <span class="ext-icon">GH</span>
+    <span class="id">#1</span>
+    <span class="status">closed</span>
+    
+  </div>
+  <div class="detail-branch">🌿 feat-zz</div>
+  <div class="detail-closed-indicator">Externally closed — 2 sessions still running</div>
+  <div class="detail-description"></div>
+  <div class="detail-sessions">
+    <div class="detail-sessions-header">
+      <span class="detail-sessions-label">Sessions</span>
+      <button class="detail-sessions-add" title="New Session" data-action="newSession" data-task-id="1">+</button>
+    </div>
+    <div class="detail-sessions-body"><div class="session-row" data-action="focusSession" data-session-id="10">
+  <span class="kind">⌨️</span>
+  <span class="label">session-10</span>
+  <span class="glyph">●</span>
+  <button class="icon-btn stop" title="Stop" data-action="stopSession" data-session-id="10">⏹</button>
+  <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="10">✓</button>
+  <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="10">⋯</button>
+</div><div class="session-row" data-action="focusSession" data-session-id="11">
+  <span class="kind">⌨️</span>
+  <span class="label">session-11</span>
+  <span class="glyph">●</span>
+  <button class="icon-btn stop" title="Stop" data-action="stopSession" data-session-id="11">⏹</button>
+  <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="11">✓</button>
+  <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="11">⋯</button>
+</div></div>
+  </div>
+  
+</div></body></html>"
+`;
+
+exports[`render snapshots — canonical Detail Mode states (#31) > Detail with no sessions 1`] = `
+"<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
+  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+  .card-list { list-style: none; margin: 0; padding: 0; }
+  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
+  .card:hover { background: var(--vscode-list-hoverBackground); }
+  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
+  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+  .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
+  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .id { color: var(--vscode-descriptionForeground); }
+  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .rollup { color: var(--vscode-descriptionForeground); }
+  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .session-rows { padding: 0 10px 6px 24px; }
+  .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .session-row:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
+  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+  .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
+  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
+  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-sessions-body { }
+  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+</style></head><body><div class="tackle-detail">
+  <div class="detail-header">
+    <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
+    <span class="detail-title">Lonely task</span>
+    <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
+  </div>
+  
+  <div class="detail-identity">
+    <span class="ext-icon">GH</span>
+    <span class="id">#7</span>
+    <span class="status">open</span>
+    
+  </div>
+  
+  
+  <div class="detail-description"></div>
+  <div class="detail-sessions">
+    <div class="detail-sessions-header">
+      <span class="detail-sessions-label">Sessions</span>
+      <button class="detail-sessions-add" title="New Session" data-action="newSession" data-task-id="1">+</button>
+    </div>
+    <div class="detail-sessions-body"><div class="detail-sessions-empty">No sessions.</div></div>
+  </div>
+  
+</div></body></html>"
+`;
+
+exports[`render snapshots — canonical Detail Mode states (#31) > Detail with populated description + mixed sessions + footer 1`] = `
+"<!doctype html>
+<html><head><meta charset="utf-8"><style>
+  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
+  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+  .card-list { list-style: none; margin: 0; padding: 0; }
+  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
+  .card:hover { background: var(--vscode-list-hoverBackground); }
+  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
+  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+  .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
+  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .id { color: var(--vscode-descriptionForeground); }
+  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .rollup { color: var(--vscode-descriptionForeground); }
+  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .session-rows { padding: 0 10px 6px 24px; }
+  .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .session-row:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
+  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+  .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
+  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
+  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-sessions-body { }
+  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+</style></head><body><div class="tackle-detail">
+  <div class="detail-header">
+    <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
+    <span class="detail-title">Main task</span>
+    <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
+  </div>
+  <div class="detail-breadcrumb">↳ #10</div>
+  <div class="detail-identity">
+    <span class="ext-icon">GH</span>
+    <span class="id">#42</span>
+    <span class="status">open</span>
+    <span class="assignee">alice</span>
+  </div>
+  <div class="detail-branch">🌿 feature-main</div>
+  
+  <div class="detail-description"><p>Hello <strong>world</strong></p></div>
+  <div class="detail-sessions">
+    <div class="detail-sessions-header">
+      <span class="detail-sessions-label">Sessions</span>
+      <button class="detail-sessions-add" title="New Session" data-action="newSession" data-task-id="1">+</button>
+    </div>
+    <div class="detail-sessions-body"><div class="session-row" data-action="focusSession" data-session-id="10">
+  <span class="kind">⌨️</span>
+  <span class="label">impl</span>
+  <span class="glyph">⏳</span>
+  <button class="icon-btn stop" title="Stop" data-action="stopSession" data-session-id="10">⏹</button>
+  <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="10">✓</button>
+  <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="10">⋯</button>
+</div><div class="session-row" data-action="focusSession" data-session-id="11">
+  <span class="kind">⌨️</span>
+  <span class="label">done</span>
+  <span class="glyph">✔️</span>
+  <button class="icon-btn stop" title="Stop" data-action="stopSession" data-session-id="11">⏹</button>
+  <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="11">✓</button>
+  <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="11">⋯</button>
+</div></div>
+  </div>
+  <div class="detail-footer"><hr class="detail-footer-rule" /><ul class="detail-footer-list"><li class="detail-footer-row" data-action="switchDetailTo" data-task-id="2" title="Other A">
+      <span class="glyph">○</span>
+      <span class="title">Other A</span>
+      <span class="id">#2</span>
+    </li><li class="detail-footer-row" data-action="switchDetailTo" data-task-id="3" title="Other B">
+      <span class="glyph">○</span>
+      <span class="title">Other B</span>
+      <span class="id">#3</span>
+    </li></ul></div>
+</div></body></html>"
+`;
