@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Task } from '@tackle/shared';
+import type { Task, Session } from '@tackle/shared';
 import { reducer, initialState, type SidebarState } from '../sidebar/sidebar-state';
 
 const task = (id: number, title: string): Task => ({
@@ -15,15 +15,45 @@ const task = (id: number, title: string): Task => ({
   created_at: '',
 });
 
+const session = (id: number, task_id: number, over: Partial<Session> = {}): Session => ({
+  id,
+  task_id,
+  phase_id: null,
+  name: `s${id}`,
+  kind: 'implement',
+  status: 'running',
+  psmux_name: `p${id}`,
+  tab_label: `tab${id}`,
+  agent: null,
+  worktree_path: null,
+  sort_order: 0,
+  claude_session_id: null,
+  agent_state: 'idle',
+  prior_claude_session_ids: null,
+  started_at: '',
+  ended_at: null,
+  ...over,
+});
+
 describe('sidebar reducer', () => {
   it('has a sensible initial state', () => {
     expect(initialState).toEqual({
       mode: 'list',
       tasks: [],
+      sessions: [],
       activeTaskId: undefined,
       expandedCardIds: new Set<number>(),
       closedFolderOpen: false,
     });
+  });
+
+  it('setSessions replaces sessions list', () => {
+    const s = reducer(initialState, {
+      type: 'setSessions',
+      sessions: [session(1, 10), session(2, 10)],
+    });
+    expect(s.sessions).toHaveLength(2);
+    expect(s.sessions[0].id).toBe(1);
   });
 
   it('setTasks replaces task list', () => {

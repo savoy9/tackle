@@ -1,10 +1,11 @@
-import type { Task } from '@tackle/shared';
+import type { Task, Session } from '@tackle/shared';
 
 export type SidebarMode = 'list' | { kind: 'detail'; taskId: number };
 
 export interface SidebarState {
   mode: SidebarMode;
   tasks: Task[];
+  sessions: Session[];
   activeTaskId: number | undefined;
   expandedCardIds: Set<number>;
   closedFolderOpen: boolean;
@@ -12,6 +13,7 @@ export interface SidebarState {
 
 export type SidebarAction =
   | { type: 'setTasks'; tasks: Task[] }
+  | { type: 'setSessions'; sessions: Session[] }
   | { type: 'setActiveTask'; taskId: number | undefined }
   | { type: 'enterDetail'; taskId: number }
   | { type: 'exitDetail' }
@@ -21,6 +23,7 @@ export type SidebarAction =
 export const initialState: SidebarState = {
   mode: 'list',
   tasks: [],
+  sessions: [],
   activeTaskId: undefined,
   expandedCardIds: new Set<number>(),
   closedFolderOpen: false,
@@ -30,6 +33,8 @@ export function reducer(state: SidebarState, action: SidebarAction): SidebarStat
   switch (action.type) {
     case 'setTasks':
       return { ...state, tasks: action.tasks };
+    case 'setSessions':
+      return { ...state, sessions: action.sessions };
     case 'setActiveTask':
       return { ...state, activeTaskId: action.taskId };
     case 'enterDetail':
