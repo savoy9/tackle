@@ -35,10 +35,37 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
   .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
   .closed-row .id { color: var(--vscode-descriptionForeground); }
   .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
   .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
   .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-sessions-body { }
+  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
 </style></head><body><div class="list-header">3 open · 0 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="3">
   <div class="line line1">
     <span class="glyph">✳️</span>
@@ -116,10 +143,37 @@ exports[`render snapshots — canonical List Mode states (#29) > card with zero 
   .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
   .closed-row .id { color: var(--vscode-descriptionForeground); }
   .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
   .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
   .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-sessions-body { }
+  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
 </style></head><body><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
   <div class="line line1">
     <span class="glyph">○</span>
@@ -171,10 +225,37 @@ exports[`render snapshots — canonical List Mode states (#29) > empty list 1`] 
   .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
   .closed-row .id { color: var(--vscode-descriptionForeground); }
   .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
   .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
   .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-sessions-body { }
+  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
 </style></head><body><div class="tackle-empty">No tasks.</div></body></html>"
 `;
 
@@ -213,10 +294,37 @@ exports[`render snapshots — canonical List Mode states (#29) > expanded card w
   .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
   .closed-row .id { color: var(--vscode-descriptionForeground); }
   .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
   .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
   .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-sessions-body { }
+  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
 </style></head><body><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card active" data-action="toggleExpanded" data-task-id="1">
   <div class="line line1">
     <span class="glyph">✳️</span>
@@ -296,10 +404,37 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
   .closed-row .id { color: var(--vscode-descriptionForeground); }
   .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
   .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
   .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-sessions-body { }
+  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
 </style></head><body><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
   <div class="line line1">
     <span class="glyph">○</span>
@@ -364,10 +499,37 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
   .closed-row .id { color: var(--vscode-descriptionForeground); }
   .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .tackle-detail { padding: 8px 12px; }
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
   .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
   .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-sessions-body { }
+  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
 </style></head><body><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
   <div class="line line1">
     <span class="glyph">○</span>

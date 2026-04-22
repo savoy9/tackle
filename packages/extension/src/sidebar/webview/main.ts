@@ -50,6 +50,12 @@ function dispatch(action: string, el: HTMLElement): boolean {
     case 'taskOverflow':
       if (taskId !== undefined) send({ type: 'taskOverflow', taskId });
       return true;
+    case 'switchDetailTo':
+      if (taskId !== undefined) send({ type: 'switchDetailTo', taskId });
+      return true;
+    case 'deactivateTask':
+      if (taskId !== undefined) send({ type: 'deactivateTask', taskId });
+      return true;
     case 'focusSession':
       if (sessionId !== undefined) send({ type: 'focusSession', sessionId });
       return true;

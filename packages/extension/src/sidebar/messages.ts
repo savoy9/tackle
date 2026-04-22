@@ -5,6 +5,8 @@ export type InboundMessage =
   | { type: 'activateTask'; id: number }
   | { type: 'enterDetail'; id: number }
   | { type: 'exitDetail' }
+  | { type: 'switchDetailTo'; taskId: number }
+  | { type: 'deactivateTask'; taskId: number }
   | { type: 'toggleExpanded'; id: number }
   | { type: 'toggleClosedFolder' }
   | { type: 'newSession'; taskId?: number }

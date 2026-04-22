@@ -1,7 +1,42 @@
-import type { TaskRepository, SessionRepository } from '@tackle/shared';
+import type { TaskRepository, SessionRepository, Task } from '@tackle/shared';
 import { reducer, initialState, type SidebarAction, type SidebarState, type SidebarMode } from './sidebar-state';
 import { render } from './render';
 import type { InboundMessage } from './messages';
+import MarkdownIt from 'markdown-it';
+
+const md = new MarkdownIt({ html: false, linkify: true, breaks: false });
+
+function renderDescriptions(tasks: Task[]): Record<number, string> {
+  const out: Record<number, string> = {};
+  for (const t of tasks) {
+    out[t.id] = md.render(t.description || '');
+  }
+  return out;
+}
+
+/**
+ * Best-effort external URL for a task's issue tracker.
+ * Repo context is not yet stored on Task (#31 accepts stubs for partial external info).
+ * For GitHub we can at least link to github.com/<external_id> as the issue number; if
+ * external_id looks like owner/repo#N we unpack it; otherwise return null.
+ */
+function buildExternalUrl(task: Task): string | null {
+  const id = task.external_id;
+  if (!id) return null;
+  if (task.external_system === 'github') {
+    // Accept owner/repo#N or owner/repo/issues/N formats if provided.
+    const m1 = id.match(/^([^/]+)\/([^#/]+)#(\d+)$/);
+    if (m1) return `https://github.com/${m1[1]}/${m1[2]}/issues/${m1[3]}`;
+    const m2 = id.match(/^([^/]+)\/([^/]+)\/issues\/(\d+)$/);
+    if (m2) return `https://github.com/${m2[1]}/${m2[2]}/issues/${m2[3]}`;
+    // Fallback: numeric or unknown — encode bare identifier so the URL still mentions id.
+    return `https://github.com/search?q=${encodeURIComponent(id)}&type=issues`;
+  }
+  if (task.external_system === 'ado') {
+    return `https://dev.azure.com/_workitems/edit/${encodeURIComponent(id)}`;
+  }
+  return null;
+}
 
 export interface SidebarScope {
   getActiveTaskId(): number | undefined;
@@ -67,6 +102,8 @@ export class SidebarController {
       activeTaskId: this.deps.scope.getActiveTaskId(),
       expandedCardIds: new Set(expandedArr),
       closedFolderOpen: closed,
+      descriptionsByTaskId: renderDescriptions(tasks),
+      hasPlanByTaskId: {},
     };
 
     this.scopeSub = this.deps.scope.onDidChangeActiveTask((id) => {
@@ -99,6 +136,7 @@ export class SidebarController {
   async refresh(): Promise<void> {
     const tasks = await this.deps.taskRepo.list();
     this.dispatch({ type: 'setTasks', tasks });
+    this.dispatch({ type: 'setDescriptions', descriptionsByTaskId: renderDescriptions(tasks) });
     await this.refreshSessions();
   }
 
@@ -118,13 +156,45 @@ export class SidebarController {
         }
         return;
       case 'enterDetail':
+        // Entering Detail on a non-Active task should also activate it.
+        if (this.state.activeTaskId !== msg.id && this.deps.scope.switchTask) {
+          await this.deps.scope.switchTask(msg.id);
+        }
         this.dispatch({ type: 'enterDetail', taskId: msg.id });
         await this.deps.workspaceState.update(KEY_MODE, this.state.mode);
         return;
       case 'exitDetail':
+        // Back returns to List without deactivating (ADR-0008).
         this.dispatch({ type: 'exitDetail' });
         await this.deps.workspaceState.update(KEY_MODE, this.state.mode);
         return;
+      case 'switchDetailTo':
+        if (this.deps.scope.switchTask) {
+          await this.deps.scope.switchTask(msg.taskId);
+        }
+        this.dispatch({ type: 'enterDetail', taskId: msg.taskId });
+        await this.deps.workspaceState.update(KEY_MODE, this.state.mode);
+        return;
+      case 'deactivateTask':
+        if (exec) await exec('tackle.deactivate');
+        return;
+      case 'openTaskExternal': {
+        const t = this.state.tasks.find((x) => x.id === msg.taskId);
+        if (t && exec) {
+          const url = buildExternalUrl(t);
+          if (url) {
+            await exec('vscode.open', url);
+          }
+        }
+        return;
+      }
+      case 'copyTaskId': {
+        const t = this.state.tasks.find((x) => x.id === msg.taskId);
+        if (t && exec) {
+          await exec('tackle.copyToClipboard', `#${t.external_id}`);
+        }
+        return;
+      }
       case 'toggleExpanded':
         this.dispatch({ type: 'toggleExpanded', taskId: msg.id });
         await this.deps.workspaceState.update(KEY_EXPANDED, Array.from(this.state.expandedCardIds));
@@ -161,8 +231,6 @@ export class SidebarController {
       case 'removeSession':
         if (exec) await exec('tackle.removeSession', msg.sessionId);
         return;
-      case 'openTaskExternal':
-      case 'copyTaskId':
       case 'taskOverflow':
       case 'sessionOverflow':
         // Stubs: logged only in this slice; future slices may wire menus.

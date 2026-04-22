@@ -9,6 +9,10 @@ export interface SidebarState {
   activeTaskId: number | undefined;
   expandedCardIds: Set<number>;
   closedFolderOpen: boolean;
+  /** Precomputed markdown HTML for Task.description, keyed by task id. */
+  descriptionsByTaskId: Record<number, string>;
+  /** Reserved for future plan tracker rendering in Detail Mode (#31). MVP: always false. */
+  hasPlanByTaskId: Record<number, boolean>;
 }
 
 export type SidebarAction =
@@ -18,7 +22,8 @@ export type SidebarAction =
   | { type: 'enterDetail'; taskId: number }
   | { type: 'exitDetail' }
   | { type: 'toggleExpanded'; taskId: number }
-  | { type: 'toggleClosedFolder' };
+  | { type: 'toggleClosedFolder' }
+  | { type: 'setDescriptions'; descriptionsByTaskId: Record<number, string> };
 
 export const initialState: SidebarState = {
   mode: 'list',
@@ -27,6 +32,8 @@ export const initialState: SidebarState = {
   activeTaskId: undefined,
   expandedCardIds: new Set<number>(),
   closedFolderOpen: false,
+  descriptionsByTaskId: {},
+  hasPlanByTaskId: {},
 };
 
 export function reducer(state: SidebarState, action: SidebarAction): SidebarState {
@@ -49,6 +56,8 @@ export function reducer(state: SidebarState, action: SidebarAction): SidebarStat
     }
     case 'toggleClosedFolder':
       return { ...state, closedFolderOpen: !state.closedFolderOpen };
+    case 'setDescriptions':
+      return { ...state, descriptionsByTaskId: action.descriptionsByTaskId };
     default:
       return state;
   }
