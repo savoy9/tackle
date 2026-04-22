@@ -12,6 +12,16 @@
   "main": "./dist/extension.js",
   "enabledApiProposals": ["terminalDataWriteEvent"],
   "contributes": {
+    "configuration": {
+      "title": "Tackle",
+      "properties": {
+        "tackle.defaultAgent": {
+          "type": "string",
+          "default": "agency-cc",
+          "description": "Default Agent used when creating a new Session. Built-in options: 'agency-cc' (Microsoft-internal Claude Code wrapper) or 'claude' (vanilla Claude Code). Per-session 'agent' values override this."
+        }
+      }
+    },
     "viewsContainers": {
       "activitybar": [
         {
