@@ -7,6 +7,7 @@ export interface UpsertTask {
   description: string;
   status: string;
   assignee: string | null;
+  parent_external_id?: string | null;
 }
 
 export interface CreateSession {
@@ -20,6 +21,8 @@ export interface CreateSession {
   worktree_path?: string | null;
   sort_order?: number;
   claude_session_id?: string | null;
+  agent_state?: 'idle' | 'working' | 'waiting';
+  prior_claude_session_ids?: string[] | null;
 }
 
 export interface UpdateSession {
@@ -31,6 +34,8 @@ export interface UpdateSession {
   worktree_path?: string | null;
   sort_order?: number;
   claude_session_id?: string | null;
+  agent_state?: 'idle' | 'working' | 'waiting';
+  prior_claude_session_ids?: string[] | null;
   ended_at?: string | null;
 }
 

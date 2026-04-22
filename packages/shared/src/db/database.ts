@@ -92,6 +92,7 @@ const SCHEMA = `
     description TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'open',
     assignee TEXT,
+    parent_external_id TEXT,
     synced_at TEXT NOT NULL DEFAULT (datetime('now')),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -112,6 +113,8 @@ const SCHEMA = `
     worktree_path TEXT,
     sort_order INTEGER NOT NULL DEFAULT 0,
     claude_session_id TEXT,
+    agent_state TEXT NOT NULL DEFAULT 'idle' CHECK(agent_state IN ('idle','working','waiting')),
+    prior_claude_session_ids TEXT,
     started_at TEXT NOT NULL DEFAULT (datetime('now')),
     ended_at TEXT
   );
@@ -163,8 +166,40 @@ const SCHEMA = `
   );
 `;
 
+function migrate(db: Database): void {
+  // Idempotent additive migrations for older DB files.
+  function columnExists(table: string, column: string): boolean {
+    const rows = db
+      .prepare<{ name: string }>(`PRAGMA table_info('${table}')`)
+      .all();
+    return rows.some((r) => r.name === column);
+  }
+  function tableExists(table: string): boolean {
+    const row = db
+      .prepare<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
+      )
+      .get(table);
+    return !!row;
+  }
+  if (tableExists('sessions')) {
+    if (!columnExists('sessions', 'agent_state')) {
+      db.exec("ALTER TABLE sessions ADD COLUMN agent_state TEXT NOT NULL DEFAULT 'idle'");
+    }
+    if (!columnExists('sessions', 'prior_claude_session_ids')) {
+      db.exec('ALTER TABLE sessions ADD COLUMN prior_claude_session_ids TEXT');
+    }
+  }
+  if (tableExists('tasks')) {
+    if (!columnExists('tasks', 'parent_external_id')) {
+      db.exec('ALTER TABLE tasks ADD COLUMN parent_external_id TEXT');
+    }
+  }
+}
+
 export function createDatabase(dbPath: string): Database {
   const db = openDatabase(dbPath);
   db.exec(SCHEMA);
+  migrate(db);
   return db;
 }

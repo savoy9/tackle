@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { createDatabase } from '../db/database';
+import { createDatabase, openDatabase } from '../db/database';
 import type { Database } from '../db/database';
+import { mkdtempSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import {
   SqliteTaskRepository,
   SqliteSessionRepository,
@@ -38,6 +41,21 @@ describe('Database schema', () => {
     expect(cols).toContain('worktree_path');
     expect(cols).toContain('sort_order');
     expect(cols).toContain('claude_session_id');
+  });
+
+  it('sessions.agent_state defaults to idle on insert', () => {
+    const cols = db
+      .prepare<{ name: string }>("PRAGMA table_info('sessions')")
+      .all()
+      .map((r) => r.name);
+    expect(cols).toContain('agent_state');
+
+    db.prepare("INSERT INTO tasks (external_id, external_system, title) VALUES ('1', 'github', 'test')").run();
+    db.prepare("INSERT INTO sessions (task_id, name, kind, psmux_name) VALUES (1, 's', 'implement', 'p')").run();
+    const row = db
+      .prepare<{ agent_state: string }>("SELECT agent_state FROM sessions WHERE name = 's'")
+      .get();
+    expect(row?.agent_state).toBe('idle');
   });
 
   it('sessions kind CHECK allows all 7 values', () => {
@@ -183,5 +201,114 @@ describe('LayoutStateRepository', () => {
     // Verify not found
     const missing = await repo.get('999');
     expect(missing).toBeUndefined();
+  });
+});
+
+describe('Session migrations fields', () => {
+  it('round-trips non-null prior_claude_session_ids JSON array', async () => {
+    const taskRepo = new SqliteTaskRepository(db);
+    await taskRepo.upsert({
+      external_id: 'GH-1',
+      external_system: 'github',
+      title: 'Task',
+      description: '',
+      status: 'open',
+      assignee: null,
+    });
+    const tasks = await taskRepo.list();
+    const taskId = tasks[0].id;
+
+    const repo = new SqliteSessionRepository(db);
+    const created = await repo.create({
+      task_id: taskId,
+      phase_id: null,
+      name: 'impl-1',
+      kind: 'implement',
+      psmux_name: 'psmux-1',
+      prior_claude_session_ids: ['abc-123', 'def-456'],
+    });
+    expect(created.prior_claude_session_ids).toEqual(['abc-123', 'def-456']);
+
+    const fetched = await repo.get(created.id);
+    expect(fetched!.prior_claude_session_ids).toEqual(['abc-123', 'def-456']);
+    expect(fetched!.agent_state).toBe('idle');
+  });
+
+  it('round-trips non-null Task.parent_external_id', async () => {
+    const repo = new SqliteTaskRepository(db);
+    await repo.upsert({
+      external_id: 'GH-5',
+      external_system: 'github',
+      title: 'Child task',
+      description: '',
+      status: 'open',
+      assignee: null,
+      parent_external_id: 'ADO-100',
+    });
+    const tasks = await repo.list();
+    expect(tasks[0].parent_external_id).toBe('ADO-100');
+    const one = await repo.get(tasks[0].id);
+    expect(one!.parent_external_id).toBe('ADO-100');
+  });
+});
+
+describe('Migration of pre-existing DB', () => {
+  it('opens an older DB file and gains missing columns without throwing', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'tackle-mig-'));
+    const file = join(dir, 'old.db');
+    try {
+      // Create a legacy schema (without agent_state / prior_claude_session_ids / parent_external_id)
+      const legacy = openDatabase(file);
+      legacy.exec(`
+        CREATE TABLE tasks (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          external_id TEXT NOT NULL,
+          external_system TEXT NOT NULL,
+          title TEXT NOT NULL,
+          description TEXT NOT NULL DEFAULT '',
+          status TEXT NOT NULL DEFAULT 'open',
+          assignee TEXT,
+          synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+          created_at TEXT NOT NULL DEFAULT (datetime('now'))
+        );
+        CREATE UNIQUE INDEX idx_tasks_external ON tasks(external_system, external_id);
+        CREATE TABLE sessions (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          task_id INTEGER,
+          phase_id INTEGER,
+          name TEXT NOT NULL,
+          kind TEXT NOT NULL DEFAULT 'implement',
+          status TEXT NOT NULL DEFAULT 'running',
+          psmux_name TEXT NOT NULL,
+          tab_label TEXT NOT NULL DEFAULT '',
+          agent TEXT,
+          worktree_path TEXT,
+          sort_order INTEGER NOT NULL DEFAULT 0,
+          claude_session_id TEXT,
+          started_at TEXT NOT NULL DEFAULT (datetime('now')),
+          ended_at TEXT
+        );
+      `);
+      legacy.prepare("INSERT INTO tasks (external_id, external_system, title) VALUES ('1', 'github', 't')").run();
+      legacy.prepare("INSERT INTO sessions (task_id, name, kind, psmux_name) VALUES (1, 'old', 'implement', 'p')").run();
+      legacy.close();
+
+      // Reopen via createDatabase - migration runs; must not throw
+      const upgraded = createDatabase(file);
+      const sessCols = upgraded.prepare<{ name: string }>("PRAGMA table_info('sessions')").all().map((c) => c.name);
+      expect(sessCols).toContain('agent_state');
+      expect(sessCols).toContain('prior_claude_session_ids');
+      const taskCols = upgraded.prepare<{ name: string }>("PRAGMA table_info('tasks')").all().map((c) => c.name);
+      expect(taskCols).toContain('parent_external_id');
+
+      // Existing legacy session's agent_state should default to 'idle'
+      const row = upgraded
+        .prepare<{ agent_state: string }>("SELECT agent_state FROM sessions WHERE name = 'old'")
+        .get();
+      expect(row?.agent_state).toBe('idle');
+      upgraded.close();
+    } finally {
+      try { rmSync(dir, { recursive: true, force: true }); } catch { /* windows file lock tolerance */ }
+    }
   });
 });
