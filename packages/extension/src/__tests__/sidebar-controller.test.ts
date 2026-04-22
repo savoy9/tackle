@@ -317,7 +317,7 @@ describe('SidebarController — sessions (#29)', () => {
     expect(exec).toHaveBeenCalledWith('tackle.markSessionDone', 10);
   });
 
-  it('handleMessage newSession triggers tackle.newSession command', async () => {
+  it('handleMessage newSession passes taskId arg to tackle.newSession command', async () => {
     const exec = vi.fn(async () => undefined);
     const c = new SidebarController({
       taskRepo: makeRepo([task(1, 'A')]),
@@ -328,7 +328,21 @@ describe('SidebarController — sessions (#29)', () => {
     });
     await c.start();
     await c.handleMessage({ type: 'newSession', taskId: 1 });
-    expect(exec).toHaveBeenCalledWith('tackle.newSession');
+    expect(exec).toHaveBeenCalledWith('tackle.newSession', { taskId: 1 });
+  });
+
+  it('handleMessage newSession without taskId falls back to active task', async () => {
+    const exec = vi.fn(async () => undefined);
+    const c = new SidebarController({
+      taskRepo: makeRepo([task(7, 'A')]),
+      scope: { ...makeScope(), getActiveTaskId: () => 7 } as any,
+      workspaceState: makeWorkspaceState(),
+      webview: { postMessage: vi.fn() },
+      executeCommand: exec,
+    });
+    await c.start();
+    await c.handleMessage({ type: 'newSession' });
+    expect(exec).toHaveBeenCalledWith('tackle.newSession', { taskId: 7 });
   });
 
   it('handleMessage focusSession calls tackle.focusSession and activates parent', async () => {
