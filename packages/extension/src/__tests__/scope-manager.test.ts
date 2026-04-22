@@ -8,11 +8,6 @@ describe('ScopeManager', () => {
     focusTerminal: vi.fn(),
   };
 
-  const mockTaskTreeProvider = {
-    setActiveTask: vi.fn(),
-    refresh: vi.fn(),
-  };
-
   const mockSessionTreeProvider = {
     setActiveTask: vi.fn(),
     refresh: vi.fn(),
@@ -23,23 +18,34 @@ describe('ScopeManager', () => {
     restoreLayoutState: vi.fn(async () => undefined),
   };
 
+  function makeWorkspaceState() {
+    const store = new Map<string, unknown>();
+    return {
+      store,
+      get: <T>(key: string): T | undefined => store.get(key) as T | undefined,
+      update: vi.fn(async (key: string, value: unknown) => {
+        store.set(key, value);
+      }),
+    };
+  }
+
   let scopeManager: ScopeManager;
+  let workspaceState: ReturnType<typeof makeWorkspaceState>;
 
   beforeEach(() => {
     vi.clearAllMocks();
+    workspaceState = makeWorkspaceState();
     scopeManager = new ScopeManager({
       terminalOrchestrator: mockTerminalOrchestrator as any,
-      taskTreeProvider: mockTaskTreeProvider as any,
       sessionTreeProvider: mockSessionTreeProvider,
       layoutManager: mockLayoutManager as any,
+      workspaceState: workspaceState as any,
     });
   });
 
   it('switchTask saves current layout before disposing terminals', async () => {
-    // Set an active task first
     await scopeManager.switchTask(1);
     vi.clearAllMocks();
-
     await scopeManager.switchTask(2);
 
     const saveOrder = mockLayoutManager.saveLayoutState.mock.invocationCallOrder[0];
@@ -49,7 +55,6 @@ describe('ScopeManager', () => {
 
   it('switchTask disposes terminals before restoring new layout', async () => {
     await scopeManager.switchTask(1);
-
     const disposeOrder = mockTerminalOrchestrator.disposeAll.mock.invocationCallOrder[0];
     const restoreOrder = mockLayoutManager.restoreLayoutState.mock.invocationCallOrder[0];
     expect(disposeOrder).toBeLessThan(restoreOrder);
@@ -57,7 +62,6 @@ describe('ScopeManager', () => {
 
   it('switchTask restores layout before reattaching terminals', async () => {
     await scopeManager.switchTask(1);
-
     const restoreOrder = mockLayoutManager.restoreLayoutState.mock.invocationCallOrder[0];
     const reattachOrder = mockTerminalOrchestrator.reattachForTask.mock.invocationCallOrder[0];
     expect(restoreOrder).toBeLessThan(reattachOrder);
@@ -68,9 +72,8 @@ describe('ScopeManager', () => {
     expect(mockTerminalOrchestrator.reattachForTask).toHaveBeenCalledWith(42);
   });
 
-  it('switchTask updates TreeViews with new task ID', async () => {
+  it('switchTask updates session TreeView with new task ID', async () => {
     await scopeManager.switchTask(5);
-    expect(mockTaskTreeProvider.setActiveTask).toHaveBeenCalledWith(5);
     expect(mockSessionTreeProvider.setActiveTask).toHaveBeenCalledWith(5);
   });
 
@@ -85,5 +88,32 @@ describe('ScopeManager', () => {
     expect(scopeManager.getActiveTaskId()).toBeUndefined();
     await scopeManager.switchTask(7);
     expect(scopeManager.getActiveTaskId()).toBe(7);
+  });
+
+  it('switchTask persists activeTaskId to workspaceState', async () => {
+    await scopeManager.switchTask(9);
+    expect(workspaceState.store.get('tackle.activeTaskId')).toBe(9);
+  });
+
+  it('restoreActiveTask() reads persisted id without side-effects on terminals', async () => {
+    workspaceState.store.set('tackle.activeTaskId', 11);
+    scopeManager.restoreActiveTask();
+    expect(scopeManager.getActiveTaskId()).toBe(11);
+    expect(mockTerminalOrchestrator.reattachForTask).not.toHaveBeenCalled();
+  });
+
+  it('onDidChangeActiveTask fires when switchTask runs', async () => {
+    const fn = vi.fn();
+    scopeManager.onDidChangeActiveTask(fn);
+    await scopeManager.switchTask(3);
+    expect(fn).toHaveBeenCalledWith(3);
+  });
+
+  it('onDidChangeActiveTask fires when restoreActiveTask is called with a stored id', () => {
+    workspaceState.store.set('tackle.activeTaskId', 15);
+    const fn = vi.fn();
+    scopeManager.onDidChangeActiveTask(fn);
+    scopeManager.restoreActiveTask();
+    expect(fn).toHaveBeenCalledWith(15);
   });
 });
