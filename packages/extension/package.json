@@ -37,10 +37,6 @@
           "id": "tackleSidebar",
           "name": "Tackle",
           "type": "webview"
-        },
-        {
-          "id": "tackleSessionView",
-          "name": "Sessions"
         }
       ]
     },
@@ -109,7 +105,7 @@
         },
         {
           "command": "tackle.newSession",
-          "when": "view == tackleSessionView",
+          "when": "view == tackleSidebar",
           "group": "navigation"
         }
       ]

@@ -8,11 +8,6 @@ describe('ScopeManager', () => {
     focusTerminal: vi.fn(),
   };
 
-  const mockSessionTreeProvider = {
-    setActiveTask: vi.fn(),
-    refresh: vi.fn(),
-  };
-
   const mockLayoutManager = {
     saveLayoutState: vi.fn(async () => {}),
     restoreLayoutState: vi.fn(async () => undefined),
@@ -37,7 +32,6 @@ describe('ScopeManager', () => {
     workspaceState = makeWorkspaceState();
     scopeManager = new ScopeManager({
       terminalOrchestrator: mockTerminalOrchestrator as any,
-      sessionTreeProvider: mockSessionTreeProvider,
       layoutManager: mockLayoutManager as any,
       workspaceState: workspaceState as any,
     });
@@ -70,11 +64,6 @@ describe('ScopeManager', () => {
   it('switchTask reattaches terminals for new task', async () => {
     await scopeManager.switchTask(42);
     expect(mockTerminalOrchestrator.reattachForTask).toHaveBeenCalledWith(42);
-  });
-
-  it('switchTask updates session TreeView with new task ID', async () => {
-    await scopeManager.switchTask(5);
-    expect(mockSessionTreeProvider.setActiveTask).toHaveBeenCalledWith(5);
   });
 
   it('switchTask works for first task (no previous layout to save)', async () => {

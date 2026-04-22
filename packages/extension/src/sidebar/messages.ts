@@ -6,7 +6,18 @@ export type InboundMessage =
   | { type: 'enterDetail'; id: number }
   | { type: 'exitDetail' }
   | { type: 'toggleExpanded'; id: number }
-  | { type: 'toggleClosedFolder' };
+  | { type: 'toggleClosedFolder' }
+  | { type: 'newSession'; taskId?: number }
+  | { type: 'openTaskExternal'; taskId: number }
+  | { type: 'copyTaskId'; taskId: number }
+  | { type: 'taskOverflow'; taskId: number }
+  | { type: 'focusSession'; sessionId: number }
+  | { type: 'stopSession'; sessionId: number }
+  | { type: 'markSessionDone'; sessionId: number }
+  | { type: 'restartSession'; sessionId: number }
+  | { type: 'renameSession'; sessionId: number }
+  | { type: 'removeSession'; sessionId: number }
+  | { type: 'sessionOverflow'; sessionId: number };
 
 export type OutboundMessage =
   | { type: 'render'; html: string };

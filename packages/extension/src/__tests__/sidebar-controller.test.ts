@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import type { Task, TaskRepository } from '@tackle/shared';
+import type { Task, TaskRepository, Session, SessionRepository } from '@tackle/shared';
 import { SidebarController } from '../sidebar/sidebar-controller';
 
 const task = (id: number, title: string): Task => ({
@@ -187,4 +187,165 @@ describe('SidebarController', () => {
     c.setWebview(newPoster);
     expect(newPoster.postMessage).toHaveBeenCalled();
   });
+});
+
+// ── #29 additions ──
+
+const sessionRow = (id: number, task_id: number, over: Partial<Session> = {}): Session => ({
+  id,
+  task_id,
+  phase_id: null,
+  name: `s${id}`,
+  kind: 'implement',
+  status: 'running',
+  psmux_name: `p${id}`,
+  tab_label: `tab${id}`,
+  agent: null,
+  worktree_path: null,
+  sort_order: 0,
+  claude_session_id: null,
+  agent_state: 'idle',
+  prior_claude_session_ids: null,
+  started_at: '',
+  ended_at: null,
+  ...over,
+});
+
+function makeSessionRepo(sessions: Session[]) {
+  const listeners: Array<() => void> = [];
+  const repo: SessionRepository & { onDidChange: (fn: () => void) => { dispose(): void }; fire: () => void } = {
+    list: async () => sessions.slice(),
+    get: async (id) => sessions.find((s) => s.id === id),
+    listForTask: async (tid) => sessions.filter((s) => s.task_id === tid),
+    create: async () => ({} as any),
+    update: async () => {},
+    complete: async () => {},
+    softDelete: async () => {},
+    onDidChange: (fn) => {
+      listeners.push(fn);
+      return { dispose: () => {} };
+    },
+    fire: () => { for (const l of listeners) l(); },
+  };
+  return repo;
+}
+
+describe('SidebarController — sessions (#29)', () => {
+  it('start() loads sessions from sessionRepo into state', async () => {
+    const repo = makeRepo([task(1, 'A')]);
+    const sessionRepo = makeSessionRepo([sessionRow(10, 1), sessionRow(11, 1)]);
+    const scope = makeScope();
+    const ws = makeWorkspaceState();
+    const poster = { postMessage: vi.fn() };
+    const c = new SidebarController({
+      taskRepo: repo,
+      sessionRepo,
+      scope: scope as any,
+      workspaceState: ws,
+      webview: poster,
+    });
+    await c.start();
+    expect(c.getState().sessions.map((s) => s.id)).toEqual([10, 11]);
+  });
+
+  it('start() excludes soft-deleted sessions', async () => {
+    const repo = makeRepo([task(1, 'A')]);
+    const sessionRepo = makeSessionRepo([
+      sessionRow(10, 1),
+      sessionRow(11, 1, { deleted_at: '2026-01-01' }),
+    ]);
+    const scope = makeScope();
+    const ws = makeWorkspaceState();
+    const c = new SidebarController({
+      taskRepo: repo,
+      sessionRepo,
+      scope: scope as any,
+      workspaceState: ws,
+      webview: { postMessage: vi.fn() },
+    });
+    await c.start();
+    expect(c.getState().sessions.map((s) => s.id)).toEqual([10]);
+  });
+
+  it('subscribes to sessionRepo.onDidChange and refreshes on change', async () => {
+    const repo = makeRepo([task(1, 'A')]);
+    const sessions: Session[] = [sessionRow(10, 1)];
+    const sessionRepo = makeSessionRepo(sessions);
+    const scope = makeScope();
+    const ws = makeWorkspaceState();
+    const c = new SidebarController({
+      taskRepo: repo,
+      sessionRepo,
+      scope: scope as any,
+      workspaceState: ws,
+      webview: { postMessage: vi.fn() },
+    });
+    await c.start();
+    sessions.push(sessionRow(11, 1));
+    (sessionRepo as any).fire();
+    await Promise.resolve();
+    await Promise.resolve();
+    expect(c.getState().sessions.map((s) => s.id)).toEqual([10, 11]);
+  });
+
+  it('handleMessage stopSession dispatches executeCommand', async () => {
+    const exec = vi.fn(async () => undefined);
+    const repo = makeRepo([task(1, 'A')]);
+    const sessionRepo = makeSessionRepo([sessionRow(10, 1)]);
+    const scope = makeScope();
+    const ws = makeWorkspaceState();
+    const c = new SidebarController({
+      taskRepo: repo, sessionRepo, scope: scope as any, workspaceState: ws,
+      webview: { postMessage: vi.fn() }, executeCommand: exec,
+    });
+    await c.start();
+    await c.handleMessage({ type: 'stopSession', sessionId: 10 });
+    expect(exec).toHaveBeenCalledWith('tackle.stopSession', 10);
+  });
+
+  it('handleMessage markSessionDone dispatches executeCommand', async () => {
+    const exec = vi.fn(async () => undefined);
+    const repo = makeRepo([task(1, 'A')]);
+    const sessionRepo = makeSessionRepo([sessionRow(10, 1)]);
+    const c = new SidebarController({
+      taskRepo: repo, sessionRepo, scope: makeScope() as any,
+      workspaceState: makeWorkspaceState(),
+      webview: { postMessage: vi.fn() }, executeCommand: exec,
+    });
+    await c.start();
+    await c.handleMessage({ type: 'markSessionDone', sessionId: 10 });
+    expect(exec).toHaveBeenCalledWith('tackle.markSessionDone', 10);
+  });
+
+  it('handleMessage newSession triggers tackle.newSession command', async () => {
+    const exec = vi.fn(async () => undefined);
+    const c = new SidebarController({
+      taskRepo: makeRepo([task(1, 'A')]),
+      scope: makeScope() as any,
+      workspaceState: makeWorkspaceState(),
+      webview: { postMessage: vi.fn() },
+      executeCommand: exec,
+    });
+    await c.start();
+    await c.handleMessage({ type: 'newSession', taskId: 1 });
+    expect(exec).toHaveBeenCalledWith('tackle.newSession');
+  });
+
+  it('handleMessage focusSession calls tackle.focusSession and activates parent', async () => {
+    const exec = vi.fn(async () => undefined);
+    const switchTask = vi.fn(async () => {});
+    const scope = { ...makeScope(), switchTask };
+    const repo = makeRepo([task(1, 'A'), task(2, 'B')]);
+    const sessionRepo = makeSessionRepo([sessionRow(10, 2)]);
+    const c = new SidebarController({
+      taskRepo: repo, sessionRepo, scope: scope as any,
+      workspaceState: makeWorkspaceState(),
+      webview: { postMessage: vi.fn() }, executeCommand: exec,
+    });
+    await c.start();
+    await c.handleMessage({ type: 'focusSession', sessionId: 10 });
+    expect(exec).toHaveBeenCalledWith('tackle.focusSession', 10);
+    expect(switchTask).toHaveBeenCalledWith(2);
+  });
+
 });

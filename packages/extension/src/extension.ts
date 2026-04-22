@@ -4,7 +4,7 @@ import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateReposit
 import { TaskService } from './task';
 import { TerminalOrchestrator } from './terminal';
 import { createVscodeAgentRegistry } from './agent';
-import { SessionTreeProvider, SessionActions } from './session';
+import { SessionActions, ObservableSessionRepository } from './session';
 import { LayoutManager } from './layout';
 import { ScopeManager } from './scope';
 import { SidebarController, SidebarViewProvider } from './sidebar';
@@ -16,14 +16,10 @@ export function activate(context: vscode.ExtensionContext): void {
   const modeManager = new ModeManager(context);
   let taskService: TaskService | undefined;
   let terminalOrchestrator: TerminalOrchestrator | undefined;
-  let sessionRepoRef: import('@tackle/shared').SessionRepository | undefined;
+  let sessionRepoRef: ObservableSessionRepository | undefined;
   let sessionActions: SessionActions | undefined;
   let scopeManager: ScopeManager | undefined;
   let sidebarController: SidebarController | undefined;
-
-  // Placeholder session tree provider so VS Code has a data provider immediately.
-  const sessionTreeProvider = new SessionTreeProvider({ list: async () => [], get: async () => undefined, listForTask: async () => [], create: async () => ({} as any), update: async () => {}, complete: async () => {}, softDelete: async () => {} }, () => false);
-  vscode.window.createTreeView('tackleSessionView', { treeDataProvider: sessionTreeProvider });
 
   // Placeholder task repo for the sidebar until activation fills it in.
   const placeholderTaskRepo = { list: async () => [], get: async () => undefined, upsert: async () => {}, upsertBatch: async () => {} };
@@ -39,8 +35,8 @@ export function activate(context: vscode.ExtensionContext): void {
     taskRepo: placeholderTaskRepo,
     scope: scopeStub,
     workspaceState: context.workspaceState,
+    executeCommand: (cmd, ...args) => Promise.resolve(vscode.commands.executeCommand(cmd, ...args)),
   });
-  // Best-effort initial render with empty state.
   void sidebarController.start();
 
   const sidebarProvider = new SidebarViewProvider(context.extensionUri, sidebarController);
@@ -71,15 +67,13 @@ export function activate(context: vscode.ExtensionContext): void {
       }
 
       const taskRepo = new SqliteTaskRepository(db);
-      const sessionRepo = new SqliteSessionRepository(db);
+      const baseSessionRepo = new SqliteSessionRepository(db);
+      const sessionRepo = new ObservableSessionRepository(baseSessionRepo);
       const layoutRepo = new SqliteLayoutStateRepository(db);
       const psmux = new PsmuxBridge();
 
-      sessionTreeProvider.setRepository(sessionRepo);
-
       taskService = new TaskService(taskRepo);
       terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry());
-      sessionTreeProvider.setHasTerminalFn((id) => terminalOrchestrator!.getTerminalForSession(id) !== undefined);
 
       sessionRepoRef = sessionRepo;
       sessionActions = new SessionActions({
@@ -94,7 +88,6 @@ export function activate(context: vscode.ExtensionContext): void {
       const layoutManager = new LayoutManager(layoutRepo);
       scopeManager = new ScopeManager({
         terminalOrchestrator,
-        sessionTreeProvider,
         layoutManager,
         workspaceState: context.workspaceState,
       });
@@ -103,18 +96,22 @@ export function activate(context: vscode.ExtensionContext): void {
       const prevController = sidebarController;
       sidebarController = new SidebarController({
         taskRepo,
+        sessionRepo,
         scope: scopeManager,
         workspaceState: context.workspaceState,
+        executeCommand: (cmd, ...args) => Promise.resolve(vscode.commands.executeCommand(cmd, ...args)),
       });
       await sidebarController.start();
-      // Swap the webview poster onto the new controller.
       sidebarProvider.setController(sidebarController);
       prevController?.dispose();
 
       scopeManager.restoreActiveTask();
 
       context.subscriptions.push(
-        vscode.window.onDidCloseTerminal((t) => terminalOrchestrator?.handleTerminalClose(t)),
+        vscode.window.onDidCloseTerminal((t) => {
+          terminalOrchestrator?.handleTerminalClose(t);
+          sessionRepo.fire();
+        }),
       );
 
       vscode.window.showInformationMessage('Tackle activated!');
@@ -160,7 +157,7 @@ export function activate(context: vscode.ExtensionContext): void {
     }
     try {
       await terminalOrchestrator.reattachSession(sessionId);
-      sessionTreeProvider.refresh();
+      sessionRepoRef?.fire();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       vscode.window.showErrorMessage(`Failed to reattach session: ${message}`);
@@ -197,7 +194,7 @@ export function activate(context: vscode.ExtensionContext): void {
         taskSlug: slug,
         kind: kind as any,
       });
-      sessionTreeProvider.refresh();
+      sessionRepoRef?.fire();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : String(err);
       vscode.window.showErrorMessage(`Failed to create session: ${message}`);
@@ -246,28 +243,28 @@ export function activate(context: vscode.ExtensionContext): void {
     const actions = ensureActions(); if (!actions) return;
     const id = await resolveId(arg, 'Select a session to stop'); if (id === undefined) return;
     await actions.stop(id);
-    sessionTreeProvider.refresh();
+    sessionRepoRef?.fire();
   });
 
   const restartSessionCmd = vscode.commands.registerCommand('tackle.restartSession', async (arg?: unknown) => {
     const actions = ensureActions(); if (!actions) return;
     const id = await resolveId(arg, 'Select a session to restart'); if (id === undefined) return;
     await actions.restart(id);
-    sessionTreeProvider.refresh();
+    sessionRepoRef?.fire();
   });
 
   const removeSessionCmd = vscode.commands.registerCommand('tackle.removeSession', async (arg?: unknown) => {
     const actions = ensureActions(); if (!actions) return;
     const id = await resolveId(arg, 'Select a session to remove'); if (id === undefined) return;
     await actions.remove(id);
-    sessionTreeProvider.refresh();
+    sessionRepoRef?.fire();
   });
 
   const markSessionDoneCmd = vscode.commands.registerCommand('tackle.markSessionDone', async (arg?: unknown) => {
     const actions = ensureActions(); if (!actions) return;
     const id = await resolveId(arg, 'Select a session to mark done'); if (id === undefined) return;
     await actions.markDone(id);
-    sessionTreeProvider.refresh();
+    sessionRepoRef?.fire();
   });
 
   const renameSessionCmd = vscode.commands.registerCommand(
@@ -285,7 +282,7 @@ export function activate(context: vscode.ExtensionContext): void {
         if (!label) return;
       }
       await actions.rename(id, label);
-      sessionTreeProvider.refresh();
+      sessionRepoRef?.fire();
     },
   );
 
