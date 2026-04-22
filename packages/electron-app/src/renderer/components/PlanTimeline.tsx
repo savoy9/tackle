@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Phase } from '@chartroom/shared';
+import type { Phase } from '@tackle/shared';
 
 interface PlanTimelineProps {
   phases: Phase[];

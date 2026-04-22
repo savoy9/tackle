@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import App from '../App';
-import type { Task } from '@chartroom/shared';
+import type { Task } from '@tackle/shared';
 
 const mockTasks: Task[] = [
   {

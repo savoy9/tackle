@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { Task, Phase } from '@chartroom/shared';
+import type { Task, Phase } from '@tackle/shared';
 import type { ManagedSessionInfo } from '../types';
 import { PlanTimeline } from './PlanTimeline';
 

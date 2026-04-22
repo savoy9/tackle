@@ -1,4 +1,4 @@
-import type { Task } from '@chartroom/shared';
+import type { Task } from '@tackle/shared';
 import type { Database } from './db';
 
 export interface UpsertTask {

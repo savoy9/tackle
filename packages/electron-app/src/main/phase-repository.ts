@@ -1,4 +1,4 @@
-import type { Phase } from '@chartroom/shared';
+import type { Phase } from '@tackle/shared';
 import type { Database } from './db';
 
 export interface CreatePhaseOptions {

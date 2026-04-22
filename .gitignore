@@ -3,6 +3,6 @@ dist/
 out/
 .vite/
 *.tsbuildinfo
-.chartroom/
+.tackle/
 .env
 .env.local

@@ -1,4 +1,4 @@
-import type { Task, SyncResult, Plan, Phase } from '@chartroom/shared';
+import type { Task, SyncResult, Plan, Phase } from '@tackle/shared';
 
 export type { SyncResult };
 

@@ -1,4 +1,4 @@
-import type { Task, Phase } from '@chartroom/shared';
+import type { Task, Phase } from '@tackle/shared';
 import type { Database } from './db';
 import type { PsmuxManager } from './psmux-manager';
 import { SessionManager } from './session-manager';

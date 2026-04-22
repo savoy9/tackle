@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import type { Task } from '@chartroom/shared';
+import type { Task } from '@tackle/shared';
 import type { ManagedSessionInfo } from './types';
 import { Divider, collapseButtonStyle } from './components/PanelHeader';
 import { TaskPanel } from './panels/TaskPanel';

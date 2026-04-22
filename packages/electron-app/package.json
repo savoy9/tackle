@@ -15,7 +15,7 @@
     "test:watch": "bun --bun vitest"
   },
   "dependencies": {
-    "@chartroom/shared": "workspace:*",
+    "@tackle/shared": "workspace:*",
     "@octokit/rest": "^22.0.1",
     "better-sqlite3": "^12.9.0",
     "node-pty": "^1.1.0",

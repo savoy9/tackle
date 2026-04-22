@@ -1,4 +1,4 @@
-import type { Plan } from '@chartroom/shared';
+import type { Plan } from '@tackle/shared';
 import type { Database } from './db';
 
 export interface CreatePlanOptions {

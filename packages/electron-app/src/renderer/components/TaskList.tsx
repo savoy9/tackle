@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Task } from '@chartroom/shared';
+import type { Task } from '@tackle/shared';
 
 export function TaskList({
   tasks,

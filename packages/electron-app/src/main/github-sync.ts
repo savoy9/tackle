@@ -1,4 +1,4 @@
-import type { SyncResult } from '@chartroom/shared';
+import type { SyncResult } from '@tackle/shared';
 import type { Octokit } from '@octokit/rest';
 import type { TaskRepository, UpsertTask } from './task-repository';
 

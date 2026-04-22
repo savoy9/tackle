@@ -1,5 +1,5 @@
 {
-  "name": "@chartroom/shared",
+  "name": "@tackle/shared",
   "version": "0.1.0",
   "private": true,
   "main": "./src/index.ts",

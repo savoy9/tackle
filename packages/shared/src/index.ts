@@ -1,3 +1,7 @@
+// ── Domain types ──
+
+export type SessionKind = 'plan' | 'implement' | 'review' | 'debug' | 'test' | 'pilot' | 'shell';
+
 export interface Task {
   id: number;
   external_id: string;
@@ -15,17 +19,16 @@ export interface Session {
   task_id: number | null;
   phase_id: number | null;
   name: string;
-  kind: 'agent' | 'terminal';
+  kind: SessionKind;
   status: 'running' | 'completed' | 'stopped';
-  psmux_session: string;
+  psmux_name: string;
+  tab_label: string;
+  agent: string | null;
+  worktree_path: string | null;
+  sort_order: number;
+  claude_session_id: string | null;
   started_at: string;
   ended_at: string | null;
-}
-
-export interface SyncResult {
-  success: boolean;
-  synced?: number;
-  error?: string;
 }
 
 export interface Plan {
@@ -47,8 +50,28 @@ export interface Phase {
   created_at: string;
 }
 
-export interface TerminalSessionInfo {
-  id: string;
-  status: 'running' | 'exited';
-  pid: number;
+export interface TerminalPlacement {
+  session_id: number;
+  group_index: number;
 }
+
+export interface LayoutState {
+  task_id: string;
+  editor_layout: Record<string, unknown>;
+  terminal_placements: TerminalPlacement[];
+  review_files: string[];
+  focused_session_id: string | null;
+  focused_group_index: number | null;
+}
+
+export interface SyncResult {
+  success: boolean;
+  synced?: number;
+  error?: string;
+}
+
+// ── Database layer ──
+export * from './db/index';
+
+// ── Psmux ──
+export { PsmuxBridge } from './psmux/index';

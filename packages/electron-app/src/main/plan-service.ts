@@ -1,4 +1,4 @@
-import type { Plan, Phase } from '@chartroom/shared';
+import type { Plan, Phase } from '@tackle/shared';
 import type { PlanRepository } from './plan-repository';
 import type { PhaseRepository } from './phase-repository';
 import { PlanParser } from './plan-parser';

@@ -1,15 +1,12 @@
 {
-  "name": "chartroom",
+  "name": "tackle",
   "private": true,
   "type": "module",
-  "description": "Agent session and task management tool",
+  "description": "Task-scoped workspace manager for VS Code",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "dev": "bun --filter electron-app dev",
-    "build": "bun --filter electron-app build",
-    "start": "bun --filter electron-app start",
     "typecheck": "bun --filter '*' typecheck",
     "test": "bun --filter '*' test",
     "lint": "eslint 'packages/*/src/**/*.{ts,tsx}'",
@@ -26,8 +23,6 @@
     "@typescript-eslint/parser": "^8.58.2",
     "eslint": "^9",
     "eslint-config-prettier": "^10.1.8",
-    "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^7.1.1",
     "globals": "^17.5.0",
     "prettier": "^3.8.3"
   }

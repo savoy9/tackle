@@ -1,4 +1,4 @@
-import type { Session } from '@chartroom/shared';
+import type { Session } from '@tackle/shared';
 import type { Database } from './db';
 
 export interface CreateSessionOptions {

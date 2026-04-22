@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Task } from '@chartroom/shared';
+import type { Task } from '@tackle/shared';
 import { PanelHeader, collapseButtonStyle } from '../components/PanelHeader';
 import { TaskList } from '../components/TaskList';
 import { TaskDetail } from '../components/TaskDetail';
