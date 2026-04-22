@@ -3,6 +3,7 @@ import { ModeManager } from './mode';
 import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateRepository, PsmuxBridge } from '@tackle/shared';
 import { TaskService, TaskTreeProvider } from './task';
 import { TerminalOrchestrator } from './terminal';
+import { createVscodeAgentRegistry } from './agent';
 import { SessionTreeProvider } from './session';
 import { LayoutManager } from './layout';
 import { ScopeManager } from './scope';
@@ -52,7 +53,7 @@ export function activate(context: vscode.ExtensionContext): void {
       sessionTreeProvider.setRepository(sessionRepo);
 
       taskService = new TaskService(taskRepo);
-      terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux);
+      terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry());
       sessionTreeProvider.setHasTerminalFn((id) => terminalOrchestrator!.getTerminalForSession(id) !== undefined);
 
       const layoutManager = new LayoutManager(layoutRepo);
