@@ -30,6 +30,16 @@ describe('Database schema', () => {
     expect(tables).toEqual(['events', 'layout_states', 'phases', 'plans', 'sessions', 'summaries', 'tasks']);
   });
 
+  it('tasks table has worktree columns', () => {
+    const cols = db
+      .prepare<{ name: string }>("PRAGMA table_info('tasks')")
+      .all()
+      .map((r) => r.name);
+    expect(cols).toContain('worktree_path');
+    expect(cols).toContain('worktree_branch');
+    expect(cols).toContain('worktree_base_branch');
+  });
+
   it('sessions table has new columns', () => {
     const cols = db
       .prepare<{ name: string }>("PRAGMA table_info('sessions')")
@@ -249,6 +259,31 @@ describe('Session migrations fields', () => {
     expect(tasks[0].parent_external_id).toBe('ADO-100');
     const one = await repo.get(tasks[0].id);
     expect(one!.parent_external_id).toBe('ADO-100');
+  });
+
+  it('TaskRepository.setWorktree persists worktree fields', async () => {
+    const repo = new SqliteTaskRepository(db);
+    await repo.upsert({
+      external_id: 'GH-7',
+      external_system: 'github',
+      title: 'Worktree task',
+      description: '',
+      status: 'open',
+      assignee: null,
+    });
+    const tasks = await repo.list();
+    const id = tasks[0].id;
+
+    await repo.setWorktree(id, {
+      worktree_path: '/wt/7-foo',
+      worktree_branch: '7-foo',
+      worktree_base_branch: 'main',
+    });
+
+    const updated = await repo.get(id);
+    expect(updated!.worktree_path).toBe('/wt/7-foo');
+    expect(updated!.worktree_branch).toBe('7-foo');
+    expect(updated!.worktree_base_branch).toBe('main');
   });
 });
 

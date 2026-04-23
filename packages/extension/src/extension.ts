@@ -4,6 +4,7 @@ import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateReposit
 import type { SessionKind } from '@tackle/shared';
 import { TaskService } from './task';
 import { TerminalOrchestrator } from './terminal';
+import { WorktreeProvisioner } from './worktree';
 import { createVscodeAgentRegistry } from './agent';
 import { SessionActions, ObservableSessionRepository, NewSessionFlow } from './session';
 import { LayoutManager } from './layout';
@@ -74,7 +75,17 @@ export function activate(context: vscode.ExtensionContext): void {
       const psmux = new PsmuxBridge();
 
       taskService = new TaskService(taskRepo);
-      terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry());
+      const worktreeProvisioner = new WorktreeProvisioner({
+        workspaceRoot,
+        taskRepo,
+      });
+      terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry(), {
+        ensureForTask: async (taskId: number) => {
+          const task = await taskRepo.get(taskId);
+          if (!task) throw new Error(`Task ${taskId} not found`);
+          return worktreeProvisioner.ensureWorktreeForTask(task);
+        },
+      });
 
       sessionRepoRef = sessionRepo;
       sessionActions = new SessionActions({

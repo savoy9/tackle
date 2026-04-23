@@ -5,10 +5,25 @@ import type { AgentRegistry } from '../agent/agent-registry';
 
 /**
  * Pure helper: resolve cwd for a session, preferring its worktree_path
- * over the workspace root. Exported for standalone testing.
+ * over the task's worktree_path over the workspace root. Exported for
+ * standalone testing.
  */
-export function resolveCwd(session: Pick<Session, 'worktree_path'>, workspaceRoot: string): string {
-  return session.worktree_path ?? workspaceRoot;
+export function resolveCwd(
+  session: Pick<Session, 'worktree_path'>,
+  workspaceRoot: string,
+  task?: { worktree_path: string | null } | null,
+): string {
+  return session.worktree_path ?? task?.worktree_path ?? workspaceRoot;
+}
+
+export interface SessionWorktreeProvider {
+  /**
+   * Returns the worktree path/branch/baseBranch for `taskId`. Called lazily
+   * before the first Session spawn on a Task; subsequent spawns hit it again
+   * and the implementation is expected to be idempotent (returns the same
+   * result without duplicating disk state).
+   */
+  ensureForTask(taskId: number): Promise<{ path: string; branch: string; baseBranch: string }>;
 }
 
 export class TerminalOrchestrator {
@@ -20,6 +35,7 @@ export class TerminalOrchestrator {
     private sessionRepo: SessionRepository,
     private psmux: PsmuxBridge,
     private agentRegistry: AgentRegistry,
+    private worktreeProvider?: SessionWorktreeProvider,
   ) {}
 
   async createTerminal(opts: {
@@ -46,6 +62,21 @@ export class TerminalOrchestrator {
 
     const adapter = this.agentRegistry.resolve(opts.agent);
 
+    // Resolve effective worktree_path for this Session. If the caller passed
+    // an explicit override (α-isolation path), honor it; otherwise — for any
+    // kind that launches an Agent — ask the worktree provider to ensure the
+    // Task's worktree exists and use its path. Shell kind never triggers
+    // provisioning (no Agent → spawn in workspaceRoot).
+    let effectiveWorktreePath: string | null = opts.worktreePath ?? null;
+    if (
+      effectiveWorktreePath === null
+      && this.agentRegistry.shouldLaunch(opts.kind)
+      && this.worktreeProvider
+    ) {
+      const wt = await this.worktreeProvider.ensureForTask(opts.taskId);
+      effectiveWorktreePath = wt.path;
+    }
+
     const terminal = vscode.window.createTerminal({
       name: tabLabel,
       location: vscode.TerminalLocation.Editor,
@@ -62,7 +93,7 @@ export class TerminalOrchestrator {
       tab_label: tabLabel,
       sort_order: n,
       agent: adapter.name,
-      worktree_path: opts.worktreePath ?? null,
+      worktree_path: effectiveWorktreePath,
     });
 
     if (this.agentRegistry.shouldLaunch(opts.kind)) {

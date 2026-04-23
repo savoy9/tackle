@@ -9,6 +9,7 @@ import type {
   UpsertTask,
   CreateSession,
   UpdateSession,
+  TaskWorktreeFields,
 } from './repositories';
 
 function buildDynamicUpdate(
@@ -69,6 +70,15 @@ export class SqliteTaskRepository implements TaskRepository {
       this.db.exec('ROLLBACK');
       throw err;
     }
+    return Promise.resolve();
+  }
+
+  setWorktree(id: number, fields: TaskWorktreeFields): Promise<void> {
+    this.db
+      .prepare(
+        'UPDATE tasks SET worktree_path = ?, worktree_branch = ?, worktree_base_branch = ? WHERE id = ?',
+      )
+      .run(fields.worktree_path, fields.worktree_branch, fields.worktree_base_branch, id);
     return Promise.resolve();
   }
 }

@@ -39,11 +39,18 @@ export interface UpdateSession {
   ended_at?: string | null;
 }
 
+export interface TaskWorktreeFields {
+  worktree_path: string | null;
+  worktree_branch: string | null;
+  worktree_base_branch: string | null;
+}
+
 export interface TaskRepository {
   list(): Promise<Task[]>;
   get(id: number): Promise<Task | undefined>;
   upsert(task: UpsertTask): Promise<void>;
   upsertBatch(tasks: UpsertTask[]): Promise<void>;
+  setWorktree(id: number, fields: TaskWorktreeFields): Promise<void>;
 }
 
 export interface SessionRepository {
