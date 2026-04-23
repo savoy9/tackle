@@ -1,4 +1,5 @@
 import type { SessionKind } from '@tackle/shared';
+import type { AgentStateDetector } from './agent-state-detector';
 
 /**
  * Identifier for the `AgentStateDetector` implementation an Agent uses.
@@ -54,7 +55,30 @@ export class UnknownAgentError extends Error {
 export interface AgentRegistry {
   resolve(agentName?: string | null): AgentAdapter;
   shouldLaunch(kind: SessionKind): boolean;
+  /**
+   * Returns the shared `AgentStateDetector` instance for the named
+   * agent's `DetectorKind`, lazily constructed on first access. The
+   * orchestrator (#43) calls this once per Session lifecycle to start
+   * and stop watchers; multiple Sessions on the same kind share one
+   * detector instance (and one event channel — consumers filter by
+   * `sessionId`).
+   *
+   * Returns `null` when no detector factory is registered for the
+   * agent's kind (e.g. a future agent we haven't shipped a detector
+   * for, or a `shell`-only configuration).
+   */
+  getDetector(agentName?: string | null): AgentStateDetector | null;
+  /** Dispose every constructed detector instance. */
+  disposeDetectors(): void;
 }
+
+/**
+ * Factory map: `DetectorKind` → constructor producing a fresh
+ * `AgentStateDetector`. Injected at registry creation so the registry
+ * itself is decoupled from any specific detector implementation
+ * (Claude Code today, future agents tomorrow).
+ */
+export type DetectorFactories = Partial<Record<DetectorKind, () => AgentStateDetector>>;
 
 const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
   'agency-cc': {
@@ -71,8 +95,12 @@ const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
   },
 };
 
-export function createAgentRegistry(config: ConfigReader): AgentRegistry {
-  return {
+export function createAgentRegistry(
+  config: ConfigReader,
+  detectorFactories: DetectorFactories = {},
+): AgentRegistry {
+  const detectorInstances = new Map<DetectorKind, AgentStateDetector>();
+  const registry: AgentRegistry = {
     resolve(agentName?: string | null): AgentAdapter {
       const name = agentName ?? config.getDefault();
       const adapter = BUILTIN_ADAPTERS[name];
@@ -82,5 +110,21 @@ export function createAgentRegistry(config: ConfigReader): AgentRegistry {
     shouldLaunch(kind: SessionKind): boolean {
       return kind !== 'shell';
     },
+    getDetector(agentName?: string | null): AgentStateDetector | null {
+      const adapter = registry.resolve(agentName);
+      const factory = detectorFactories[adapter.detector];
+      if (!factory) return null;
+      let inst = detectorInstances.get(adapter.detector);
+      if (!inst) {
+        inst = factory();
+        detectorInstances.set(adapter.detector, inst);
+      }
+      return inst;
+    },
+    disposeDetectors(): void {
+      for (const d of detectorInstances.values()) d.dispose();
+      detectorInstances.clear();
+    },
   };
+  return registry;
 }

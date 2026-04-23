@@ -48,4 +48,8 @@ export class ObservableSessionRepository implements SessionRepository {
     await this.inner.softDelete(id);
     this.fire();
   }
+  async setAgentState(id: number, state: 'idle' | 'working' | 'waiting'): Promise<void> {
+    await this.inner.setAgentState(id, state);
+    this.fire();
+  }
 }

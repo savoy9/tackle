@@ -61,6 +61,12 @@ export interface SessionRepository {
   update(id: number, fields: UpdateSession): Promise<void>;
   complete(id: number): Promise<void>;
   softDelete(id: number): Promise<void>;
+  /**
+   * Hot-path write for AgentStateDetector transitions. Updates only the
+   * `agent_state` column without touching any other field, so we can fire
+   * cheaply on every detector event without rewriting the whole row.
+   */
+  setAgentState(id: number, state: 'idle' | 'working' | 'waiting'): Promise<void>;
 }
 
 export interface LayoutStateRepository {
