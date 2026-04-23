@@ -3,68 +3,163 @@
 exports[`render snapshots — canonical Detail Mode states (#31) > Detail with externally-closed indicator 1`] = `
 "<!doctype html>
 <html><head><meta charset="utf-8"><style>
-  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
-  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+:root {
+  --tk-bg: #f5f1ea;
+  --tk-card-bg: #faf7f1;
+  --tk-card-bg-active: #ffffff;
+  --tk-card-bg-hover: #efeae1;
+  --tk-card-bg-closed: #ece7dd;
+  --tk-stroke: #d8d1c2;
+  --tk-stroke-muted: #e6e0d2;
+  --tk-accent: #d97a32;
+  --tk-accent-soft: rgba(217, 122, 50, 0.45);
+  --tk-fg: #2a2622;
+  --tk-fg-muted: #6b6358;
+  --tk-shadow-active: 0 1px 2px rgba(40, 32, 20, 0.08), 0 2px 6px rgba(40, 32, 20, 0.06);
+  --tk-description-bg: #efeae1;
+
+  --tk-radius-card: 5px;
+  --tk-stroke-width: 1px;
+  --tk-pad-card: 4px;
+  --tk-gap-card: 3px;
+
+  --tk-dur-hover: 120ms;
+  --tk-dur-active: 150ms;
+  --tk-dur-detail: 180ms;
+  --tk-ease: ease-out;
+}
+
+[data-theme="dark"] {
+  --tk-bg: #1a1f26;
+  --tk-card-bg: #232a33;
+  --tk-card-bg-active: #2c3540;
+  --tk-card-bg-hover: #2a323c;
+  --tk-card-bg-closed: #1f242b;
+  --tk-stroke: #38424f;
+  --tk-stroke-muted: #2a323c;
+  --tk-accent: #4ec0d8;
+  --tk-accent-soft: rgba(78, 192, 216, 0.40);
+  --tk-fg: #e6ecf2;
+  --tk-fg-muted: #93a1b3;
+  --tk-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.40), 0 2px 6px rgba(0, 0, 0, 0.30);
+  --tk-description-bg: #1d232b;
+}
+
+[data-theme="hc-dark"] {
+  --tk-bg: #000000;
+  --tk-card-bg: #000000;
+  --tk-card-bg-active: #000000;
+  --tk-card-bg-hover: #0a0a0a;
+  --tk-card-bg-closed: #000000;
+  --tk-stroke: var(--vscode-contrastBorder, #ffffff);
+  --tk-stroke-muted: var(--vscode-contrastBorder, #ffffff);
+  --tk-accent: #00e5ff;
+  --tk-accent-soft: #00e5ff;
+  --tk-fg: #ffffff;
+  --tk-fg-muted: #ffffff;
+  --tk-shadow-active: none;
+  --tk-description-bg: #000000;
+}
+
+[data-theme="hc-light"] {
+  --tk-bg: #ffffff;
+  --tk-card-bg: #ffffff;
+  --tk-card-bg-active: #ffffff;
+  --tk-card-bg-hover: #f4f4f4;
+  --tk-card-bg-closed: #ffffff;
+  --tk-stroke: var(--vscode-contrastBorder, #000000);
+  --tk-stroke-muted: var(--vscode-contrastBorder, #000000);
+  --tk-accent: #b34700;
+  --tk-accent-soft: #b34700;
+  --tk-fg: #000000;
+  --tk-fg-muted: #000000;
+  --tk-shadow-active: none;
+  --tk-description-bg: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --tk-dur-hover: 0ms;
+    --tk-dur-active: 0ms;
+    --tk-dur-detail: 0ms;
+  }
+}
+
+  body {
+    color: var(--tk-fg);
+    background: var(--tk-bg);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    margin: 0;
+    padding: 0;
+  }
+  .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
-  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
-  .card:hover { background: var(--vscode-list-hoverBackground); }
-  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
-  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+
+  /* Idle Task Card primitive (#45):
+     rounded 5 px corners, 1 px stroke, --tk-card-bg fill,
+     4 px padding, 3 px gap. */
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-gap-card);
+    padding: var(--tk-pad-card);
+    margin: var(--tk-pad-card);
+    background: var(--tk-card-bg);
+    border: var(--tk-stroke-width) solid var(--tk-stroke);
+    border-radius: var(--tk-radius-card);
+    cursor: pointer;
+    color: var(--tk-fg);
+  }
+  .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
-  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .card .id { color: var(--vscode-descriptionForeground); }
-  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .card .rollup { color: var(--vscode-descriptionForeground); }
-  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 0 4px; }
+  .card .ext-icon { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .id { color: var(--tk-fg-muted); }
+  .card .parent { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .rollup { color: var(--tk-fg-muted); }
+  .card .branch { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .new-session { color: var(--tk-accent); cursor: pointer; }
+
   .session-rows { padding: 0 10px 6px 24px; }
   .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
-  .session-row:hover { background: var(--vscode-list-hoverBackground); }
   .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
-  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
-  .list-header { padding: 6px 12px; color: var(--vscode-descriptionForeground); font-size: 0.9em; }
-  .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--vscode-descriptionForeground); user-select: none; }
-  .closed-folder:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .icon-btn { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 0 3px; }
+  .session-divider { height: 1px; background: var(--tk-stroke-muted); margin: 4px 0; opacity: 0.6; }
+
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
-  .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .closed-row:hover { background: var(--vscode-list-hoverBackground); }
+  .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
   .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
-  .closed-row .id { color: var(--vscode-descriptionForeground); }
-  .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .closed-row .id { color: var(--tk-fg-muted); }
+  .closed-row .date { color: var(--tk-fg-muted); font-size: 0.85em; }
+
   .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
-  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
-  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
   .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
-  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
   .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
-  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
-  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
-  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
-  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
-  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-overflow { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }
   .detail-description pre { overflow-x: auto; }
   .detail-sessions { margin-top: 6px; flex-shrink: 0; }
-  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
-  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
-  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--tk-accent); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-empty { color: var(--tk-fg-muted); padding: 4px; font-size: 0.9em; }
   .detail-footer { margin-top: 8px; }
-  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-rule { border: none; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); margin: 0 0 4px 0; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
-  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
-  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; color: var(--tk-fg); }
   .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
 </style></head><body><div class="tackle-detail">
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
@@ -109,68 +204,163 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
 exports[`render snapshots — canonical Detail Mode states (#31) > Detail with no sessions 1`] = `
 "<!doctype html>
 <html><head><meta charset="utf-8"><style>
-  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
-  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+:root {
+  --tk-bg: #f5f1ea;
+  --tk-card-bg: #faf7f1;
+  --tk-card-bg-active: #ffffff;
+  --tk-card-bg-hover: #efeae1;
+  --tk-card-bg-closed: #ece7dd;
+  --tk-stroke: #d8d1c2;
+  --tk-stroke-muted: #e6e0d2;
+  --tk-accent: #d97a32;
+  --tk-accent-soft: rgba(217, 122, 50, 0.45);
+  --tk-fg: #2a2622;
+  --tk-fg-muted: #6b6358;
+  --tk-shadow-active: 0 1px 2px rgba(40, 32, 20, 0.08), 0 2px 6px rgba(40, 32, 20, 0.06);
+  --tk-description-bg: #efeae1;
+
+  --tk-radius-card: 5px;
+  --tk-stroke-width: 1px;
+  --tk-pad-card: 4px;
+  --tk-gap-card: 3px;
+
+  --tk-dur-hover: 120ms;
+  --tk-dur-active: 150ms;
+  --tk-dur-detail: 180ms;
+  --tk-ease: ease-out;
+}
+
+[data-theme="dark"] {
+  --tk-bg: #1a1f26;
+  --tk-card-bg: #232a33;
+  --tk-card-bg-active: #2c3540;
+  --tk-card-bg-hover: #2a323c;
+  --tk-card-bg-closed: #1f242b;
+  --tk-stroke: #38424f;
+  --tk-stroke-muted: #2a323c;
+  --tk-accent: #4ec0d8;
+  --tk-accent-soft: rgba(78, 192, 216, 0.40);
+  --tk-fg: #e6ecf2;
+  --tk-fg-muted: #93a1b3;
+  --tk-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.40), 0 2px 6px rgba(0, 0, 0, 0.30);
+  --tk-description-bg: #1d232b;
+}
+
+[data-theme="hc-dark"] {
+  --tk-bg: #000000;
+  --tk-card-bg: #000000;
+  --tk-card-bg-active: #000000;
+  --tk-card-bg-hover: #0a0a0a;
+  --tk-card-bg-closed: #000000;
+  --tk-stroke: var(--vscode-contrastBorder, #ffffff);
+  --tk-stroke-muted: var(--vscode-contrastBorder, #ffffff);
+  --tk-accent: #00e5ff;
+  --tk-accent-soft: #00e5ff;
+  --tk-fg: #ffffff;
+  --tk-fg-muted: #ffffff;
+  --tk-shadow-active: none;
+  --tk-description-bg: #000000;
+}
+
+[data-theme="hc-light"] {
+  --tk-bg: #ffffff;
+  --tk-card-bg: #ffffff;
+  --tk-card-bg-active: #ffffff;
+  --tk-card-bg-hover: #f4f4f4;
+  --tk-card-bg-closed: #ffffff;
+  --tk-stroke: var(--vscode-contrastBorder, #000000);
+  --tk-stroke-muted: var(--vscode-contrastBorder, #000000);
+  --tk-accent: #b34700;
+  --tk-accent-soft: #b34700;
+  --tk-fg: #000000;
+  --tk-fg-muted: #000000;
+  --tk-shadow-active: none;
+  --tk-description-bg: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --tk-dur-hover: 0ms;
+    --tk-dur-active: 0ms;
+    --tk-dur-detail: 0ms;
+  }
+}
+
+  body {
+    color: var(--tk-fg);
+    background: var(--tk-bg);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    margin: 0;
+    padding: 0;
+  }
+  .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
-  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
-  .card:hover { background: var(--vscode-list-hoverBackground); }
-  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
-  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+
+  /* Idle Task Card primitive (#45):
+     rounded 5 px corners, 1 px stroke, --tk-card-bg fill,
+     4 px padding, 3 px gap. */
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-gap-card);
+    padding: var(--tk-pad-card);
+    margin: var(--tk-pad-card);
+    background: var(--tk-card-bg);
+    border: var(--tk-stroke-width) solid var(--tk-stroke);
+    border-radius: var(--tk-radius-card);
+    cursor: pointer;
+    color: var(--tk-fg);
+  }
+  .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
-  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .card .id { color: var(--vscode-descriptionForeground); }
-  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .card .rollup { color: var(--vscode-descriptionForeground); }
-  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 0 4px; }
+  .card .ext-icon { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .id { color: var(--tk-fg-muted); }
+  .card .parent { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .rollup { color: var(--tk-fg-muted); }
+  .card .branch { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .new-session { color: var(--tk-accent); cursor: pointer; }
+
   .session-rows { padding: 0 10px 6px 24px; }
   .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
-  .session-row:hover { background: var(--vscode-list-hoverBackground); }
   .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
-  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
-  .list-header { padding: 6px 12px; color: var(--vscode-descriptionForeground); font-size: 0.9em; }
-  .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--vscode-descriptionForeground); user-select: none; }
-  .closed-folder:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .icon-btn { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 0 3px; }
+  .session-divider { height: 1px; background: var(--tk-stroke-muted); margin: 4px 0; opacity: 0.6; }
+
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
-  .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .closed-row:hover { background: var(--vscode-list-hoverBackground); }
+  .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
   .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
-  .closed-row .id { color: var(--vscode-descriptionForeground); }
-  .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .closed-row .id { color: var(--tk-fg-muted); }
+  .closed-row .date { color: var(--tk-fg-muted); font-size: 0.85em; }
+
   .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
-  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
-  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
   .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
-  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
   .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
-  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
-  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
-  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
-  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
-  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-overflow { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }
   .detail-description pre { overflow-x: auto; }
   .detail-sessions { margin-top: 6px; flex-shrink: 0; }
-  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
-  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
-  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--tk-accent); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-empty { color: var(--tk-fg-muted); padding: 4px; font-size: 0.9em; }
   .detail-footer { margin-top: 8px; }
-  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-rule { border: none; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); margin: 0 0 4px 0; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
-  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
-  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; color: var(--tk-fg); }
   .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
 </style></head><body><div class="tackle-detail">
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
@@ -201,68 +391,163 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
 exports[`render snapshots — canonical Detail Mode states (#31) > Detail with populated description + mixed sessions + footer 1`] = `
 "<!doctype html>
 <html><head><meta charset="utf-8"><style>
-  body { color: var(--vscode-foreground); background: var(--vscode-sideBar-background); font-family: var(--vscode-font-family); font-size: var(--vscode-font-size); margin: 0; padding: 0; }
-  .tackle-empty { padding: 12px; color: var(--vscode-descriptionForeground); }
+:root {
+  --tk-bg: #f5f1ea;
+  --tk-card-bg: #faf7f1;
+  --tk-card-bg-active: #ffffff;
+  --tk-card-bg-hover: #efeae1;
+  --tk-card-bg-closed: #ece7dd;
+  --tk-stroke: #d8d1c2;
+  --tk-stroke-muted: #e6e0d2;
+  --tk-accent: #d97a32;
+  --tk-accent-soft: rgba(217, 122, 50, 0.45);
+  --tk-fg: #2a2622;
+  --tk-fg-muted: #6b6358;
+  --tk-shadow-active: 0 1px 2px rgba(40, 32, 20, 0.08), 0 2px 6px rgba(40, 32, 20, 0.06);
+  --tk-description-bg: #efeae1;
+
+  --tk-radius-card: 5px;
+  --tk-stroke-width: 1px;
+  --tk-pad-card: 4px;
+  --tk-gap-card: 3px;
+
+  --tk-dur-hover: 120ms;
+  --tk-dur-active: 150ms;
+  --tk-dur-detail: 180ms;
+  --tk-ease: ease-out;
+}
+
+[data-theme="dark"] {
+  --tk-bg: #1a1f26;
+  --tk-card-bg: #232a33;
+  --tk-card-bg-active: #2c3540;
+  --tk-card-bg-hover: #2a323c;
+  --tk-card-bg-closed: #1f242b;
+  --tk-stroke: #38424f;
+  --tk-stroke-muted: #2a323c;
+  --tk-accent: #4ec0d8;
+  --tk-accent-soft: rgba(78, 192, 216, 0.40);
+  --tk-fg: #e6ecf2;
+  --tk-fg-muted: #93a1b3;
+  --tk-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.40), 0 2px 6px rgba(0, 0, 0, 0.30);
+  --tk-description-bg: #1d232b;
+}
+
+[data-theme="hc-dark"] {
+  --tk-bg: #000000;
+  --tk-card-bg: #000000;
+  --tk-card-bg-active: #000000;
+  --tk-card-bg-hover: #0a0a0a;
+  --tk-card-bg-closed: #000000;
+  --tk-stroke: var(--vscode-contrastBorder, #ffffff);
+  --tk-stroke-muted: var(--vscode-contrastBorder, #ffffff);
+  --tk-accent: #00e5ff;
+  --tk-accent-soft: #00e5ff;
+  --tk-fg: #ffffff;
+  --tk-fg-muted: #ffffff;
+  --tk-shadow-active: none;
+  --tk-description-bg: #000000;
+}
+
+[data-theme="hc-light"] {
+  --tk-bg: #ffffff;
+  --tk-card-bg: #ffffff;
+  --tk-card-bg-active: #ffffff;
+  --tk-card-bg-hover: #f4f4f4;
+  --tk-card-bg-closed: #ffffff;
+  --tk-stroke: var(--vscode-contrastBorder, #000000);
+  --tk-stroke-muted: var(--vscode-contrastBorder, #000000);
+  --tk-accent: #b34700;
+  --tk-accent-soft: #b34700;
+  --tk-fg: #000000;
+  --tk-fg-muted: #000000;
+  --tk-shadow-active: none;
+  --tk-description-bg: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --tk-dur-hover: 0ms;
+    --tk-dur-active: 0ms;
+    --tk-dur-detail: 0ms;
+  }
+}
+
+  body {
+    color: var(--tk-fg);
+    background: var(--tk-bg);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    margin: 0;
+    padding: 0;
+  }
+  .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
-  .card { position: relative; padding: 6px 10px 6px 12px; cursor: pointer; border-left: 3px solid transparent; }
-  .card:hover { background: var(--vscode-list-hoverBackground); }
-  .card.active { border-left: 3px solid var(--vscode-focusBorder); background: var(--vscode-list-inactiveSelectionBackground); }
-  .card .line { display: flex; align-items: center; gap: 6px; min-height: 18px; }
+
+  /* Idle Task Card primitive (#45):
+     rounded 5 px corners, 1 px stroke, --tk-card-bg fill,
+     4 px padding, 3 px gap. */
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-gap-card);
+    padding: var(--tk-pad-card);
+    margin: var(--tk-pad-card);
+    background: var(--tk-card-bg);
+    border: var(--tk-stroke-width) solid var(--tk-stroke);
+    border-radius: var(--tk-radius-card);
+    cursor: pointer;
+    color: var(--tk-fg);
+  }
+  .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
-  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 4px; }
-  .card .line1 .activate:hover, .card .line1 .overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .card .ext-icon { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .card .id { color: var(--vscode-descriptionForeground); }
-  .card .parent { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .card .rollup { color: var(--vscode-descriptionForeground); }
-  .card .branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
-  .card .new-session { color: var(--vscode-textLink-foreground); cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 0 4px; }
+  .card .ext-icon { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .id { color: var(--tk-fg-muted); }
+  .card .parent { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .rollup { color: var(--tk-fg-muted); }
+  .card .branch { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .new-session { color: var(--tk-accent); cursor: pointer; }
+
   .session-rows { padding: 0 10px 6px 24px; }
   .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
-  .session-row:hover { background: var(--vscode-list-hoverBackground); }
   .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .session-row .icon-btn { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 0 3px; }
-  .session-row .icon-btn:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .session-divider { height: 1px; background: var(--vscode-panel-border); margin: 4px 0; opacity: 0.6; }
-  .list-header { padding: 6px 12px; color: var(--vscode-descriptionForeground); font-size: 0.9em; }
-  .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--vscode-descriptionForeground); user-select: none; }
-  .closed-folder:hover { background: var(--vscode-list-hoverBackground); }
+  .session-row .icon-btn { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 0 3px; }
+  .session-divider { height: 1px; background: var(--tk-stroke-muted); margin: 4px 0; opacity: 0.6; }
+
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
-  .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .closed-row:hover { background: var(--vscode-list-hoverBackground); }
+  .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
   .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
-  .closed-row .id { color: var(--vscode-descriptionForeground); }
-  .closed-row .date { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .closed-row .id { color: var(--tk-fg-muted); }
+  .closed-row .date { color: var(--tk-fg-muted); font-size: 0.85em; }
+
   .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
   .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
-  .tackle-back { background: var(--vscode-button-background); color: var(--vscode-button-foreground); border: none; padding: 4px 12px; cursor: pointer; }
-  .tackle-back:hover { background: var(--vscode-button-hoverBackground); }
   .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
-  .detail-back { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
-  .detail-back:hover { background: var(--vscode-toolbar-hoverBackground); }
+  .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
   .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .detail-overflow { background: transparent; color: var(--vscode-foreground); border: none; cursor: pointer; padding: 2px 6px; }
-  .detail-overflow:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .detail-breadcrumb { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
-  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--vscode-descriptionForeground); font-size: 0.9em; margin-bottom: 2px; }
-  .detail-branch { color: var(--vscode-descriptionForeground); font-size: 0.85em; margin-bottom: 2px; }
-  .detail-closed-indicator { color: var(--vscode-descriptionForeground); font-style: italic; font-size: 0.85em; margin: 4px 0; }
-  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; border: 1px solid var(--vscode-panel-border); }
+  .detail-overflow { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }
   .detail-description pre { overflow-x: auto; }
   .detail-sessions { margin-top: 6px; flex-shrink: 0; }
-  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: 1px solid var(--vscode-panel-border); }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
-  .detail-sessions-add { background: transparent; color: var(--vscode-textLink-foreground); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
-  .detail-sessions-add:hover { background: var(--vscode-toolbar-hoverBackground); }
-  .detail-sessions-empty { color: var(--vscode-descriptionForeground); padding: 4px; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--tk-accent); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-empty { color: var(--tk-fg-muted); padding: 4px; font-size: 0.9em; }
   .detail-footer { margin-top: 8px; }
-  .detail-footer-rule { border: none; border-top: 1px solid var(--vscode-panel-border); margin: 0 0 4px 0; }
+  .detail-footer-rule { border: none; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); margin: 0 0 4px 0; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
-  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
-  .detail-footer-row:hover { background: var(--vscode-list-hoverBackground); }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; color: var(--tk-fg); }
   .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .detail-footer-row .id { color: var(--vscode-descriptionForeground); font-size: 0.85em; }
+  .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
 </style></head><body><div class="tackle-detail">
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>

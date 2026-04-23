@@ -21,8 +21,11 @@ export type InboundMessage =
   | { type: 'removeSession'; sessionId: number }
   | { type: 'sessionOverflow'; sessionId: number };
 
+import type { ThemeKind } from './theme';
+
 export type OutboundMessage =
-  | { type: 'render'; html: string };
+  | { type: 'render'; html: string }
+  | { type: 'themeKind'; kind: ThemeKind };
 
 // Minimal shape of the object returned by `acquireVsCodeApi()` that we care about.
 export interface WebviewPoster {
