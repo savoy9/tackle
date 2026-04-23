@@ -23,6 +23,7 @@ function createMocks() {
   const sessions: Session[] = [];
 
   const mockPsmux = {
+    binary: 'tmux',
     createSession: vi.fn(),
     killSession: vi.fn(),
     hasSession: vi.fn(() => true),
