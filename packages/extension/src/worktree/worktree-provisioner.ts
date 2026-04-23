@@ -53,6 +53,17 @@ function gitTry(cwd: string, args: string[]): { ok: boolean; stdout: string; std
 }
 
 /**
+ * Returns true when `cwd` is inside a git working tree (the main checkout or
+ * any linked worktree). Returns false for non-git directories or when `git`
+ * is unavailable.
+ */
+export function isGitWorkspace(cwd: string): boolean {
+  if (!existsSync(cwd)) return false;
+  const out = gitTry(cwd, ['rev-parse', '--is-inside-work-tree']);
+  return out.ok && out.stdout.trim() === 'true';
+}
+
+/**
  * Returns true when `cwd` is itself a git worktree (its `.git` is a worktree
  * gitfile under the main repo's `.git/worktrees/` directory). The repo's
  * main checkout returns false.
@@ -76,7 +87,17 @@ export class WorktreeProvisioner {
   async ensureWorktreeForTask(task: Task): Promise<WorktreeProvisionResult> {
     const workspaceRoot = this.deps.workspaceRoot;
 
+    // Hard-fail early when the workspace is not a git repo. We do this before
+    // touching the DB so no partial state is written.
+    if (!isGitWorkspace(workspaceRoot)) {
+      throw new Error(
+        `Tackle requires a git repository. The current workspace (${workspaceRoot}) is not a git repo. Initialize one with \`git init\` or open a folder inside a git repo.`,
+      );
+    }
+
     // Idempotent: if Task already has a worktree path on disk, return it.
+    // Tackle never inspects, asserts, or mutates the worktree contents — a
+    // dirty tree or a manually-checked-out branch is preserved as-is.
     const fresh = (await this.deps.taskRepo.get(task.id)) ?? task;
     if (
       fresh.worktree_path
@@ -89,6 +110,30 @@ export class WorktreeProvisioner {
         branch: fresh.worktree_branch,
         baseBranch: fresh.worktree_base_branch,
       };
+    }
+
+    // Missing-worktree recovery: the Task row points at a worktree path that
+    // was deleted from disk. Prune the stale registration and recreate it at
+    // the same path on the same branch. Silent — no user prompt.
+    if (
+      fresh.worktree_path
+      && fresh.worktree_branch
+      && fresh.worktree_base_branch
+      && !existsSync(fresh.worktree_path)
+    ) {
+      // Clear any stale `git worktree` registration for the missing path.
+      gitTry(workspaceRoot, ['worktree', 'prune']);
+      const add = gitTry(workspaceRoot, ['worktree', 'add', fresh.worktree_path, fresh.worktree_branch]);
+      if (!add.ok) {
+        throw new Error(`git worktree add (recovery) failed: ${add.stderr}`);
+      }
+      const result: WorktreeProvisionResult = {
+        path: fresh.worktree_path,
+        branch: fresh.worktree_branch,
+        baseBranch: fresh.worktree_base_branch,
+      };
+      await this.persist(task.id, result);
+      return result;
     }
 
     // Workspace is itself a worktree → reuse it; skip nested creation.
