@@ -1,11 +1,10 @@
 import * as vscode from 'vscode';
 import { ModeManager } from './mode';
 import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateRepository, PsmuxBridge } from '@tackle/shared';
-import type { SessionKind } from '@tackle/shared';
 import { TaskService } from './task';
 import { TerminalOrchestrator } from './terminal';
 import { createVscodeAgentRegistry } from './agent';
-import { SessionActions, ObservableSessionRepository, NewSessionFlow } from './session';
+import { SessionActions, ObservableSessionRepository, NewSessionFlow, buildKindQuickPickItems } from './session';
 import { LayoutManager } from './layout';
 import { ScopeManager } from './scope';
 import { SidebarController, SidebarViewProvider } from './sidebar';
@@ -177,11 +176,11 @@ export function activate(context: vscode.ExtensionContext): void {
       sessions: sessionRepoRef,
       orchestrator: terminalOrchestrator,
       scope: scopeManager,
-      pickKind: async () =>
-        (await vscode.window.showQuickPick(
-          ['plan', 'implement', 'review', 'debug', 'test', 'pilot', 'shell'],
-          { placeHolder: 'Session kind' },
-        )) as SessionKind | undefined,
+      pickKind: async () => {
+        const items = buildKindQuickPickItems();
+        const picked = await vscode.window.showQuickPick(items, { placeHolder: 'Session kind' });
+        return picked?.kind;
+      },
     });
 
     try {
