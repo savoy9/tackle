@@ -1,13 +1,27 @@
-// Task Card primitive (#45) — idle state only. Future slices add the
-// state matrix (Active / Running / Hover / Closed) on top.
+// Task Card primitive — state matrix (#46) layered on the idle primitive
+// landed in #45.
 //
 // Visual identity contract: rounded 5 px, 1 px stroke, --tk-card-bg fill,
 // 4 px padding, 3 px gap. All colors come from --tk-* tokens. No
 // var(--vscode-*) for color (font props excepted by convention).
+//
+// State modifiers (mutually exclusive on Active vs Running):
+//   card--active   — the user's Active Task. Stacks lift + shadow + accent
+//                    stroke + fill bump + full-opacity Edge Bar.
+//   card--running  — non-Active Task with a running Session. Soft Edge Bar.
+//   card--closed   — Closed Folder rows (sunken treatment, no Edge Bar).
+//   card--hover    — applied via CSS :hover (kept as a class for parity with
+//                    the spec's mental model and for snapshot stability when
+//                    a future test wants to assert a hover-explicit variant).
 
 import type { Task, Session } from '@tackle/shared';
 import { rollupGlyph, sessionGlyph } from './glyph';
 import { KIND_ICON } from '../session/kind-icon';
+import {
+  deriveEdgeBarState,
+  edgeBarClassFor,
+  EDGE_BAR_CLASS,
+} from './edge-bar';
 
 export { KIND_ICON };
 
@@ -100,8 +114,17 @@ export function renderCard(
     line3 = `<div class="line line3"><span class="rollup">${bits}</span></div>`;
   }
 
-  const cardClass = active ? 'card active' : 'card';
+  const cardClasses = ['card'];
+  const edgeState = deriveEdgeBarState(task, sessions, active);
+  if (active) cardClasses.push('card--active');
+  else if (edgeState !== 'off') cardClasses.push('card--running');
+  const cardClass = cardClasses.join(' ');
+  const edgeBar =
+    edgeState === 'off'
+      ? ''
+      : `<span class="${EDGE_BAR_CLASS} ${edgeBarClassFor(edgeState)}" aria-hidden="true"></span>`;
   return `<li class="${cardClass}" data-action="toggleExpanded" data-task-id="${task.id}">
+  ${edgeBar}
   <div class="line line1">
     <span class="glyph">${glyph}</span>
     <span class="title" data-action="enterDetail" data-task-id="${task.id}">${title}</span>

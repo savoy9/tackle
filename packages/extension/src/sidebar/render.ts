@@ -49,6 +49,51 @@ const COMPONENT_CSS = `
     border-radius: var(--tk-radius-card);
     cursor: pointer;
     color: var(--tk-fg);
+    transition:
+      background-color var(--tk-dur-hover) var(--tk-ease),
+      transform var(--tk-dur-active) var(--tk-ease),
+      box-shadow var(--tk-dur-active) var(--tk-ease),
+      border-color var(--tk-dur-active) var(--tk-ease);
+  }
+  /* Hover: subtle bg tint, no lift. (#46) */
+  .card:hover, .card.card--hover {
+    background: var(--tk-card-bg-hover);
+  }
+  /* Active card (#46): lift + shadow + accent stroke + fill bump. */
+  .card.card--active {
+    transform: translateY(-1px);
+    box-shadow: var(--tk-shadow-active);
+    border-color: var(--tk-accent);
+    background: var(--tk-card-bg-active);
+  }
+  /* Closed Folder rows (#46): sunken treatment, no stroke, inset shadow,
+     reduced glyph/meta opacity. Rendered as .closed-row.card--closed. */
+  .card--closed {
+    background: var(--tk-card-bg-closed);
+    border: none;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  .card--closed .glyph, .card--closed .id, .card--closed .date {
+    opacity: 0.6;
+  }
+
+  /* Edge Bar (#46): inset 1 px from card stroke so the rounded corner does
+     not clip a hard 3 px rectangle. Sits at the left edge of card padding. */
+  .edge-bar {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    bottom: 1px;
+    width: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .edge-bar--soft { background: var(--tk-accent-soft); }
+  .edge-bar--solid { background: var(--tk-accent); }
+  .edge-bar--off { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
   }
   .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
@@ -131,7 +176,7 @@ function renderClosedRow(t: import('@tackle/shared').Task): string {
   const title = escapeHtml(t.title);
   const extId = escapeHtml(t.external_id);
   const date = escapeHtml(closedDate(t));
-  return `<div class="closed-row" data-action="enterDetail" data-task-id="${t.id}">
+  return `<div class="closed-row card--closed" data-action="enterDetail" data-task-id="${t.id}">
   <span class="title">${title}</span>
   <span class="id">#${extId}</span>
   <span class="date">${date}</span>
