@@ -215,6 +215,46 @@ export class WorktreeProvisioner {
     return result;
   }
 
+  /**
+   * Create a per-Session α-isolation sub-worktree branched off the Task's
+   * existing worktree branch. Caller is responsible for storing the result on
+   * `Session.worktree_path`; this method does NOT touch the Task row.
+   *
+   * @param task           The Task that owns the parent worktree. Must already
+   *                       have `worktree_path` / `worktree_branch` populated
+   *                       (i.e. `ensureWorktreeForTask` ran first).
+   * @param sessionRef     A stable identifier (typically the Session id, or a
+   *                       monotonically-increasing per-task ordinal) used as
+   *                       the suffix on the sub-branch and sub-directory.
+   */
+  async createIsolatedWorktree(
+    task: Task,
+    sessionRef: number | string,
+  ): Promise<WorktreeProvisionResult> {
+    if (!task.worktree_path || !task.worktree_branch) {
+      throw new Error(
+        `Cannot α-isolate session: Task ${task.id} has no worktree yet. `
+        + `Call ensureWorktreeForTask first.`,
+      );
+    }
+    const workspaceRoot = this.deps.workspaceRoot;
+    const subBranch = `${task.worktree_branch}-${sessionRef}`;
+    const subDir = `${task.worktree_branch.replace(/[\\/]/g, '-')}-${sessionRef}`;
+    const subPath = this.resolveWorktreePath(workspaceRoot, subDir);
+
+    const add = gitTry(workspaceRoot, [
+      'worktree', 'add', '-b', subBranch, subPath, task.worktree_branch,
+    ]);
+    if (!add.ok) {
+      throw new Error(`git worktree add (α-isolation) failed: ${add.stderr}`);
+    }
+    return {
+      path: subPath,
+      branch: subBranch,
+      baseBranch: task.worktree_branch,
+    };
+  }
+
   private async persist(taskId: number, r: WorktreeProvisionResult): Promise<void> {
     await this.deps.taskRepo.setWorktree(taskId, {
       worktree_path: r.path,
