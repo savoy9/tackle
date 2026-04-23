@@ -91,4 +91,45 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
     };
     expect(render(state)).toMatchSnapshot();
   });
+
+  it('Detail with description, no sessions, no other tasks (#47)', () => {
+    const state: SidebarState = {
+      ...initialState,
+      mode: { kind: 'detail', taskId: 1 },
+      tasks: [task(1, 'With desc', { external_id: '8', synced_at: '2026-04-10' })],
+      descriptionsByTaskId: { 1: '<p>A short description.</p>' },
+    };
+    expect(render(state)).toMatchSnapshot();
+  });
+
+  it('Detail without description, with running sessions (#47)', () => {
+    const state: SidebarState = {
+      ...initialState,
+      mode: { kind: 'detail', taskId: 1 },
+      tasks: [task(1, 'Running detail', { external_id: '9', synced_at: '2026-04-10' })],
+      sessions: [
+        sess(10, 1, { status: 'running', agent_state: 'working', tab_label: 'impl' }),
+      ],
+      descriptionsByTaskId: { 1: '' },
+      activeTaskId: 1,
+    };
+    expect(render(state)).toMatchSnapshot();
+  });
+
+  it('Detail with footer mini-cards: one running, one idle (#47)', () => {
+    const state: SidebarState = {
+      ...initialState,
+      mode: { kind: 'detail', taskId: 1 },
+      tasks: [
+        task(1, 'Focus', { external_id: '1', synced_at: '2026-04-10' }),
+        task(2, 'Sibling running', { external_id: '2', synced_at: '2026-04-09' }),
+        task(3, 'Sibling idle', { external_id: '3', synced_at: '2026-04-08' }),
+      ],
+      sessions: [
+        sess(20, 2, { status: 'running' }),
+      ],
+      descriptionsByTaskId: { 1: '' },
+    };
+    expect(render(state)).toMatchSnapshot();
+  });
 });

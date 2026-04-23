@@ -22,6 +22,11 @@ import {
   edgeBarClassFor,
   EDGE_BAR_CLASS,
 } from './edge-bar';
+import {
+  renderSessionRow as renderSessionRowImpl,
+  renderSessionRows as renderSessionRowsImpl,
+  type RenderSessionRowOptions,
+} from './render-session-row';
 
 export { KIND_ICON };
 
@@ -51,32 +56,21 @@ export function sessionsByTask(sessions: Session[]): Map<number, Session[]> {
   return m;
 }
 
-export function renderSessionRow(sess: Session): string {
-  const glyph = sessionGlyph(sess);
-  const kind = KIND_ICON[sess.kind];
-  const label = escapeHtml(sess.tab_label || sess.name);
-  return `<div class="session-row" data-action="focusSession" data-session-id="${sess.id}">
-  <span class="kind">${kind}</span>
-  <span class="label">${label}</span>
-  <span class="glyph">${glyph}</span>
-  <button class="icon-btn stop" title="Stop" data-action="stopSession" data-session-id="${sess.id}">⏹</button>
-  <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="${sess.id}">✓</button>
-  <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="${sess.id}">⋯</button>
-</div>`;
+// Re-exports keep the old module surface working for callers that still
+// import from render-card. The split into render-session-row.ts (#47) lets
+// Detail Mode opt into hover-revealed action buttons via the surface flag.
+export function renderSessionRow(
+  sess: Session,
+  opts: RenderSessionRowOptions = {},
+): string {
+  return renderSessionRowImpl(sess, opts);
 }
 
-export function renderSessionRows(sessions: Session[]): string {
-  const active = sessions.filter((s) => s.status === 'running');
-  const inactive = sessions.filter((s) => s.status !== 'running');
-  const parts: string[] = [];
-  parts.push(`<div class="session-rows">`);
-  for (const s of active) parts.push(renderSessionRow(s));
-  if (inactive.length > 0) {
-    parts.push(`<div class="session-divider"></div>`);
-  }
-  for (const s of inactive) parts.push(renderSessionRow(s));
-  parts.push(`</div>`);
-  return parts.join('');
+export function renderSessionRows(
+  sessions: Session[],
+  opts: RenderSessionRowOptions = {},
+): string {
+  return renderSessionRowsImpl(sessions, opts);
 }
 
 export function renderCard(

@@ -6,20 +6,18 @@
 // inside the HC token blocks (--vscode-contrastBorder). No inline hex.
 
 import type { SidebarState } from './sidebar-state';
-import { rollupGlyph } from './glyph';
 import { sortTasks } from './sort';
-import { partitionTasks, isClosedStatus } from './closed';
+import { partitionTasks } from './closed';
 import { THEME_CSS } from './theme';
 import {
   escapeHtml,
-  EXT_ICON,
   renderCard,
-  renderSessionRow,
   sessionsByTask,
 } from './render-card';
+import { renderDetail } from './render-detail';
 
 // Re-export for any external import sites that still reference the old module.
-export { renderSessionRow } from './render-card';
+export { renderSessionRow } from './render-session-row';
 
 const COMPONENT_CSS = `
   body {
@@ -104,11 +102,40 @@ const COMPONENT_CSS = `
   .card .branch { color: var(--tk-fg-muted); font-size: 0.85em; }
   .card .new-session { color: var(--tk-accent); cursor: pointer; }
 
+  /* Session Row primitive (#47).
+     Surface variants:
+       .session-row              — list-expanded (default). Action buttons
+                                   are always visible.
+       .session-row--detail      — Detail Mode. Action buttons are hidden by
+                                   default and fade in on row hover (120 ms
+                                   ease-out per visual identity §6).
+     Inside Detail Mode the row is a pill: 12 px radius, full-width, 4x10
+     padding. */
   .session-rows { padding: 0 10px 6px 24px; }
   .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
   .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .session-row .icon-btn { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 0 3px; }
   .session-divider { height: 1px; background: var(--tk-stroke-muted); margin: 4px 0; opacity: 0.6; }
+
+  /* Detail Mode session row pill (#47). */
+  .session-row--detail {
+    border-radius: 12px;
+    width: 100%;
+    padding: 4px 10px;
+    box-sizing: border-box;
+  }
+  /* Hide actions by default in Detail Mode; fade in on row hover. */
+  .session-row--detail .icon-btn {
+    opacity: 0;
+    transition: opacity var(--tk-dur-hover) var(--tk-ease);
+  }
+  .session-row--detail:hover .icon-btn,
+  .session-row--detail:focus-within .icon-btn {
+    opacity: 1;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .session-row--detail .icon-btn { transition: none; }
+  }
 
   .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
   .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
@@ -118,31 +145,69 @@ const COMPONENT_CSS = `
   .closed-row .id { color: var(--tk-fg-muted); }
   .closed-row .date { color: var(--tk-fg-muted); font-size: 0.85em; }
 
-  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
-  .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
-  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  /* Detail Mode (#47): the entire surface is one expanded Active card.
+     Sections are separated by whitespace ONLY — no internal border or
+     border-top rules. */
+  .tackle-detail {
+    /* Override card defaults that don't make sense for the full-surface card. */
+    margin: 8px;
+    padding: 10px 12px;
+    gap: 6px;
+    box-sizing: border-box;
+    cursor: default;
+  }
+  .detail-header { display: flex; align-items: center; gap: 6px; }
   .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
   .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .detail-overflow { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
-  .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
-  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
-  .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; }
   .detail-branch-empty { color: var(--tk-fg-muted); font-style: italic; opacity: 0.8; }
-  .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
-  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
+  .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; }
+
+  /* Description area (#47): inset surface inside the Detail card.
+     8 px x 10 px padding, 4 px radius, 40 vh max height with internal scroll. */
+  .detail-description {
+    background: var(--tk-description-bg);
+    padding: 8px 10px;
+    border-radius: 4px;
+    max-height: 40vh;
+    overflow-y: auto;
+  }
   .detail-description img { max-width: 100%; height: auto; }
   .detail-description pre { overflow-x: auto; }
-  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
-  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
-  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+
+  .detail-sessions { display: flex; flex-direction: column; gap: 4px; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; }
   .detail-sessions-add { background: transparent; color: var(--tk-accent); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
   .detail-sessions-empty { color: var(--tk-fg-muted); padding: 4px; font-size: 0.9em; }
-  .detail-footer { margin-top: 8px; }
-  .detail-footer-rule { border: none; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); margin: 0 0 4px 0; }
-  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
-  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; color: var(--tk-fg); }
-  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
+
+  /* Section micro-labels (#47): 11 px / weight 600 per visual identity §4. */
+  .section-micro-label {
+    flex: 1 1 auto;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--tk-fg-muted);
+  }
+
+  /* Task Footer (#47): vertical list of 1-line mini-cards using the .card
+     primitive plus the .card--mini modifier. Renders OUTSIDE the detail
+     card on the plain sidebar background. */
+  .detail-footer { margin-top: 6px; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 28px); overflow-y: auto; }
+  .card--mini {
+    flex-direction: row;
+    align-items: center;
+    height: 24px;
+    padding: 0 8px;
+    margin: 2px 8px;
+    gap: 6px;
+  }
+  .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
 `;
 
 function renderList(state: SidebarState): string {
@@ -200,100 +265,9 @@ function renderClosedFolder(closed: import('@tackle/shared').Task[], open: boole
   return `${folder}<div class="closed-rows">${rows}</div>`;
 }
 
-function renderDetail(state: SidebarState, taskId: number): string {
-  const task = state.tasks.find((t) => t.id === taskId);
-  if (!task) {
-    return `<div class="tackle-detail">
-  <div class="detail-header">
-    <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
-    <span class="detail-title">#${taskId}</span>
-  </div>
-</div>`;
-  }
-
-  const title = escapeHtml(task.title);
-  const extIcon = EXT_ICON[task.external_system];
-  const extId = escapeHtml(task.external_id);
-  const status = escapeHtml(task.status);
-  const assignee = task.assignee ? escapeHtml(task.assignee) : '';
-
-  const header = `<div class="detail-header">
-    <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
-    <span class="detail-title">${title}</span>
-    <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="${task.id}">⋯</button>
-  </div>`;
-
-  const breadcrumb = task.parent_external_id
-    ? `<div class="detail-breadcrumb">↳ #${escapeHtml(task.parent_external_id)}</div>`
-    : '';
-
-  const identity = `<div class="detail-identity">
-    <span class="ext-icon">${extIcon}</span>
-    <span class="id">#${extId}</span>
-    <span class="status">${status}</span>
-    ${assignee ? `<span class="assignee">${assignee}</span>` : ''}
-  </div>`;
-
-  const taskSessions = state.sessions.filter((s) => s.task_id === task.id && !s.deleted_at);
-  const branchLine = task.worktree_branch
-    ? `<div class="detail-branch">🌿 ${escapeHtml(task.worktree_branch)}</div>`
-    : `<div class="detail-branch detail-branch-empty">🌿 no worktree yet</div>`;
-
-  const runningCount = taskSessions.filter((s) => s.status === 'running').length;
-  const closedIndicator =
-    isClosedStatus(task.status) && runningCount >= 1
-      ? `<div class="detail-closed-indicator">Externally closed — ${runningCount} session${runningCount === 1 ? '' : 's'} still running</div>`
-      : '';
-
-  const descHtml = state.descriptionsByTaskId?.[task.id] ?? '';
-  const description = `<div class="detail-description">${descHtml}</div>`;
-
-  const sessionsBody = taskSessions.length > 0
-    ? taskSessions.map((s) => renderSessionRow(s)).join('')
-    : `<div class="detail-sessions-empty">No sessions.</div>`;
-  const sessionsSection = `<div class="detail-sessions">
-    <div class="detail-sessions-header">
-      <span class="detail-sessions-label">Sessions</span>
-      <button class="detail-sessions-add" title="New Session" data-action="newSession" data-task-id="${task.id}">+</button>
-    </div>
-    <div class="detail-sessions-body">${sessionsBody}</div>
-  </div>`;
-
-  const otherTasks = state.tasks.filter((t) => t.id !== task.id);
-  let footer = '';
-  if (otherTasks.length > 0) {
-    const byTask = sessionsByTask(state.sessions);
-    const sorted = sortTasks(otherTasks, byTask);
-    const rows = sorted
-      .map((t) => {
-        const g = rollupGlyph(byTask.get(t.id) ?? []);
-        const tTitle = escapeHtml(t.title);
-        const tId = escapeHtml(t.external_id);
-        return `<li class="detail-footer-row" data-action="switchDetailTo" data-task-id="${t.id}" title="${tTitle}">
-      <span class="glyph">${g}</span>
-      <span class="title">${tTitle}</span>
-      <span class="id">#${tId}</span>
-    </li>`;
-      })
-      .join('');
-    footer = `<div class="detail-footer"><hr class="detail-footer-rule" /><ul class="detail-footer-list">${rows}</ul></div>`;
-  }
-
-  return `<div class="tackle-detail">
-  ${header}
-  ${breadcrumb}
-  ${identity}
-  ${branchLine}
-  ${closedIndicator}
-  ${description}
-  ${sessionsSection}
-  ${footer}
-</div>`;
-}
-
 export function render(state: SidebarState): string {
   const body =
-    state.mode === 'list' ? renderList(state) : renderDetail(state, state.mode.taskId);
+    state.mode === 'list' ? renderList(state) : renderDetail(state);
   return `<!doctype html>
 <html><head><meta charset="utf-8"><style>${THEME_CSS}${COMPONENT_CSS}</style></head><body>${body}</body></html>`;
 }
