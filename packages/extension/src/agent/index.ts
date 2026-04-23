@@ -18,3 +18,5 @@ export function createVscodeAgentRegistry(): AgentRegistry {
 }
 
 export * from './agent-registry';
+export * from './agent-state-detector';
+export * from './claude-jsonl-detector';

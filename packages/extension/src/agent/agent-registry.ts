@@ -1,6 +1,16 @@
 import type { SessionKind } from '@tackle/shared';
 
 /**
+ * Identifier for the `AgentStateDetector` implementation an Agent uses.
+ *
+ * A string tag (rather than an imported constructor) keeps the registry
+ * independent of detector wiring: the orchestrator (#43) looks up the
+ * detector instance by tag, so this module doesn't need to import
+ * detector code or carry its runtime dependencies.
+ */
+export type DetectorKind = 'ClaudeJsonlDetector';
+
+/**
  * Spawn adapter for a Tackle Agent.
  *
  * `command` is the executable the terminal orchestrator will launch.
@@ -8,11 +18,17 @@ import type { SessionKind } from '@tackle/shared';
  * Claude session id; both `agency-cc` and vanilla `claude` accept
  * `-r <id>` / `--resume <id>`, so the registry exposes this as a
  * uniform contract.
+ *
+ * `detector` names the `AgentStateDetector` implementation the agent
+ * uses to report `idle` / `working` / `waiting` transitions. Both
+ * built-in agents are Claude Code under the hood and share
+ * `ClaudeJsonlDetector`.
  */
 export interface AgentAdapter {
   name: string;
   command: string;
   resumeFlag(sessionId: string): string[];
+  detector: DetectorKind;
 }
 
 export interface ConfigReader {
@@ -45,11 +61,13 @@ const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
     name: 'agency-cc',
     command: 'agency-cc',
     resumeFlag: (sessionId: string) => ['-r', sessionId],
+    detector: 'ClaudeJsonlDetector',
   },
   claude: {
     name: 'claude',
     command: 'claude',
     resumeFlag: (sessionId: string) => ['-r', sessionId],
+    detector: 'ClaudeJsonlDetector',
   },
 };
 

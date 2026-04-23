@@ -50,6 +50,18 @@ describe('agent-registry', () => {
     });
   });
 
+  describe('detector', () => {
+    const registry = createAgentRegistry({ getDefault: () => 'agency-cc' });
+
+    it('agency-cc declares ClaudeJsonlDetector', () => {
+      expect(registry.resolve('agency-cc').detector).toBe('ClaudeJsonlDetector');
+    });
+
+    it('claude declares ClaudeJsonlDetector', () => {
+      expect(registry.resolve('claude').detector).toBe('ClaudeJsonlDetector');
+    });
+  });
+
   describe('createVscodeAgentRegistry', () => {
     it('reads the default agent from tackle.defaultAgent configuration', async () => {
       resetMocks();
