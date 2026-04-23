@@ -1,6 +1,7 @@
 export {
   WorktreeProvisioner,
   workspaceIsWorktree,
+  isGitWorkspace,
   slugifyTitle,
 } from './worktree-provisioner';
 export type {

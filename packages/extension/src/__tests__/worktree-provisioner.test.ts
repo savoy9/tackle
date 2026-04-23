@@ -160,6 +160,76 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     expect(branches).toContain('tackle/42');
   });
 
+  it('hard-fails with a clear error when workspaceRoot is not a git repo', async () => {
+    // Non-git directory: a fresh tempdir with no git init.
+    const nonGit = mkdtempSync(join(tmpdir(), 'tackle-nogit-'));
+    try {
+      const task = makeTask({ id: 1, external_id: '42', title: 'whatever' });
+      state.tasks.set(1, task);
+      const provisioner = new WorktreeProvisioner({ workspaceRoot: nonGit, taskRepo: repo, rootPath: wtRoot });
+      await expect(provisioner.ensureWorktreeForTask(task)).rejects.toThrow(/git repo|git repository|not a git/i);
+      // No partial state: Task row was not updated.
+      const updated = await repo.get(1);
+      expect(updated!.worktree_path).toBeNull();
+    } finally {
+      try { rmSync(nonGit, { recursive: true, force: true }); } catch { /* windows */ }
+    }
+  });
+
+  it('silently recreates the worktree when the directory was deleted from disk', async () => {
+    const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
+    state.tasks.set(1, task);
+
+    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const first = await provisioner.ensureWorktreeForTask(task);
+    expect(existsSync(first.path)).toBe(true);
+
+    // Simulate a dev manually deleting the worktree directory from disk.
+    rmSync(first.path, { recursive: true, force: true });
+    expect(existsSync(first.path)).toBe(false);
+
+    // Next spawn re-runs ensureWorktreeForTask silently → should recreate.
+    const refreshed = (await repo.get(1))!;
+    const second = await provisioner.ensureWorktreeForTask(refreshed);
+    expect(second.path).toBe(first.path);
+    expect(second.branch).toBe(first.branch);
+    expect(existsSync(second.path)).toBe(true);
+    // git worktree list should have exactly main + the recreated worktree
+    const lines = git(repoDir, 'worktree list').split(/\r?\n/).filter(Boolean);
+    expect(lines).toHaveLength(2);
+  });
+
+  it('does not inspect or mutate a dirty worktree or a manually-checked-out branch', async () => {
+    const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
+    state.tasks.set(1, task);
+
+    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const first = await provisioner.ensureWorktreeForTask(task);
+
+    // Dirty up the worktree (uncommitted file) and checkout a different branch.
+    writeFileSync(join(first.path, 'dirty.txt'), 'uncommitted\n');
+    git(first.path, 'checkout -q -b some-other-branch');
+
+    // Capture state before the second call.
+    const branchBefore = git(first.path, 'rev-parse --abbrev-ref HEAD');
+    const dirtyBefore = existsSync(join(first.path, 'dirty.txt'));
+    expect(branchBefore).toBe('some-other-branch');
+    expect(dirtyBefore).toBe(true);
+
+    // Spawning again on the same Task: should be a no-op on the worktree.
+    const refreshed = (await repo.get(1))!;
+    const second = await provisioner.ensureWorktreeForTask(refreshed);
+    expect(second.path).toBe(first.path);
+
+    // No branch switch, no file mutation.
+    const branchAfter = git(first.path, 'rev-parse --abbrev-ref HEAD');
+    expect(branchAfter).toBe('some-other-branch');
+    expect(existsSync(join(first.path, 'dirty.txt'))).toBe(true);
+    // No new worktree directories created.
+    const lines = git(repoDir, 'worktree list').split(/\r?\n/).filter(Boolean);
+    expect(lines).toHaveLength(2);
+  });
+
   it('when workspaceRoot is itself a worktree, returns workspaceRoot and skips nested creation', async () => {
     // Create a sibling worktree from the main repo, then point the
     // provisioner at that sibling as its workspaceRoot.
