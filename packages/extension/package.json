@@ -94,6 +94,10 @@
       {
         "command": "tackle.markSessionDone",
         "title": "Tackle: Mark Session Done"
+      },
+      {
+        "command": "tackle.removeTask",
+        "title": "Tackle: Remove Task"
       }
     ],
     "menus": {
