@@ -84,6 +84,18 @@ describe('TerminalOrchestrator', () => {
       const session = { worktree_path: null } as Session;
       expect(resolveCwd(session, '/workspace')).toBe('/workspace');
     });
+
+    it('falls back to task.worktree_path when session.worktree_path is null', () => {
+      const session = { worktree_path: null } as Session;
+      const task = { worktree_path: '/wt/task' } as { worktree_path: string | null };
+      expect(resolveCwd(session, '/workspace', task)).toBe('/wt/task');
+    });
+
+    it('session worktree_path wins over task worktree_path', () => {
+      const session = { worktree_path: '/wt/sess' } as Session;
+      const task = { worktree_path: '/wt/task' } as { worktree_path: string | null };
+      expect(resolveCwd(session, '/workspace', task)).toBe('/wt/sess');
+    });
   });
 
   describe('createTerminal', () => {
@@ -158,6 +170,46 @@ describe('TerminalOrchestrator', () => {
     it('does not send agent keys for shell kind', async () => {
       await orchestrator.createTerminal({ taskId: 1, taskSlug: 'x', kind: 'shell' });
       expect(mockPsmux.sendKeys).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('worktree provisioning', () => {
+    it('calls worktreeProvider before spawning when no session-level worktreePath', async () => {
+      const ensure = vi.fn(async (taskId: number) => ({
+        path: `/wt/task-${taskId}`,
+        branch: `${taskId}-x`,
+        baseBranch: 'main',
+      }));
+      orchestrator = new TerminalOrchestrator(mockSessionRepo, mockPsmux, mockAgentRegistry, {
+        ensureForTask: ensure,
+      });
+
+      const session = await orchestrator.createTerminal({ taskId: 99, taskSlug: 's', kind: 'implement' });
+
+      expect(ensure).toHaveBeenCalledWith(99);
+      expect(session.worktree_path).toBe('/wt/task-99');
+      expect(mockPsmux.sendKeys).toHaveBeenCalledWith(
+        expect.any(String),
+        'cd /wt/task-99 && agency-cc',
+      );
+    });
+
+    it('does not call worktreeProvider when explicit worktreePath is supplied', async () => {
+      const ensure = vi.fn(async () => ({ path: '/wt/no', branch: 'b', baseBranch: 'main' }));
+      orchestrator = new TerminalOrchestrator(mockSessionRepo, mockPsmux, mockAgentRegistry, {
+        ensureForTask: ensure,
+      });
+      await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'implement', worktreePath: '/wt/explicit' });
+      expect(ensure).not.toHaveBeenCalled();
+    });
+
+    it('does not call worktreeProvider for shell kind', async () => {
+      const ensure = vi.fn();
+      orchestrator = new TerminalOrchestrator(mockSessionRepo, mockPsmux, mockAgentRegistry, {
+        ensureForTask: ensure,
+      });
+      await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'shell' });
+      expect(ensure).not.toHaveBeenCalled();
     });
   });
 

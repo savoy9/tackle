@@ -11,6 +11,9 @@ export interface Task {
   status: string;
   assignee: string | null;
   parent_external_id: string | null;
+  worktree_path: string | null;
+  worktree_branch: string | null;
+  worktree_base_branch: string | null;
   synced_at: string;
   created_at: string;
 }
