@@ -35,6 +35,7 @@ function createMocks() {
     update: vi.fn(async () => {}),
     complete: vi.fn(async () => {}),
     softDelete: vi.fn(async () => {}),
+    setAgentState: vi.fn(async () => {}),
   } as unknown as SessionRepository;
 
   const orchestrator = {

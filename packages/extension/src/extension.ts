@@ -12,6 +12,11 @@ import { SidebarController, SidebarViewProvider } from './sidebar';
 import { checkSingleRootWorkspace, ensureTackleDir } from './guards';
 import { runLatencyBenchmark, formatResult } from './bench';
 
+// Module-level reference so `deactivate()` can release detectors and
+// terminal handles cleanly when VS Code shuts down. Set inside
+// `activate()` once the orchestrator is constructed.
+let activeOrchestrator: TerminalOrchestrator | undefined;
+
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Tackle: extension activate() called');
   const modeManager = new ModeManager(context);
@@ -86,6 +91,7 @@ export function activate(context: vscode.ExtensionContext): void {
           return worktreeProvisioner.ensureWorktreeForTask(task);
         },
       });
+      activeOrchestrator = terminalOrchestrator;
 
       sessionRepoRef = sessionRepo;
       sessionActions = new SessionActions({
@@ -118,6 +124,15 @@ export function activate(context: vscode.ExtensionContext): void {
       prevController?.dispose();
 
       scopeManager.restoreActiveTask();
+
+      // Re-attach detectors to any Session rows still marked `running`
+      // (psmux survives VS Code restarts per ADR-0003). Best-effort: a
+      // failure here shouldn't block the rest of activation.
+      try {
+        await terminalOrchestrator.resumeRunningDetectors();
+      } catch (err: unknown) {
+        console.error('Tackle: resumeRunningDetectors failed', err);
+      }
 
       context.subscriptions.push(
         vscode.window.onDidCloseTerminal((t) => {
@@ -319,4 +334,10 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(benchCmd);
 }
 
-export function deactivate(): void {}
+export function deactivate(): void {
+  // Release detectors (file watchers, polling timers) and terminals so
+  // VS Code shutdown is clean — psmux sessions stay alive on disk and
+  // get re-attached on next activation via `resumeRunningDetectors`.
+  activeOrchestrator?.disposeAll();
+  activeOrchestrator = undefined;
+}

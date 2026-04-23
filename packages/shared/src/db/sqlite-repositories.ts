@@ -153,6 +153,11 @@ export class SqliteSessionRepository implements SessionRepository {
     this.db.prepare(`UPDATE sessions SET deleted_at = datetime('now') WHERE id = ?`).run(id);
     return Promise.resolve();
   }
+
+  setAgentState(id: number, state: 'idle' | 'working' | 'waiting'): Promise<void> {
+    this.db.prepare('UPDATE sessions SET agent_state = ? WHERE id = ?').run(state, id);
+    return Promise.resolve();
+  }
 }
 
 interface LayoutStateRow {

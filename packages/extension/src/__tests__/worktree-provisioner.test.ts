@@ -222,8 +222,10 @@ describe('Integration: TerminalOrchestrator + WorktreeProvisioner', () => {
     };
 
     const agentRegistry = {
-      resolve: () => ({ name: 'agency-cc', command: 'agency-cc', resumeFlag: (id: string) => ['-r', id] }),
+      resolve: () => ({ name: 'agency-cc', command: 'agency-cc', resumeFlag: (id: string) => ['-r', id], detector: 'ClaudeJsonlDetector' }),
       shouldLaunch: (kind: string) => kind !== 'shell',
+      getDetector: () => null,
+      disposeDetectors: () => {},
     } as any;
 
     const orchestrator = new TerminalOrchestrator(sessionRepo, fakePsmux, agentRegistry, {
