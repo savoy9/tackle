@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import { ModeManager } from './mode';
 import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateRepository, PsmuxBridge } from '@tackle/shared';
-import { TaskService } from './task';
+import { TaskService, TaskRemover, type RemovePromptFn } from './task';
 import { TerminalOrchestrator } from './terminal';
 import { WorktreeProvisioner, createVscodeWorktreeConfigReader } from './worktree';
 import { createVscodeAgentRegistry } from './agent';
@@ -21,6 +21,7 @@ export function activate(context: vscode.ExtensionContext): void {
   let sessionActions: SessionActions | undefined;
   let scopeManager: ScopeManager | undefined;
   let sidebarController: SidebarController | undefined;
+  let taskRemover: TaskRemover | undefined;
 
   // Placeholder task repo for the sidebar until activation fills it in.
   const placeholderTaskRepo = { list: async () => [], get: async () => undefined, upsert: async () => {}, upsertBatch: async () => {} };
@@ -101,6 +102,23 @@ export function activate(context: vscode.ExtensionContext): void {
       });
 
       const layoutManager = new LayoutManager(layoutRepo);
+
+      const removePrompt: RemovePromptFn = async (task, cleanliness) => {
+        const summary = cleanliness.clean
+          ? 'The worktree is clean (no uncommitted changes, nothing ahead of base).'
+          : `The worktree is dirty: ${cleanliness.reason}.`;
+        const message =
+          `Remove worktree for task "${task.title}" at ${task.worktree_path}?\n\n${summary}`;
+        const defaultRemove = cleanliness.clean;
+        // Modal preselects the first action; order matches the safe default.
+        const items: string[] = defaultRemove
+          ? ['Remove worktree', 'Keep worktree']
+          : ['Keep worktree', 'Remove worktree'];
+        const pick = await vscode.window.showWarningMessage(message, { modal: true }, ...items);
+        const remove = pick === 'Remove worktree';
+        return { remove, force: remove && !cleanliness.clean };
+      };
+      taskRemover = new TaskRemover({ taskRepo, prompt: removePrompt, workspaceRoot });
       scopeManager = new ScopeManager({
         terminalOrchestrator,
         layoutManager,
@@ -212,6 +230,36 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   context.subscriptions.push(activateCmd, deactivateCmd, syncTasksCmd, activateTaskCmd, focusSessionCmd, newSessionCmd);
+
+  const removeTaskCmd = vscode.commands.registerCommand('tackle.removeTask', async (arg?: unknown) => {
+    if (!taskRemover) {
+      vscode.window.showErrorMessage('Tackle must be activated first.');
+      return;
+    }
+    let taskId: number | undefined;
+    if (typeof arg === 'number') {
+      taskId = arg;
+    } else if (arg && typeof arg === 'object' && 'taskId' in (arg as any) && typeof (arg as any).taskId === 'number') {
+      taskId = (arg as any).taskId;
+    } else if (arg && typeof arg === 'object' && 'id' in (arg as any) && typeof (arg as any).id === 'number') {
+      taskId = (arg as any).id;
+    }
+    if (taskId === undefined) {
+      vscode.window.showErrorMessage('Tackle: removeTask requires a task id.');
+      return;
+    }
+    try {
+      const result = await taskRemover.removeTask(taskId);
+      if (result.worktreeRemoved) {
+        await sidebarController?.refresh();
+        vscode.window.showInformationMessage('Tackle: worktree removed.');
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      vscode.window.showErrorMessage(`Tackle: failed to remove task worktree: ${message}`);
+    }
+  });
+  context.subscriptions.push(removeTaskCmd);
 
   async function pickSessionId(placeHolder: string): Promise<number | undefined> {
     if (!sessionRepoRef) {
