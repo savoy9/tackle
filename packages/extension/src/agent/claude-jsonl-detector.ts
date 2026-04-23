@@ -212,18 +212,60 @@ export function createClaudeJsonlDetector(opts: ClaudeJsonlDetectorOptions): Age
 /**
  * Translate the last JSONL entry into an agent state.
  *
- * Heuristic (intentionally minimal — extends in #42 for `waiting`):
- *   - `assistant` entries with a tool_use mid-turn → working
- *   - any `assistant` entry that is the turn's final message → idle
- *   - `user` entries (typed prompt or tool_result) → working (agent will respond)
+ * State rules:
+ *   - `assistant` entries containing an `AskUserQuestion` tool_use →
+ *     waiting (Claude is paused on a human-input prompt)
+ *   - `system` entries with subtype `tool_approval_request` → waiting
+ *     (Claude paused awaiting tool-permission approval)
+ *   - other `assistant` entries with a mid-turn tool_use → working
+ *   - assistant entry with stop_reason end_turn/stop_sequence (and no
+ *     pending AskUserQuestion) → idle
+ *   - `user` entries (typed prompt or tool_result) → working
  *   - anything we can't classify → working (conservative; never flip to
- *     waiting in #36's scope, never falsely report idle mid-turn)
+ *     waiting on ambiguous shapes, never falsely report idle mid-turn)
  *
- * Claude Code's JSONL fields: `type` is the entry kind; assistant
- * messages carry `message.stop_reason` once the turn is complete. We
- * key on `stop_reason` to distinguish "still streaming" from "turn
- * over", and treat its absence on an assistant entry as still-working.
+ * Documented assumptions about the on-disk JSONL shapes (sampled from
+ * `~/.claude/projects/<hash>/<id>.jsonl`, Claude Code v2.1.x):
+ *   - Each line is a JSON object with a top-level `type` field of
+ *     `user`, `assistant`, `system`, `summary`, `attachment`, etc.
+ *   - Assistant entries nest the model message under `message`, with
+ *     `stop_reason` ∈ {end_turn, stop_sequence, tool_use} once finalised
+ *     and `content` an array of `{type:'text'|'tool_use', …}` blocks.
+ *   - Human-input pauses surface as a tool_use whose `name` is
+ *     `AskUserQuestion` (Claude Code's built-in question tool). Even
+ *     when `stop_reason` is `end_turn` the turn is "done from Claude's
+ *     side, awaiting the human." We classify those as waiting.
+ *   - Tool-approval pauses (when permissionMode≠auto) are assumed to
+ *     surface as a system entry with `subtype: 'tool_approval_request'`.
+ *     This shape was not directly observed in sampled transcripts (all
+ *     ran in auto-approve), so the classifier guards on the explicit
+ *     subtype string and falls back to `working` for any other shape.
+ *     If the real-world subtype differs, extend the predicate below
+ *     rather than weakening the conservative default.
  */
+
+const ASK_USER_QUESTION_TOOL = 'AskUserQuestion';
+const TOOL_APPROVAL_SUBTYPES = new Set<string>([
+  'tool_approval_request',
+  // Defensive aliases — surface any of these as waiting if we ever see
+  // them. Adding here only widens the waiting trigger; the conservative
+  // default still applies to anything not listed.
+  'permission_request',
+  'tool_permission_request',
+]);
+
+function hasAskUserQuestionToolUse(message: unknown): boolean {
+  if (!message || typeof message !== 'object') return false;
+  const content = (message as Record<string, unknown>).content;
+  if (!Array.isArray(content)) return false;
+  for (const block of content) {
+    if (!block || typeof block !== 'object') continue;
+    const b = block as Record<string, unknown>;
+    if (b.type === 'tool_use' && b.name === ASK_USER_QUESTION_TOOL) return true;
+  }
+  return false;
+}
+
 export function deriveStateFromEntry(entry: unknown): AgentState {
   if (!entry || typeof entry !== 'object') return 'working';
   const e = entry as Record<string, unknown>;
@@ -236,6 +278,12 @@ export function deriveStateFromEntry(entry: unknown): AgentState {
 
   if (type === 'assistant') {
     const message = e.message as Record<string, unknown> | undefined;
+    // Human-input pause takes precedence over stop_reason: even an
+    // end_turn assistant entry is "waiting" if it contains an
+    // AskUserQuestion call.
+    if (hasAskUserQuestionToolUse(message)) {
+      return 'waiting';
+    }
     const stopReason = message?.stop_reason;
     if (stopReason === 'end_turn' || stopReason === 'stop_sequence') {
       return 'idle';
@@ -245,10 +293,17 @@ export function deriveStateFromEntry(entry: unknown): AgentState {
     return 'working';
   }
 
-  if (type === 'summary' || type === 'system') {
-    // Metadata entries don't change state on their own — but if they're
-    // the last line we've never been told the turn is over, so stay
-    // conservative.
+  if (type === 'system') {
+    const subtype = e.subtype;
+    if (typeof subtype === 'string' && TOOL_APPROVAL_SUBTYPES.has(subtype)) {
+      return 'waiting';
+    }
+    // Other system entries (turn_duration, away_summary, api_error, …)
+    // don't change state on their own — stay conservative.
+    return 'working';
+  }
+
+  if (type === 'summary') {
     return 'working';
   }
 

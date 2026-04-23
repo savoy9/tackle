@@ -180,16 +180,183 @@ describe('deriveStateFromEntry (conservative defaults)', () => {
       deriveStateFromEntry({ type: 'assistant', message: { stop_reason: 'stop_sequence' } }),
     ).toBe('idle');
   });
-  it('never returns waiting in #36 scope (waiting belongs to #42)', () => {
-    // Sample a few shapes that #42 will eventually classify; for now
-    // they all stay conservative.
-    const samples = [
-      { type: 'user', message: { content: [{ type: 'tool_result' }] } },
-      { type: 'assistant', message: { stop_reason: 'tool_use' } },
-      { type: 'system', subtype: 'tool_approval_request' },
-    ];
-    for (const s of samples) {
-      expect(deriveStateFromEntry(s)).not.toBe('waiting');
-    }
+  it('returns working for plain stop_reason:tool_use without an AskUserQuestion call', () => {
+    // Conservative: a tool_use that isn't a human-input prompt may be
+    // auto-approved, so stay on `working` rather than risk a false ✳️.
+    expect(
+      deriveStateFromEntry({
+        type: 'assistant',
+        message: {
+          stop_reason: 'tool_use',
+          content: [{ type: 'tool_use', name: 'Bash', input: { command: 'ls' } }],
+        },
+      }),
+    ).toBe('working');
+  });
+});
+
+describe('deriveStateFromEntry — waiting state (#42)', () => {
+  it('returns waiting when the last assistant entry contains an AskUserQuestion tool_use', () => {
+    // Human-input pause: Claude emits the AskUserQuestion tool to ask the
+    // operator a question and the turn ends awaiting their answer.
+    const entry = {
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        stop_reason: 'tool_use',
+        content: [
+          { type: 'text', text: 'I need to confirm before proceeding.' },
+          {
+            type: 'tool_use',
+            name: 'AskUserQuestion',
+            input: { questions: [{ question: 'Proceed?', options: [] }] },
+          },
+        ],
+      },
+    };
+    expect(deriveStateFromEntry(entry)).toBe('waiting');
+  });
+
+  it('returns waiting for an AskUserQuestion tool_use even when stop_reason is end_turn', () => {
+    // Some Claude Code versions emit `stop_reason: 'end_turn'` after an
+    // AskUserQuestion call (the turn really is over until the user answers).
+    const entry = {
+      type: 'assistant',
+      message: {
+        stop_reason: 'end_turn',
+        content: [{ type: 'tool_use', name: 'AskUserQuestion', input: {} }],
+      },
+    };
+    expect(deriveStateFromEntry(entry)).toBe('waiting');
+  });
+
+  it('returns waiting for a system tool_approval_request entry', () => {
+    // Documented assumption: when Claude Code surfaces a tool-approval
+    // pause it writes a system entry with a recognisable subtype. If
+    // this shape ever changes the detector falls back to `working`.
+    expect(
+      deriveStateFromEntry({ type: 'system', subtype: 'tool_approval_request' }),
+    ).toBe('waiting');
+  });
+
+  it('stays working for an assistant entry that has tool_use but no AskUserQuestion', () => {
+    expect(
+      deriveStateFromEntry({
+        type: 'assistant',
+        message: {
+          stop_reason: 'tool_use',
+          content: [
+            { type: 'text', text: 'reading file' },
+            { type: 'tool_use', name: 'Read', input: { path: 'x' } },
+          ],
+        },
+      }),
+    ).toBe('working');
+  });
+
+  it('stays working for ambiguous system subtypes', () => {
+    // Conservative: anything we don't recognise as an explicit pause
+    // signal must NOT flip to waiting.
+    expect(deriveStateFromEntry({ type: 'system', subtype: 'turn_duration' })).toBe(
+      'working',
+    );
+    expect(deriveStateFromEntry({ type: 'system', subtype: 'away_summary' })).toBe(
+      'working',
+    );
+  });
+});
+
+describe('ClaudeJsonlDetector — waiting transitions (#42)', () => {
+  it('emits idle → working → waiting → working → idle through an approval pause', async () => {
+    fs.writeFileSync(jsonlPath, '');
+
+    const detector = createClaudeJsonlDetector({
+      pathResolver: resolver,
+      pollIntervalMs: 50,
+    });
+    const events: AgentStateEvent[] = [];
+    detector.onChange((e) => events.push(e));
+
+    detector.start(baseSession({ id: 42 }));
+    await sleep(SETTLE_MS);
+
+    // User prompt → working.
+    appendJsonl({ type: 'user', message: { role: 'user', content: 'do the thing' } });
+    await sleep(SETTLE_MS);
+
+    // Assistant pauses for human input via AskUserQuestion → waiting.
+    appendJsonl({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        stop_reason: 'tool_use',
+        content: [
+          {
+            type: 'tool_use',
+            name: 'AskUserQuestion',
+            input: { questions: [{ question: 'ok?', options: [] }] },
+          },
+        ],
+      },
+    });
+    await sleep(SETTLE_MS);
+
+    // User answers (tool_result) → working again.
+    appendJsonl({
+      type: 'user',
+      message: {
+        role: 'user',
+        content: [{ type: 'tool_result', tool_use_id: 'x', content: 'yes' }],
+      },
+    });
+    await sleep(SETTLE_MS);
+
+    // Assistant ends turn → idle.
+    appendJsonl({
+      type: 'assistant',
+      message: { role: 'assistant', stop_reason: 'end_turn' },
+    });
+    await sleep(SETTLE_MS);
+
+    detector.stop(baseSession({ id: 42 }));
+
+    expect(events.map((e) => e.state)).toEqual([
+      'idle',
+      'working',
+      'waiting',
+      'working',
+      'idle',
+    ]);
+    for (const e of events) expect(e.sessionId).toBe(42);
+  });
+
+  it('does not flip to waiting on an ambiguous tool_use entry', async () => {
+    fs.writeFileSync(jsonlPath, '');
+    const detector = createClaudeJsonlDetector({
+      pathResolver: resolver,
+      pollIntervalMs: 50,
+    });
+    const events: AgentStateEvent[] = [];
+    detector.onChange((e) => events.push(e));
+
+    detector.start(baseSession({ id: 43 }));
+    await sleep(SETTLE_MS);
+
+    // A regular Bash tool_use — could auto-approve. Conservative: working.
+    appendJsonl({
+      type: 'assistant',
+      message: {
+        role: 'assistant',
+        stop_reason: 'tool_use',
+        content: [{ type: 'tool_use', name: 'Bash', input: { command: 'ls' } }],
+      },
+    });
+    await sleep(SETTLE_MS);
+
+    detector.stop(baseSession({ id: 43 }));
+
+    const states = events.map((e) => e.state);
+    expect(states).toEqual(['idle', 'working']);
+    expect(states).not.toContain('waiting');
   });
 });
