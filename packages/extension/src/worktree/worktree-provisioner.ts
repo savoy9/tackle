@@ -3,16 +3,37 @@ import { existsSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import type { Task, TaskRepository } from '@tackle/shared';
 
+/**
+ * Pluggable source of `tackle.worktree.*` settings. A `WorktreeProvisioner`
+ * consults this on every call so live VS Code setting changes are picked up
+ * without recreating the provisioner. Returning `undefined` means
+ * "use the built-in default" (`baseBranch='main'`,
+ * `rootPath='../{repoName}.worktrees/'`).
+ */
+export interface WorktreeConfigReader {
+  getBaseBranch(): string | undefined;
+  getRootPath(): string | undefined;
+}
+
 export interface WorktreeProvisionerDeps {
   workspaceRoot: string;
   taskRepo: Pick<TaskRepository, 'get' | 'setWorktree'>;
-  /** Default base branch for new worktree branches. Default: 'main'. */
+  /**
+   * Default base branch for new worktree branches. Default: 'main'.
+   * Overridden per-call by `configReader.getBaseBranch()` when present.
+   */
   baseBranch?: string;
   /**
    * Root directory where Tackle places per-task worktrees. Supports the
    * `{repoName}` placeholder. Default: `../{repoName}.worktrees/`.
+   * Overridden per-call by `configReader.getRootPath()` when present.
    */
   rootPath?: string;
+  /**
+   * Optional injectable settings source. Read on every provision call so
+   * that VS Code setting changes are picked up live.
+   */
+  configReader?: WorktreeConfigReader;
 }
 
 export interface WorktreeProvisionResult {
@@ -65,16 +86,27 @@ export function workspaceIsWorktree(cwd: string): boolean {
 }
 
 export class WorktreeProvisioner {
-  private readonly baseBranch: string;
-  private readonly rootPathTemplate: string;
+  private readonly defaultBaseBranch: string;
+  private readonly defaultRootPathTemplate: string;
+  private readonly configReader?: WorktreeConfigReader;
 
   constructor(private readonly deps: WorktreeProvisionerDeps) {
-    this.baseBranch = deps.baseBranch ?? 'main';
-    this.rootPathTemplate = deps.rootPath ?? '../{repoName}.worktrees/';
+    this.defaultBaseBranch = deps.baseBranch ?? 'main';
+    this.defaultRootPathTemplate = deps.rootPath ?? '../{repoName}.worktrees/';
+    this.configReader = deps.configReader;
+  }
+
+  private resolveBaseBranch(): string {
+    return this.configReader?.getBaseBranch() ?? this.defaultBaseBranch;
+  }
+
+  private resolveRootPathTemplate(): string {
+    return this.configReader?.getRootPath() ?? this.defaultRootPathTemplate;
   }
 
   async ensureWorktreeForTask(task: Task): Promise<WorktreeProvisionResult> {
     const workspaceRoot = this.deps.workspaceRoot;
+    const baseBranch = this.resolveBaseBranch();
 
     // Idempotent: if Task already has a worktree path on disk, return it.
     const fresh = (await this.deps.taskRepo.get(task.id)) ?? task;
@@ -97,7 +129,7 @@ export class WorktreeProvisioner {
       const result: WorktreeProvisionResult = {
         path: workspaceRoot,
         branch,
-        baseBranch: this.baseBranch,
+        baseBranch,
       };
       await this.persist(task.id, result);
       return result;
@@ -109,7 +141,7 @@ export class WorktreeProvisioner {
       const path = this.resolveWorktreePath(workspaceRoot, matched);
       const add = gitTry(workspaceRoot, ['worktree', 'add', path, matched]);
       if (!add.ok) throw new Error(`git worktree add failed: ${add.stderr}`);
-      const result: WorktreeProvisionResult = { path, branch: matched, baseBranch: this.baseBranch };
+      const result: WorktreeProvisionResult = { path, branch: matched, baseBranch };
       await this.persist(task.id, result);
       return result;
     }
@@ -117,9 +149,9 @@ export class WorktreeProvisioner {
     // Otherwise, create a fresh `<id>-<slug>` branch off baseBranch.
     const slugBranch = `${task.external_id}-${slugifyTitle(task.title)}`;
     const slugPath = this.resolveWorktreePath(workspaceRoot, slugBranch);
-    let add = gitTry(workspaceRoot, ['worktree', 'add', '-b', slugBranch, slugPath, this.baseBranch]);
+    let add = gitTry(workspaceRoot, ['worktree', 'add', '-b', slugBranch, slugPath, baseBranch]);
     if (add.ok) {
-      const result: WorktreeProvisionResult = { path: slugPath, branch: slugBranch, baseBranch: this.baseBranch };
+      const result: WorktreeProvisionResult = { path: slugPath, branch: slugBranch, baseBranch };
       await this.persist(task.id, result);
       return result;
     }
@@ -131,9 +163,9 @@ export class WorktreeProvisioner {
     // Collision → fall back to `tackle/<external-id>`.
     const fallbackBranch = `tackle/${task.external_id}`;
     const fallbackPath = this.resolveWorktreePath(workspaceRoot, `tackle-${task.external_id}`);
-    add = gitTry(workspaceRoot, ['worktree', 'add', '-b', fallbackBranch, fallbackPath, this.baseBranch]);
+    add = gitTry(workspaceRoot, ['worktree', 'add', '-b', fallbackBranch, fallbackPath, baseBranch]);
     if (!add.ok) throw new Error(`git worktree add failed (fallback): ${add.stderr}`);
-    const result: WorktreeProvisionResult = { path: fallbackPath, branch: fallbackBranch, baseBranch: this.baseBranch };
+    const result: WorktreeProvisionResult = { path: fallbackPath, branch: fallbackBranch, baseBranch };
     await this.persist(task.id, result);
     return result;
   }
@@ -153,7 +185,8 @@ export class WorktreeProvisioner {
   private resolveWorktreePath(workspaceRoot: string, dirName: string): string {
     const repoName = basename(workspaceRoot);
     const parent = dirname(workspaceRoot);
-    const rel = this.rootPathTemplate.replace(/\{repoName\}/g, repoName);
+    const template = this.resolveRootPathTemplate();
+    const rel = template.replace(/\{repoName\}/g, repoName);
     const root = resolve(parent, rel);
     // Sanitize directory name (strip path separators introduced by branch names like `tackle/42`).
     const safe = dirName.replace(/[\\/]/g, '-');

@@ -181,6 +181,144 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
   });
 });
 
+describe('WorktreeProvisioner config plumbing', () => {
+  it('honors a configReader-supplied baseBranch when creating new branches', async () => {
+    // Pre-create a 'develop' branch off main so we can use it as a base.
+    git(repoDir, 'branch develop');
+
+    const task = makeTask({ id: 1, external_id: '88', title: 'Use develop' });
+    state.tasks.set(1, task);
+
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+      configReader: {
+        getBaseBranch: () => 'develop',
+        getRootPath: () => undefined,
+      },
+    });
+
+    const result = await provisioner.ensureWorktreeForTask(task);
+    expect(result.baseBranch).toBe('develop');
+    // The new branch should fork from develop's tip.
+    const developSha = git(repoDir, 'rev-parse develop');
+    const branchSha = git(repoDir, `rev-parse ${result.branch}`);
+    expect(branchSha).toBe(developSha);
+  });
+
+  it('honors a configReader-supplied rootPath with {repoName} substitution', async () => {
+    const task = makeTask({ id: 1, external_id: '77', title: 'rooted' });
+    state.tasks.set(1, task);
+
+    // configReader returns a rootPath with the {repoName} placeholder; the
+    // provisioner should substitute the basename of workspaceRoot.
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      configReader: {
+        getBaseBranch: () => undefined,
+        getRootPath: () => join(rootDir, '{repoName}.worktrees'),
+      },
+    });
+
+    const result = await provisioner.ensureWorktreeForTask(task);
+    const expectedRoot = join(rootDir, 'myrepo.worktrees');
+    expect(result.path.startsWith(expectedRoot)).toBe(true);
+    expect(existsSync(result.path)).toBe(true);
+  });
+
+  it('reads config dynamically per call so live setting changes are picked up', async () => {
+    let baseBranch = 'main';
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+      configReader: {
+        getBaseBranch: () => baseBranch,
+        getRootPath: () => undefined,
+      },
+    });
+
+    const t1 = makeTask({ id: 1, external_id: '101', title: 'first' });
+    state.tasks.set(1, t1);
+    const r1 = await provisioner.ensureWorktreeForTask(t1);
+    expect(r1.baseBranch).toBe('main');
+
+    // User flips the setting between calls.
+    git(repoDir, 'branch develop');
+    baseBranch = 'develop';
+
+    const t2 = makeTask({ id: 2, external_id: '102', title: 'second' });
+    state.tasks.set(2, t2);
+    const r2 = await provisioner.ensureWorktreeForTask(t2);
+    expect(r2.baseBranch).toBe('develop');
+  });
+
+  it('falls back to defaults when configReader returns undefined for both keys', async () => {
+    // Default rootPath escapes our temp dir into a shared `myrepo.worktrees`
+    // sibling, so use a process-unique external id to avoid colliding with
+    // stale state from prior test runs.
+    const uniqueId = `def-${process.pid}-${Date.now()}`;
+    const task = makeTask({ id: 1, external_id: uniqueId, title: 'defaulty' });
+    state.tasks.set(1, task);
+
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      configReader: {
+        getBaseBranch: () => undefined,
+        getRootPath: () => undefined,
+      },
+    });
+
+    const result = await provisioner.ensureWorktreeForTask(task);
+    try {
+      expect(result.baseBranch).toBe('main');
+      // Default rootPath template `../{repoName}.worktrees/` is resolved
+      // against `dirname(workspaceRoot)`, then ascends one more level due
+      // to the leading `..`.
+      const { dirname } = await import('node:path');
+      const defaultRoot = join(dirname(rootDir), 'myrepo.worktrees');
+      expect(result.path.startsWith(defaultRoot)).toBe(true);
+    } finally {
+      // Clean up the worktree dir that escaped our tmpdir sandbox.
+      try { execSync(`git worktree remove --force "${result.path}"`, { cwd: repoDir }); } catch { /* ignore */ }
+      try { rmSync(result.path, { recursive: true, force: true }); } catch { /* ignore */ }
+    }
+  });
+});
+
+describe('createVscodeWorktreeConfigReader', () => {
+  it('reads tackle.worktree.baseBranch and tackle.worktree.rootPath from a getConfiguration shim', async () => {
+    const { createVscodeWorktreeConfigReader } = await import('../worktree/worktree-config');
+    const store: Record<string, unknown> = {
+      'worktree.baseBranch': 'trunk',
+      'worktree.rootPath': '/somewhere/{repoName}',
+    };
+    const fakeGetConfiguration = (section?: string) => {
+      expect(section).toBe('tackle');
+      return {
+        get: <T>(key: string): T | undefined => store[key] as T | undefined,
+      };
+    };
+    const reader = createVscodeWorktreeConfigReader(fakeGetConfiguration);
+    expect(reader.getBaseBranch()).toBe('trunk');
+    expect(reader.getRootPath()).toBe('/somewhere/{repoName}');
+
+    // Mutate store and confirm the reader picks up the new values on each call.
+    store['worktree.baseBranch'] = 'release';
+    expect(reader.getBaseBranch()).toBe('release');
+  });
+
+  it('returns undefined when keys are not set', async () => {
+    const { createVscodeWorktreeConfigReader } = await import('../worktree/worktree-config');
+    const reader = createVscodeWorktreeConfigReader(() => ({ get: () => undefined }));
+    expect(reader.getBaseBranch()).toBeUndefined();
+    expect(reader.getRootPath()).toBeUndefined();
+  });
+});
+
 describe('Integration: TerminalOrchestrator + WorktreeProvisioner', () => {
   it('first Session spawn on a Task ends with psmux cwd = Task worktree', async () => {
     // Lazy import inside test to keep top-of-file diff small.

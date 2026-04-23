@@ -19,6 +19,16 @@
           "type": "string",
           "default": "agency-cc",
           "description": "Default Agent used when creating a new Session. Built-in options: 'agency-cc' (Microsoft-internal Claude Code wrapper) or 'claude' (vanilla Claude Code). Per-session 'agent' values override this."
+        },
+        "tackle.worktree.baseBranch": {
+          "type": "string",
+          "default": "main",
+          "description": "Base branch new per-Task worktree branches are created off of. Override for repos whose default branch is not 'main' (e.g. 'master', 'trunk', 'develop')."
+        },
+        "tackle.worktree.rootPath": {
+          "type": "string",
+          "default": "../{repoName}.worktrees/",
+          "description": "Directory where Tackle places per-Task worktrees. Relative paths are resolved against the workspace folder. Supports the {repoName} placeholder, which expands to the workspace folder name. Default places worktrees as siblings of the repo (idiomatic git layout)."
         }
       }
     },

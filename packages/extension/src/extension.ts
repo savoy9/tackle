@@ -3,7 +3,7 @@ import { ModeManager } from './mode';
 import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateRepository, PsmuxBridge } from '@tackle/shared';
 import { TaskService } from './task';
 import { TerminalOrchestrator } from './terminal';
-import { WorktreeProvisioner } from './worktree';
+import { WorktreeProvisioner, createVscodeWorktreeConfigReader } from './worktree';
 import { createVscodeAgentRegistry } from './agent';
 import { SessionActions, ObservableSessionRepository, NewSessionFlow, buildKindQuickPickItems } from './session';
 import { LayoutManager } from './layout';
@@ -78,6 +78,9 @@ export function activate(context: vscode.ExtensionContext): void {
       const worktreeProvisioner = new WorktreeProvisioner({
         workspaceRoot,
         taskRepo,
+        configReader: createVscodeWorktreeConfigReader((section) =>
+          vscode.workspace.getConfiguration(section),
+        ),
       });
       terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry(), {
         ensureForTask: async (taskId: number) => {
