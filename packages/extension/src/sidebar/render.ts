@@ -1,8 +1,9 @@
-import type { Task, Session, SessionKind } from '@tackle/shared';
+import type { Task, Session } from '@tackle/shared';
 import type { SidebarState } from './sidebar-state';
 import { rollupGlyph, sessionGlyph } from './glyph';
 import { sortTasks } from './sort';
 import { partitionTasks, isClosedStatus } from './closed';
+import { KIND_ICON } from '../session/kind-icon';
 
 function escapeHtml(s: string): string {
   return s
@@ -12,16 +13,6 @@ function escapeHtml(s: string): string {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-
-const KIND_ICON: Record<SessionKind, string> = {
-  plan: '📓',
-  implement: '⌨️',
-  review: '👁',
-  debug: '🐞',
-  test: '🧪',
-  pilot: '🚀',
-  shell: '💻',
-};
 
 const EXT_ICON: Record<Task['external_system'], string> = {
   github: 'GH',
