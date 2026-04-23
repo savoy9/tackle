@@ -151,13 +151,11 @@ export function activate(context: vscode.ExtensionContext): void {
       scopeManager.restoreActiveTask();
 
       // Re-attach detectors to any Session rows still marked `running`
-      // (psmux survives VS Code restarts per ADR-0003). Best-effort: a
-      // failure here shouldn't block the rest of activation.
-      try {
-        await terminalOrchestrator.resumeRunningDetectors();
-      } catch (err: unknown) {
+      // (psmux survives VS Code restarts per ADR-0003). Fire-and-forget so
+      // activation isn't blocked by file reads for every running session.
+      terminalOrchestrator.resumeRunningDetectors().catch((err) => {
         console.error('Tackle: resumeRunningDetectors failed', err);
-      }
+      });
 
       context.subscriptions.push(
         vscode.window.onDidCloseTerminal((t) => {

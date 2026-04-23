@@ -17,6 +17,7 @@
 import type { Task, Session } from '@tackle/shared';
 import { rollupGlyph, sessionGlyph } from './glyph';
 import { KIND_ICON } from '../session/kind-icon';
+import { escapeHtml, EXT_ICON } from './html';
 import {
   deriveEdgeBarState,
   edgeBarClassFor,
@@ -28,21 +29,7 @@ import {
   type RenderSessionRowOptions,
 } from './render-session-row';
 
-export { KIND_ICON };
-
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
-export const EXT_ICON: Record<Task['external_system'], string> = {
-  github: 'GH',
-  ado: 'ADO',
-};
+export { KIND_ICON, escapeHtml, EXT_ICON };
 
 export function sessionsByTask(sessions: Session[]): Map<number, Session[]> {
   const m = new Map<number, Session[]>();

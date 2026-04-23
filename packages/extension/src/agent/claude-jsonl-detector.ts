@@ -116,6 +116,12 @@ export function createClaudeJsonlDetector(opts: ClaudeJsonlDetectorOptions): Age
       st.lastSize = 0;
       st.lastState = null; // force re-emit so consumers see the reset
     }
+    // No-op guard: poll tick with no file-size change and we've already
+    // emitted at least one state. Skips a full file read + JSON parse per
+    // poll interval on quiescent sessions.
+    if (stat.size === st.lastSize && st.lastState !== null) {
+      return;
+    }
     st.lastSize = stat.size;
     if (stat.size === 0) {
       transition(st, 'idle');

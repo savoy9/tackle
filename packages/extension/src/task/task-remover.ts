@@ -1,6 +1,6 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import type { Task, TaskRepository } from '@tackle/shared';
+import { gitTry } from '../worktree/git';
 
 /**
  * Result of inspecting a Task's worktree to decide a confirmation default.
@@ -40,19 +40,6 @@ export interface TaskRemoverDeps {
   prompt: RemovePromptFn;
   /** Override for the directory `git worktree remove` is invoked from. Defaults to the repo's main checkout (parent of `worktree_path`'s parent). */
   workspaceRoot?: string;
-}
-
-function gitTry(cwd: string, args: string[]): { ok: boolean; stdout: string; stderr: string } {
-  try {
-    const out = execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-    return { ok: true, stdout: out.toString(), stderr: '' };
-  } catch (err: any) {
-    return {
-      ok: false,
-      stdout: (err.stdout ?? '').toString(),
-      stderr: (err.stderr ?? err.message ?? '').toString(),
-    };
-  }
 }
 
 /**

@@ -19,26 +19,15 @@
 import type { Session } from '@tackle/shared';
 import { sessionGlyph } from './glyph';
 import { KIND_ICON } from '../session/kind-icon';
+import { escapeHtml } from './html';
 
-/** Where the session row is being rendered. */
 export type SessionRowSurface = 'list-expanded' | 'detail';
 
 export interface RenderSessionRowOptions {
-  /** Default 'list-expanded' for backwards compatibility. */
   surface?: SessionRowSurface;
 }
 
-/** Modifier class applied to Detail Mode session rows so CSS can hover-reveal actions. */
 export const SESSION_ROW_DETAIL_CLASS = 'session-row--detail';
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 export function renderSessionRow(
   sess: Session,

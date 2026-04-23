@@ -1,7 +1,7 @@
-import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { basename, dirname, join, resolve } from 'node:path';
 import type { Task, TaskRepository } from '@tackle/shared';
+import { git, gitTry } from './git';
 
 /**
  * Pluggable source of `tackle.worktree.*` settings. A `WorktreeProvisioner`
@@ -54,23 +54,6 @@ export function slugifyTitle(title: string, maxLen = 40): string {
   if (base.length === 0) return 'task';
   if (base.length <= maxLen) return base;
   return base.slice(0, maxLen).replace(/-+$/g, '');
-}
-
-function git(cwd: string, args: string[]): string {
-  return execFileSync('git', args, { cwd, encoding: 'utf8' }).trim();
-}
-
-function gitTry(cwd: string, args: string[]): { ok: boolean; stdout: string; stderr: string } {
-  try {
-    const out = execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
-    return { ok: true, stdout: out.toString(), stderr: '' };
-  } catch (err: any) {
-    return {
-      ok: false,
-      stdout: (err.stdout ?? '').toString(),
-      stderr: (err.stderr ?? err.message ?? '').toString(),
-    };
-  }
 }
 
 /**

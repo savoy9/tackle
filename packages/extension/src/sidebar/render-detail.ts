@@ -25,6 +25,7 @@ import type { Task } from '@tackle/shared';
 import { rollupGlyph } from './glyph';
 import { sortTasks } from './sort';
 import { isClosedStatus } from './closed';
+import { escapeHtml, EXT_ICON } from './html';
 import {
   deriveEdgeBarState,
   edgeBarClassFor,
@@ -33,20 +34,6 @@ import {
 import { renderSessionRow, SESSION_ROW_DETAIL_CLASS } from './render-session-row';
 
 export { SESSION_ROW_DETAIL_CLASS };
-
-const EXT_ICON: Record<Task['external_system'], string> = {
-  github: 'GH',
-  ado: 'ADO',
-};
-
-function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 function sessionsFor(state: SidebarState, taskId: number) {
   return state.sessions.filter((s) => s.task_id === taskId && !s.deleted_at);

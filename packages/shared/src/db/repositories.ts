@@ -1,4 +1,4 @@
-import type { Task, Session, LayoutState, Plan, Phase } from '../index';
+import type { Task, Session, LayoutState, Plan, Phase, AgentState } from '../index';
 
 export interface UpsertTask {
   external_id: string;
@@ -21,7 +21,7 @@ export interface CreateSession {
   worktree_path?: string | null;
   sort_order?: number;
   claude_session_id?: string | null;
-  agent_state?: 'idle' | 'working' | 'waiting';
+  agent_state?: AgentState;
   prior_claude_session_ids?: string[] | null;
 }
 
@@ -34,7 +34,7 @@ export interface UpdateSession {
   worktree_path?: string | null;
   sort_order?: number;
   claude_session_id?: string | null;
-  agent_state?: 'idle' | 'working' | 'waiting';
+  agent_state?: AgentState;
   prior_claude_session_ids?: string[] | null;
   ended_at?: string | null;
 }
@@ -66,7 +66,7 @@ export interface SessionRepository {
    * `agent_state` column without touching any other field, so we can fire
    * cheaply on every detector event without rewriting the whole row.
    */
-  setAgentState(id: number, state: 'idle' | 'working' | 'waiting'): Promise<void>;
+  setAgentState(id: number, state: AgentState): Promise<void>;
 }
 
 export interface LayoutStateRepository {

@@ -68,9 +68,10 @@ export class NewSessionFlow {
     // Decide whether to offer the α-isolation toggle. Requires the Task row
     // (so we can see if a worktree already exists) and a pickIsolate callback.
     let isolate = false;
+    let cachedTask: Awaited<ReturnType<NonNullable<typeof taskRepo>['get']>> | undefined;
     if (pickIsolate && taskRepo) {
-      const task = await taskRepo.get(taskId);
-      const taskWorktreeExists = !!task?.worktree_path;
+      cachedTask = await taskRepo.get(taskId);
+      const taskWorktreeExists = !!cachedTask?.worktree_path;
       if (shouldOfferIsolation(kind, { taskWorktreeExists })) {
         const choice = await pickIsolate(kind);
         if (choice === undefined) return undefined; // user cancelled
@@ -81,14 +82,9 @@ export class NewSessionFlow {
     const existing = await sessions.listForTask(taskId);
     const label = computeAutoLabel(existing, kind);
 
-    // If toggle is ON, provision the sub-worktree now and forward its path
-    // as the explicit override so the orchestrator skips the Task-level
-    // provisioner. The sessionRef seeds the sub-branch suffix; we use a
-    // best-effort ordinal computed from listForTask + 1 for stability before
-    // the row exists.
     let isolatedWorktreePath: string | null = null;
     if (isolate && worktreeProvisioner && taskRepo) {
-      const task = await taskRepo.get(taskId);
+      const task = cachedTask ?? (await taskRepo.get(taskId));
       if (task) {
         const sessionRef = existing.length + 1;
         const wt = await worktreeProvisioner.createIsolatedWorktree(task, sessionRef);

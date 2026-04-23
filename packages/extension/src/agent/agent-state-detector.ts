@@ -1,13 +1,6 @@
-import type { Session } from '@tackle/shared';
+import type { Session, AgentState } from '@tackle/shared';
 
-/**
- * The agent state vocabulary the sidebar consumes.
- *
- * `waiting` is reserved for #42's tool-approval / human-input detection.
- * #36 only ships `idle` and `working`; conservative defaults prefer
- * `working` over `waiting` for ambiguous inputs.
- */
-export type AgentState = 'idle' | 'working' | 'waiting';
+export type { AgentState };
 
 export interface AgentStateEvent {
   sessionId: number;

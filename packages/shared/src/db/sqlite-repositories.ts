@@ -1,4 +1,4 @@
-import type { Task, Session, LayoutState, Plan, Phase } from '../index';
+import type { Task, Session, LayoutState, Plan, Phase, AgentState } from '../index';
 import type { Database } from './database';
 import type {
   TaskRepository,
@@ -154,7 +154,7 @@ export class SqliteSessionRepository implements SessionRepository {
     return Promise.resolve();
   }
 
-  setAgentState(id: number, state: 'idle' | 'working' | 'waiting'): Promise<void> {
+  setAgentState(id: number, state: AgentState): Promise<void> {
     this.db.prepare('UPDATE sessions SET agent_state = ? WHERE id = ?').run(state, id);
     return Promise.resolve();
   }
