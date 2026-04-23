@@ -5,7 +5,6 @@
 // `var(--vscode-*)` is permitted for font family/size and as a fallback
 // inside the HC token blocks (--vscode-contrastBorder). No inline hex.
 
-import type { Session } from '@tackle/shared';
 import type { SidebarState } from './sidebar-state';
 import { rollupGlyph } from './glyph';
 import { sortTasks } from './sort';
@@ -83,6 +82,7 @@ const COMPONENT_CSS = `
   .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
   .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
   .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-branch-empty { color: var(--tk-fg-muted); font-style: italic; opacity: 0.8; }
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
   .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }
@@ -155,23 +155,6 @@ function renderClosedFolder(closed: import('@tackle/shared').Task[], open: boole
   return `${folder}<div class="closed-rows">${rows}</div>`;
 }
 
-function mostRecentWorktreePath(sessions: Session[]): string | null {
-  const withPath = sessions.filter((s) => s.worktree_path);
-  if (withPath.length === 0) return null;
-  const sorted = withPath.slice().sort((a, b) => {
-    const ka = a.started_at || '';
-    const kb = b.started_at || '';
-    if (ka !== kb) return ka < kb ? 1 : -1;
-    return b.id - a.id;
-  });
-  return sorted[0].worktree_path;
-}
-
-function branchFromPath(p: string): string {
-  const parts = p.split(/[\\/]/).filter(Boolean);
-  return parts[parts.length - 1] ?? p;
-}
-
 function renderDetail(state: SidebarState, taskId: number): string {
   const task = state.tasks.find((t) => t.id === taskId);
   if (!task) {
@@ -207,10 +190,9 @@ function renderDetail(state: SidebarState, taskId: number): string {
   </div>`;
 
   const taskSessions = state.sessions.filter((s) => s.task_id === task.id && !s.deleted_at);
-  const wtPath = mostRecentWorktreePath(taskSessions);
-  const branchLine = wtPath
-    ? `<div class="detail-branch">🌿 ${escapeHtml(branchFromPath(wtPath))}</div>`
-    : '';
+  const branchLine = task.worktree_branch
+    ? `<div class="detail-branch">🌿 ${escapeHtml(task.worktree_branch)}</div>`
+    : `<div class="detail-branch detail-branch-empty">🌿 no worktree yet</div>`;
 
   const runningCount = taskSessions.filter((s) => s.status === 'running').length;
   const closedIndicator =
