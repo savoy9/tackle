@@ -181,6 +181,59 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
   });
 });
 
+describe('WorktreeProvisioner.createIsolatedWorktree (α-isolation)', () => {
+  it('creates <task-branch>-<session-ref> sub-worktree off the Task branch', async () => {
+    const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
+    state.tasks.set(1, task);
+
+    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const taskWt = await provisioner.ensureWorktreeForTask(task);
+
+    // Now create an α-isolated sub-worktree for sessionId=7
+    const refreshed = (await repo.get(1))!;
+    const iso = await provisioner.createIsolatedWorktree(refreshed, 7);
+
+    expect(iso.path).toBe(join(wtRoot, '42-fix-the-auth-bug-7'));
+    expect(existsSync(iso.path)).toBe(true);
+    expect(iso.branch).toBe(`${taskWt.branch}-7`);
+    // Sub-worktree's HEAD branch should be the new sub-branch
+    const headBranch = git(iso.path, 'rev-parse --abbrev-ref HEAD');
+    expect(headBranch).toBe(iso.branch);
+    // Task row is unchanged — α-isolation only feeds Session.worktree_path
+    const persisted = await repo.get(1);
+    expect(persisted!.worktree_path).toBe(taskWt.path);
+    expect(persisted!.worktree_branch).toBe(taskWt.branch);
+  });
+
+  it('multiple isolated sessions on the same task get distinct sub-worktrees', async () => {
+    const task = makeTask({ id: 1, external_id: '42', title: 'Multi' });
+    state.tasks.set(1, task);
+
+    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    await provisioner.ensureWorktreeForTask(task);
+    const refreshed = (await repo.get(1))!;
+
+    const a = await provisioner.createIsolatedWorktree(refreshed, 1);
+    const b = await provisioner.createIsolatedWorktree(refreshed, 2);
+
+    expect(a.path).not.toBe(b.path);
+    expect(a.branch).not.toBe(b.branch);
+    expect(existsSync(a.path)).toBe(true);
+    expect(existsSync(b.path)).toBe(true);
+
+    // git worktree list should show main + task + 2 isolated = 4
+    const lines = git(repoDir, 'worktree list').split(/\r?\n/).filter(Boolean);
+    expect(lines).toHaveLength(4);
+  });
+
+  it('throws when the Task does not yet have a worktree', async () => {
+    const task = makeTask({ id: 1, external_id: '42', title: 'No wt yet' });
+    state.tasks.set(1, task);
+    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    await expect(provisioner.createIsolatedWorktree(task, 1)).rejects.toThrow();
+  });
+});
+
 describe('Integration: TerminalOrchestrator + WorktreeProvisioner', () => {
   it('first Session spawn on a Task ends with psmux cwd = Task worktree', async () => {
     // Lazy import inside test to keep top-of-file diff small.

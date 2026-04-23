@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import type { SessionKind } from '@tackle/shared';
 import { KIND_ICON, formatKindLabel } from '../session/kind-icon';
-import { buildKindQuickPickItems } from '../session/pick-kind';
+import { buildKindQuickPickItems, IMPL_LIKE_KINDS, shouldOfferIsolation } from '../session/pick-kind';
 
 describe('KIND_ICON', () => {
   it('has a glyph for every SessionKind', () => {
@@ -53,5 +53,31 @@ describe('buildKindQuickPickItems', () => {
     expect(byKind.test).toBe('🧪 test');
     expect(byKind.pilot).toBe('🚀 pilot');
     expect(byKind.shell).toBe('💻 shell');
+  });
+});
+
+describe('IMPL_LIKE_KINDS', () => {
+  it('contains exactly implement, debug, test, pilot', () => {
+    expect(new Set(IMPL_LIKE_KINDS)).toEqual(new Set(['implement', 'debug', 'test', 'pilot']));
+  });
+});
+
+describe('shouldOfferIsolation', () => {
+  it('is true for impl-like kinds when a Task worktree already exists', () => {
+    for (const k of ['implement', 'debug', 'test', 'pilot'] as SessionKind[]) {
+      expect(shouldOfferIsolation(k, { taskWorktreeExists: true })).toBe(true);
+    }
+  });
+
+  it('is false for impl-like kinds when no Task worktree exists yet (first spawn)', () => {
+    for (const k of ['implement', 'debug', 'test', 'pilot'] as SessionKind[]) {
+      expect(shouldOfferIsolation(k, { taskWorktreeExists: false })).toBe(false);
+    }
+  });
+
+  it('is false for non-impl kinds even if Task worktree exists', () => {
+    for (const k of ['plan', 'review', 'shell'] as SessionKind[]) {
+      expect(shouldOfferIsolation(k, { taskWorktreeExists: true })).toBe(false);
+    }
   });
 });

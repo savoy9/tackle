@@ -21,6 +21,8 @@ export function activate(context: vscode.ExtensionContext): void {
   let sessionActions: SessionActions | undefined;
   let scopeManager: ScopeManager | undefined;
   let sidebarController: SidebarController | undefined;
+  let taskRepoRef: SqliteTaskRepository | undefined;
+  let worktreeProvisionerRef: WorktreeProvisioner | undefined;
 
   // Placeholder task repo for the sidebar until activation fills it in.
   const placeholderTaskRepo = { list: async () => [], get: async () => undefined, upsert: async () => {}, upsertBatch: async () => {} };
@@ -79,6 +81,8 @@ export function activate(context: vscode.ExtensionContext): void {
         workspaceRoot,
         taskRepo,
       });
+      taskRepoRef = taskRepo;
+      worktreeProvisionerRef = worktreeProvisioner;
       terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry(), {
         ensureForTask: async (taskId: number) => {
           const task = await taskRepo.get(taskId);
@@ -194,6 +198,18 @@ export function activate(context: vscode.ExtensionContext): void {
         const picked = await vscode.window.showQuickPick(items, { placeHolder: 'Session kind' });
         return picked?.kind;
       },
+      pickIsolate: async (kind) => {
+        const picked = await vscode.window.showQuickPick(
+          [
+            { label: 'Share Task worktree', description: 'Default — siblings see each other\'s edits', isolate: false },
+            { label: '✂️  Isolate in new worktree', description: `Spawn ${kind} in a parallel sub-worktree`, isolate: true },
+          ],
+          { placeHolder: 'Worktree isolation' },
+        );
+        return picked?.isolate;
+      },
+      taskRepo: taskRepoRef,
+      worktreeProvisioner: worktreeProvisionerRef,
     });
 
     try {

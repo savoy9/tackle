@@ -146,4 +146,137 @@ describe('NewSessionFlow.start', () => {
     await flow.start(42);
     expect(scope.switchTask).not.toHaveBeenCalled();
   });
+
+  describe('α-isolation toggle', () => {
+    function makeTaskRepo(taskWorktreePath: string | null = '/wt/task-42') {
+      return {
+        get: vi.fn(async (_id: number) => ({
+          id: 42,
+          external_id: '42',
+          worktree_path: taskWorktreePath,
+          worktree_branch: '42-foo',
+          worktree_base_branch: 'main',
+        })),
+      };
+    }
+
+    it('does NOT call pickIsolate when no Task worktree exists yet', async () => {
+      const sessions = mockSessions([]);
+      const orchestrator = makeOrchestrator();
+      const scope = makeScope(42);
+      const pickIsolate = vi.fn(async () => false);
+      const flow = new NewSessionFlow({
+        sessions,
+        orchestrator: orchestrator as any,
+        scope,
+        pickKind: async () => 'implement' as SessionKind,
+        pickIsolate,
+        taskRepo: makeTaskRepo(null) as any,
+      });
+      await flow.start(42);
+      expect(pickIsolate).not.toHaveBeenCalled();
+      const arg = orchestrator.createTerminal.mock.calls[0][0];
+      expect(arg.worktreePath).toBeFalsy();
+    });
+
+    it('does NOT call pickIsolate for non-impl kinds (plan, review, shell)', async () => {
+      for (const kind of ['plan', 'review', 'shell'] as SessionKind[]) {
+        const sessions = mockSessions([]);
+        const orchestrator = makeOrchestrator();
+        const scope = makeScope(42);
+        const pickIsolate = vi.fn(async () => false);
+        const flow = new NewSessionFlow({
+          sessions,
+          orchestrator: orchestrator as any,
+          scope,
+          pickKind: async () => kind,
+          pickIsolate,
+          taskRepo: makeTaskRepo() as any,
+        });
+        await flow.start(42);
+        expect(pickIsolate).not.toHaveBeenCalled();
+      }
+    });
+
+    it('calls pickIsolate for impl-like kinds when Task worktree exists', async () => {
+      const sessions = mockSessions([]);
+      const orchestrator = makeOrchestrator();
+      const scope = makeScope(42);
+      const pickIsolate = vi.fn(async () => false);
+      const flow = new NewSessionFlow({
+        sessions,
+        orchestrator: orchestrator as any,
+        scope,
+        pickKind: async () => 'implement' as SessionKind,
+        pickIsolate,
+        taskRepo: makeTaskRepo() as any,
+      });
+      await flow.start(42);
+      expect(pickIsolate).toHaveBeenCalledTimes(1);
+    });
+
+    it('when toggle ON: calls provisioner.createIsolatedWorktree and forwards path as worktreePath', async () => {
+      const sessions = mockSessions([]);
+      const orchestrator = makeOrchestrator();
+      const scope = makeScope(42);
+      const pickIsolate = vi.fn(async () => true);
+      const createIsolatedWorktree = vi.fn(async (_task: any, _ref: number) => ({
+        path: '/wt/task-42-iso',
+        branch: '42-foo-iso',
+        baseBranch: 'main',
+      }));
+      const flow = new NewSessionFlow({
+        sessions,
+        orchestrator: orchestrator as any,
+        scope,
+        pickKind: async () => 'implement' as SessionKind,
+        pickIsolate,
+        taskRepo: makeTaskRepo() as any,
+        worktreeProvisioner: { createIsolatedWorktree } as any,
+      });
+      await flow.start(42);
+      expect(createIsolatedWorktree).toHaveBeenCalledTimes(1);
+      const arg = orchestrator.createTerminal.mock.calls[0][0];
+      expect(arg.worktreePath).toBe('/wt/task-42-iso');
+    });
+
+    it('when toggle OFF: does not call createIsolatedWorktree', async () => {
+      const sessions = mockSessions([]);
+      const orchestrator = makeOrchestrator();
+      const scope = makeScope(42);
+      const pickIsolate = vi.fn(async () => false);
+      const createIsolatedWorktree = vi.fn();
+      const flow = new NewSessionFlow({
+        sessions,
+        orchestrator: orchestrator as any,
+        scope,
+        pickKind: async () => 'implement' as SessionKind,
+        pickIsolate,
+        taskRepo: makeTaskRepo() as any,
+        worktreeProvisioner: { createIsolatedWorktree } as any,
+      });
+      await flow.start(42);
+      expect(createIsolatedWorktree).not.toHaveBeenCalled();
+      const arg = orchestrator.createTerminal.mock.calls[0][0];
+      expect(arg.worktreePath).toBeFalsy();
+    });
+
+    it('cancelling pickIsolate (undefined) aborts session creation', async () => {
+      const sessions = mockSessions([]);
+      const orchestrator = makeOrchestrator();
+      const scope = makeScope(42);
+      const pickIsolate = vi.fn(async () => undefined);
+      const flow = new NewSessionFlow({
+        sessions,
+        orchestrator: orchestrator as any,
+        scope,
+        pickKind: async () => 'implement' as SessionKind,
+        pickIsolate,
+        taskRepo: makeTaskRepo() as any,
+      });
+      const result = await flow.start(42);
+      expect(result).toBeUndefined();
+      expect(orchestrator.createTerminal).not.toHaveBeenCalled();
+    });
+  });
 });
