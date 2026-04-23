@@ -145,6 +145,7 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
   .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
   .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
   .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-branch-empty { color: var(--tk-fg-muted); font-style: italic; opacity: 0.8; }
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
   .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }
@@ -347,6 +348,7 @@ exports[`render snapshots — canonical List Mode states (#29) > card with zero 
   .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
   .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
   .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-branch-empty { color: var(--tk-fg-muted); font-style: italic; opacity: 0.8; }
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
   .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }
@@ -523,6 +525,7 @@ exports[`render snapshots — canonical List Mode states (#29) > empty list 1`] 
   .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
   .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
   .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-branch-empty { color: var(--tk-fg-muted); font-style: italic; opacity: 0.8; }
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
   .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }
@@ -686,6 +689,7 @@ exports[`render snapshots — canonical List Mode states (#29) > expanded card w
   .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
   .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
   .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-branch-empty { color: var(--tk-fg-muted); font-style: italic; opacity: 0.8; }
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
   .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }
@@ -890,6 +894,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
   .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
   .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-branch-empty { color: var(--tk-fg-muted); font-style: italic; opacity: 0.8; }
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
   .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }
@@ -1079,6 +1084,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
   .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
   .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-branch-empty { color: var(--tk-fg-muted); font-style: italic; opacity: 0.8; }
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
   .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
   .detail-description img { max-width: 100%; height: auto; }

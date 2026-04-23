@@ -12,6 +12,9 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   status: 'open',
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,
@@ -100,28 +103,48 @@ describe('render — Detail Subhead: breadcrumb + identity', () => {
   });
 });
 
-describe('render — Detail Subhead: branch line', () => {
-  it('renders branch line with 🌿 when a session has a worktree_path', () => {
+describe('render — Detail Subhead: branch line (#40)', () => {
+  it('renders branch line with 🌿 from Task.worktree_branch', () => {
     const state = detailState({
-      sessions: [sess(10, 1, { worktree_path: '/path/to/feature-foo' })],
+      tasks: [task(1, 'X', { worktree_branch: '42-feature-foo' })],
     });
     const html = render(state);
     expect(html).toContain('class="detail-branch"');
     expect(html).toContain('🌿');
-    expect(html).toContain('feature-foo');
+    expect(html).toContain('42-feature-foo');
   });
 
-  it('omits branch line when no session has a worktree_path', () => {
+  it('renders muted placeholder when Task.worktree_branch is null (no worktree yet)', () => {
     const state = detailState({
-      sessions: [sess(10, 1, { worktree_path: null })],
+      tasks: [task(1, 'X', { worktree_branch: null })],
     });
     const html = render(state);
-    expect(html).not.toContain('class="detail-branch"');
+    expect(html).toMatch(/class="detail-branch[^"]*"/);
+    expect(html).toMatch(/detail-branch-empty/);
+    expect(html).toMatch(/no worktree yet/i);
   });
 
-  it('omits branch line when no sessions at all', () => {
-    const html = render(detailState());
-    expect(html).not.toContain('class="detail-branch"');
+  it('renders placeholder regardless of session worktree_path when task has no branch', () => {
+    // Source of truth is Task.worktree_branch — a session worktree_path
+    // does not by itself populate the branch line.
+    const state = detailState({
+      tasks: [task(1, 'X', { worktree_branch: null })],
+      sessions: [sess(10, 1, { worktree_path: '/path/to/feature-foo' })],
+    });
+    const html = render(state);
+    expect(html).toMatch(/class="detail-branch[^"]*"/);
+    expect(html).not.toContain('feature-foo');
+    expect(html).toMatch(/no worktree yet/i);
+  });
+
+  it('escapes branch name', () => {
+    const state = detailState({
+      tasks: [task(1, 'X', { worktree_branch: 'feat/<script>' })],
+    });
+    const html = render(state);
+    expect(html).toContain('class="detail-branch"');
+    expect(html).not.toContain('<script>');
+    expect(html).toContain('&lt;script&gt;');
   });
 });
 

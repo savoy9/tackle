@@ -12,6 +12,9 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   status: 'open',
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,
@@ -47,6 +50,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
           external_id: '42',
           assignee: 'alice',
           parent_external_id: '10',
+          worktree_branch: 'feature-main',
           synced_at: '2026-04-10',
         }),
         task(2, 'Other A', { external_id: '2', synced_at: '2026-04-08' }),
@@ -78,7 +82,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
     const state: SidebarState = {
       ...initialState,
       mode: { kind: 'detail', taskId: 1 },
-      tasks: [task(1, 'Closed task', { status: 'closed', synced_at: '2026-04-10' })],
+      tasks: [task(1, 'Closed task', { status: 'closed', worktree_branch: 'feat-zz', synced_at: '2026-04-10' })],
       sessions: [
         sess(10, 1, { status: 'running', worktree_path: '/wt/feat-zz' }),
         sess(11, 1, { status: 'running', worktree_path: '/wt/feat-zz' }),
