@@ -37,6 +37,7 @@ export function activate(context: vscode.ExtensionContext): void {
     scope: scopeStub,
     workspaceState: context.workspaceState,
     executeCommand: (cmd, ...args) => Promise.resolve(vscode.commands.executeCommand(cmd, ...args)),
+    colorTheme: vscode.window,
   });
   void sidebarController.start();
 
@@ -110,6 +111,7 @@ export function activate(context: vscode.ExtensionContext): void {
         scope: scopeManager,
         workspaceState: context.workspaceState,
         executeCommand: (cmd, ...args) => Promise.resolve(vscode.commands.executeCommand(cmd, ...args)),
+        colorTheme: vscode.window,
       });
       await sidebarController.start();
       sidebarProvider.setController(sidebarController);

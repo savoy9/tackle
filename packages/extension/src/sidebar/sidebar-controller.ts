@@ -2,6 +2,7 @@ import type { TaskRepository, SessionRepository, Task } from '@tackle/shared';
 import { reducer, initialState, type SidebarAction, type SidebarState, type SidebarMode } from './sidebar-state';
 import { render } from './render';
 import type { InboundMessage } from './messages';
+import { kindToDataTheme, type ThemeKind } from './theme';
 import MarkdownIt from 'markdown-it';
 
 const md = new MarkdownIt({ html: false, linkify: true, breaks: false });
@@ -59,6 +60,14 @@ export interface SessionRepoEvents {
   onDidChange?: (listener: () => void) => { dispose(): void };
 }
 
+/** Subset of `vscode.window` we need for theme transport. Injected for tests. */
+export interface SidebarColorTheme {
+  readonly activeColorTheme: { readonly kind: number };
+  onDidChangeActiveColorTheme(
+    listener: (theme: { kind: number }) => void,
+  ): { dispose(): void };
+}
+
 export interface SidebarControllerDeps {
   taskRepo: TaskRepository;
   sessionRepo?: SessionRepository & SessionRepoEvents;
@@ -67,6 +76,8 @@ export interface SidebarControllerDeps {
   webview?: SidebarWebview;
   /** Executes a VS Code command. Injected for testability. */
   executeCommand?: (command: string, ...args: unknown[]) => Promise<unknown>;
+  /** Source of VS Code color-theme info. When omitted, no themeKind messages. */
+  colorTheme?: SidebarColorTheme;
 }
 
 const KEY_MODE = 'tackle.sidebar.mode';
@@ -78,6 +89,8 @@ export class SidebarController {
   private webview: SidebarWebview | undefined;
   private scopeSub: { dispose(): void } | undefined;
   private sessionSub: { dispose(): void } | undefined;
+  private colorThemeSub: { dispose(): void } | undefined;
+  private themeKind: ThemeKind | undefined;
 
   constructor(private deps: SidebarControllerDeps) {
     this.webview = deps.webview;
@@ -115,12 +128,22 @@ export class SidebarController {
       });
     }
 
+    if (this.deps.colorTheme) {
+      this.themeKind = kindToDataTheme(this.deps.colorTheme.activeColorTheme.kind);
+      this.colorThemeSub = this.deps.colorTheme.onDidChangeActiveColorTheme((t) => {
+        this.themeKind = kindToDataTheme(t.kind);
+        this.pushThemeKind();
+      });
+      this.pushThemeKind();
+    }
+
     this.pushRender();
   }
 
   dispose(): void {
     this.scopeSub?.dispose();
     this.sessionSub?.dispose();
+    this.colorThemeSub?.dispose();
   }
 
   getState(): SidebarState {
@@ -129,6 +152,7 @@ export class SidebarController {
 
   setWebview(webview: SidebarWebview | undefined): void {
     this.webview = webview;
+    this.pushThemeKind();
     this.pushRender();
   }
 
@@ -243,5 +267,10 @@ export class SidebarController {
   private pushRender(): void {
     if (!this.webview) return;
     this.webview.postMessage({ type: 'render', html: render(this.state) });
+  }
+
+  private pushThemeKind(): void {
+    if (!this.webview || !this.themeKind) return;
+    this.webview.postMessage({ type: 'themeKind', kind: this.themeKind });
   }
 }

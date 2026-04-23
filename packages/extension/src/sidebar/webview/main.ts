@@ -1,6 +1,7 @@
 // Webview-side entry point. Receives rendered HTML from the host, delegates
 // clicks to typed inbound messages using data-action attributes.
 import { post, type InboundMessage, type OutboundMessage } from '../messages';
+import { handleOutbound } from './handle-outbound';
 
 declare function acquireVsCodeApi(): { postMessage: (msg: unknown) => void };
 
@@ -8,13 +9,6 @@ const vscode = acquireVsCodeApi();
 
 function send(msg: InboundMessage): void {
   post(vscode, msg);
-}
-
-function mount(html: string): void {
-  const root = document.getElementById('root');
-  if (!root) return;
-  const match = html.match(/<body[^>]*>([\s\S]*)<\/body>/i);
-  root.innerHTML = match ? match[1] : html;
 }
 
 function dispatch(action: string, el: HTMLElement): boolean {
@@ -119,7 +113,7 @@ function onContextMenu(e: MouseEvent): void {
 
 window.addEventListener('message', (event) => {
   const msg = event.data as OutboundMessage;
-  if (msg && msg.type === 'render') mount(msg.html);
+  handleOutbound(msg, document);
 });
 
 document.addEventListener('click', onClick);
