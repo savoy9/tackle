@@ -150,10 +150,10 @@ describe('render — Card Line 3 (session rollup + branch | + New session)', () 
 });
 
 describe('render — Active marker class (state matrix is #46)', () => {
-  it('active task has .active class on the card element', () => {
+  it('active task has card--active class on the card element', () => {
     const state: SidebarState = { ...initialState, tasks: [task(1, 'A')], activeTaskId: 1 };
     const html = render(state);
-    expect(html).toMatch(/class="card active"[^>]*data-task-id="1"/);
+    expect(html).toMatch(/class="card card--active"[^>]*data-task-id="1"/);
   });
 
   it('non-active task does not have .active class', () => {

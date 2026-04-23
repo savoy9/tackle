@@ -111,6 +111,51 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
     border-radius: var(--tk-radius-card);
     cursor: pointer;
     color: var(--tk-fg);
+    transition:
+      background-color var(--tk-dur-hover) var(--tk-ease),
+      transform var(--tk-dur-active) var(--tk-ease),
+      box-shadow var(--tk-dur-active) var(--tk-ease),
+      border-color var(--tk-dur-active) var(--tk-ease);
+  }
+  /* Hover: subtle bg tint, no lift. (#46) */
+  .card:hover, .card.card--hover {
+    background: var(--tk-card-bg-hover);
+  }
+  /* Active card (#46): lift + shadow + accent stroke + fill bump. */
+  .card.card--active {
+    transform: translateY(-1px);
+    box-shadow: var(--tk-shadow-active);
+    border-color: var(--tk-accent);
+    background: var(--tk-card-bg-active);
+  }
+  /* Closed Folder rows (#46): sunken treatment, no stroke, inset shadow,
+     reduced glyph/meta opacity. Rendered as .closed-row.card--closed. */
+  .card--closed {
+    background: var(--tk-card-bg-closed);
+    border: none;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  .card--closed .glyph, .card--closed .id, .card--closed .date {
+    opacity: 0.6;
+  }
+
+  /* Edge Bar (#46): inset 1 px from card stroke so the rounded corner does
+     not clip a hard 3 px rectangle. Sits at the left edge of card padding. */
+  .edge-bar {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    bottom: 1px;
+    width: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .edge-bar--soft { background: var(--tk-accent-soft); }
+  .edge-bar--solid { background: var(--tk-accent); }
+  .edge-bar--off { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
   }
   .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
@@ -161,7 +206,8 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
   .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; color: var(--tk-fg); }
   .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="list-header">3 open · 0 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="3">
+</style></head><body><div class="list-header">3 open · 0 closed</div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="3">
+  <span class="edge-bar edge-bar--soft" aria-hidden="true"></span>
   <div class="line line1">
     <span class="glyph">✳️</span>
     <span class="title" data-action="enterDetail" data-task-id="3">Waiting task</span>
@@ -174,7 +220,8 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
     
   </div>
   <div class="line line3"><span class="rollup"><span>✳️1</span></span></div>
-</li><li class="card active" data-action="toggleExpanded" data-task-id="1">
+</li><li class="card card--active" data-action="toggleExpanded" data-task-id="1">
+  <span class="edge-bar edge-bar--solid" aria-hidden="true"></span>
   <div class="line line1">
     <span class="glyph">●</span>
     <span class="title" data-action="enterDetail" data-task-id="1">Active task</span>
@@ -188,6 +235,7 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
   </div>
   <div class="line line3"><span class="rollup"><span>●1</span></span></div>
 </li><li class="card" data-action="toggleExpanded" data-task-id="2">
+  
   <div class="line line1">
     <span class="glyph">○</span>
     <span class="title" data-action="enterDetail" data-task-id="2">Idle task</span>
@@ -314,6 +362,51 @@ exports[`render snapshots — canonical List Mode states (#29) > card with zero 
     border-radius: var(--tk-radius-card);
     cursor: pointer;
     color: var(--tk-fg);
+    transition:
+      background-color var(--tk-dur-hover) var(--tk-ease),
+      transform var(--tk-dur-active) var(--tk-ease),
+      box-shadow var(--tk-dur-active) var(--tk-ease),
+      border-color var(--tk-dur-active) var(--tk-ease);
+  }
+  /* Hover: subtle bg tint, no lift. (#46) */
+  .card:hover, .card.card--hover {
+    background: var(--tk-card-bg-hover);
+  }
+  /* Active card (#46): lift + shadow + accent stroke + fill bump. */
+  .card.card--active {
+    transform: translateY(-1px);
+    box-shadow: var(--tk-shadow-active);
+    border-color: var(--tk-accent);
+    background: var(--tk-card-bg-active);
+  }
+  /* Closed Folder rows (#46): sunken treatment, no stroke, inset shadow,
+     reduced glyph/meta opacity. Rendered as .closed-row.card--closed. */
+  .card--closed {
+    background: var(--tk-card-bg-closed);
+    border: none;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  .card--closed .glyph, .card--closed .id, .card--closed .date {
+    opacity: 0.6;
+  }
+
+  /* Edge Bar (#46): inset 1 px from card stroke so the rounded corner does
+     not clip a hard 3 px rectangle. Sits at the left edge of card padding. */
+  .edge-bar {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    bottom: 1px;
+    width: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .edge-bar--soft { background: var(--tk-accent-soft); }
+  .edge-bar--solid { background: var(--tk-accent); }
+  .edge-bar--off { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
   }
   .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
@@ -365,6 +458,7 @@ exports[`render snapshots — canonical List Mode states (#29) > card with zero 
   .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
 </style></head><body><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+  
   <div class="line line1">
     <span class="glyph">○</span>
     <span class="title" data-action="enterDetail" data-task-id="1">Fresh task</span>
@@ -491,6 +585,51 @@ exports[`render snapshots — canonical List Mode states (#29) > empty list 1`] 
     border-radius: var(--tk-radius-card);
     cursor: pointer;
     color: var(--tk-fg);
+    transition:
+      background-color var(--tk-dur-hover) var(--tk-ease),
+      transform var(--tk-dur-active) var(--tk-ease),
+      box-shadow var(--tk-dur-active) var(--tk-ease),
+      border-color var(--tk-dur-active) var(--tk-ease);
+  }
+  /* Hover: subtle bg tint, no lift. (#46) */
+  .card:hover, .card.card--hover {
+    background: var(--tk-card-bg-hover);
+  }
+  /* Active card (#46): lift + shadow + accent stroke + fill bump. */
+  .card.card--active {
+    transform: translateY(-1px);
+    box-shadow: var(--tk-shadow-active);
+    border-color: var(--tk-accent);
+    background: var(--tk-card-bg-active);
+  }
+  /* Closed Folder rows (#46): sunken treatment, no stroke, inset shadow,
+     reduced glyph/meta opacity. Rendered as .closed-row.card--closed. */
+  .card--closed {
+    background: var(--tk-card-bg-closed);
+    border: none;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  .card--closed .glyph, .card--closed .id, .card--closed .date {
+    opacity: 0.6;
+  }
+
+  /* Edge Bar (#46): inset 1 px from card stroke so the rounded corner does
+     not clip a hard 3 px rectangle. Sits at the left edge of card padding. */
+  .edge-bar {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    bottom: 1px;
+    width: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .edge-bar--soft { background: var(--tk-accent-soft); }
+  .edge-bar--solid { background: var(--tk-accent); }
+  .edge-bar--off { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
   }
   .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
@@ -655,6 +794,51 @@ exports[`render snapshots — canonical List Mode states (#29) > expanded card w
     border-radius: var(--tk-radius-card);
     cursor: pointer;
     color: var(--tk-fg);
+    transition:
+      background-color var(--tk-dur-hover) var(--tk-ease),
+      transform var(--tk-dur-active) var(--tk-ease),
+      box-shadow var(--tk-dur-active) var(--tk-ease),
+      border-color var(--tk-dur-active) var(--tk-ease);
+  }
+  /* Hover: subtle bg tint, no lift. (#46) */
+  .card:hover, .card.card--hover {
+    background: var(--tk-card-bg-hover);
+  }
+  /* Active card (#46): lift + shadow + accent stroke + fill bump. */
+  .card.card--active {
+    transform: translateY(-1px);
+    box-shadow: var(--tk-shadow-active);
+    border-color: var(--tk-accent);
+    background: var(--tk-card-bg-active);
+  }
+  /* Closed Folder rows (#46): sunken treatment, no stroke, inset shadow,
+     reduced glyph/meta opacity. Rendered as .closed-row.card--closed. */
+  .card--closed {
+    background: var(--tk-card-bg-closed);
+    border: none;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  .card--closed .glyph, .card--closed .id, .card--closed .date {
+    opacity: 0.6;
+  }
+
+  /* Edge Bar (#46): inset 1 px from card stroke so the rounded corner does
+     not clip a hard 3 px rectangle. Sits at the left edge of card padding. */
+  .edge-bar {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    bottom: 1px;
+    width: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .edge-bar--soft { background: var(--tk-accent-soft); }
+  .edge-bar--solid { background: var(--tk-accent); }
+  .edge-bar--off { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
   }
   .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
@@ -705,7 +889,8 @@ exports[`render snapshots — canonical List Mode states (#29) > expanded card w
   .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; color: var(--tk-fg); }
   .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card active" data-action="toggleExpanded" data-task-id="1">
+</style></head><body><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card card--active" data-action="toggleExpanded" data-task-id="1">
+  <span class="edge-bar edge-bar--solid" aria-hidden="true"></span>
   <div class="line line1">
     <span class="glyph">✳️</span>
     <span class="title" data-action="enterDetail" data-task-id="1">Big task</span>
@@ -747,6 +932,260 @@ exports[`render snapshots — canonical List Mode states (#29) > expanded card w
   <button class="icon-btn done" title="Mark Done" data-action="markSessionDone" data-session-id="13">✓</button>
   <button class="icon-btn overflow" title="More" data-action="sessionOverflow" data-session-id="13">⋯</button>
 </div></div></ul></body></html>"
+`;
+
+exports[`render snapshots — canonical List Mode states (#29) > full state matrix — Active, Running-non-active, Idle, Closed (#46) 1`] = `
+"<!doctype html>
+<html><head><meta charset="utf-8"><style>
+:root {
+  --tk-bg: #f5f1ea;
+  --tk-card-bg: #faf7f1;
+  --tk-card-bg-active: #ffffff;
+  --tk-card-bg-hover: #efeae1;
+  --tk-card-bg-closed: #ece7dd;
+  --tk-stroke: #d8d1c2;
+  --tk-stroke-muted: #e6e0d2;
+  --tk-accent: #d97a32;
+  --tk-accent-soft: rgba(217, 122, 50, 0.45);
+  --tk-fg: #2a2622;
+  --tk-fg-muted: #6b6358;
+  --tk-shadow-active: 0 1px 2px rgba(40, 32, 20, 0.08), 0 2px 6px rgba(40, 32, 20, 0.06);
+  --tk-description-bg: #efeae1;
+
+  --tk-radius-card: 5px;
+  --tk-stroke-width: 1px;
+  --tk-pad-card: 4px;
+  --tk-gap-card: 3px;
+
+  --tk-dur-hover: 120ms;
+  --tk-dur-active: 150ms;
+  --tk-dur-detail: 180ms;
+  --tk-ease: ease-out;
+}
+
+[data-theme="dark"] {
+  --tk-bg: #1a1f26;
+  --tk-card-bg: #232a33;
+  --tk-card-bg-active: #2c3540;
+  --tk-card-bg-hover: #2a323c;
+  --tk-card-bg-closed: #1f242b;
+  --tk-stroke: #38424f;
+  --tk-stroke-muted: #2a323c;
+  --tk-accent: #4ec0d8;
+  --tk-accent-soft: rgba(78, 192, 216, 0.40);
+  --tk-fg: #e6ecf2;
+  --tk-fg-muted: #93a1b3;
+  --tk-shadow-active: 0 1px 2px rgba(0, 0, 0, 0.40), 0 2px 6px rgba(0, 0, 0, 0.30);
+  --tk-description-bg: #1d232b;
+}
+
+[data-theme="hc-dark"] {
+  --tk-bg: #000000;
+  --tk-card-bg: #000000;
+  --tk-card-bg-active: #000000;
+  --tk-card-bg-hover: #0a0a0a;
+  --tk-card-bg-closed: #000000;
+  --tk-stroke: var(--vscode-contrastBorder, #ffffff);
+  --tk-stroke-muted: var(--vscode-contrastBorder, #ffffff);
+  --tk-accent: #00e5ff;
+  --tk-accent-soft: #00e5ff;
+  --tk-fg: #ffffff;
+  --tk-fg-muted: #ffffff;
+  --tk-shadow-active: none;
+  --tk-description-bg: #000000;
+}
+
+[data-theme="hc-light"] {
+  --tk-bg: #ffffff;
+  --tk-card-bg: #ffffff;
+  --tk-card-bg-active: #ffffff;
+  --tk-card-bg-hover: #f4f4f4;
+  --tk-card-bg-closed: #ffffff;
+  --tk-stroke: var(--vscode-contrastBorder, #000000);
+  --tk-stroke-muted: var(--vscode-contrastBorder, #000000);
+  --tk-accent: #b34700;
+  --tk-accent-soft: #b34700;
+  --tk-fg: #000000;
+  --tk-fg-muted: #000000;
+  --tk-shadow-active: none;
+  --tk-description-bg: #ffffff;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --tk-dur-hover: 0ms;
+    --tk-dur-active: 0ms;
+    --tk-dur-detail: 0ms;
+  }
+}
+
+  body {
+    color: var(--tk-fg);
+    background: var(--tk-bg);
+    font-family: var(--vscode-font-family);
+    font-size: var(--vscode-font-size);
+    margin: 0;
+    padding: 0;
+  }
+  .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
+  .card-list { list-style: none; margin: 0; padding: 0; }
+
+  /* Idle Task Card primitive (#45):
+     rounded 5 px corners, 1 px stroke, --tk-card-bg fill,
+     4 px padding, 3 px gap. */
+  .card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--tk-gap-card);
+    padding: var(--tk-pad-card);
+    margin: var(--tk-pad-card);
+    background: var(--tk-card-bg);
+    border: var(--tk-stroke-width) solid var(--tk-stroke);
+    border-radius: var(--tk-radius-card);
+    cursor: pointer;
+    color: var(--tk-fg);
+    transition:
+      background-color var(--tk-dur-hover) var(--tk-ease),
+      transform var(--tk-dur-active) var(--tk-ease),
+      box-shadow var(--tk-dur-active) var(--tk-ease),
+      border-color var(--tk-dur-active) var(--tk-ease);
+  }
+  /* Hover: subtle bg tint, no lift. (#46) */
+  .card:hover, .card.card--hover {
+    background: var(--tk-card-bg-hover);
+  }
+  /* Active card (#46): lift + shadow + accent stroke + fill bump. */
+  .card.card--active {
+    transform: translateY(-1px);
+    box-shadow: var(--tk-shadow-active);
+    border-color: var(--tk-accent);
+    background: var(--tk-card-bg-active);
+  }
+  /* Closed Folder rows (#46): sunken treatment, no stroke, inset shadow,
+     reduced glyph/meta opacity. Rendered as .closed-row.card--closed. */
+  .card--closed {
+    background: var(--tk-card-bg-closed);
+    border: none;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  .card--closed .glyph, .card--closed .id, .card--closed .date {
+    opacity: 0.6;
+  }
+
+  /* Edge Bar (#46): inset 1 px from card stroke so the rounded corner does
+     not clip a hard 3 px rectangle. Sits at the left edge of card padding. */
+  .edge-bar {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    bottom: 1px;
+    width: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .edge-bar--soft { background: var(--tk-accent-soft); }
+  .edge-bar--solid { background: var(--tk-accent); }
+  .edge-bar--off { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
+  }
+  .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
+  .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+  .card .line1 .activate, .card .line1 .overflow { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 0 4px; }
+  .card .ext-icon { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .id { color: var(--tk-fg-muted); }
+  .card .parent { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .rollup { color: var(--tk-fg-muted); }
+  .card .branch { color: var(--tk-fg-muted); font-size: 0.85em; }
+  .card .new-session { color: var(--tk-accent); cursor: pointer; }
+
+  .session-rows { padding: 0 10px 6px 24px; }
+  .session-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; }
+  .session-row .label { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .session-row .icon-btn { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 0 3px; }
+  .session-divider { height: 1px; background: var(--tk-stroke-muted); margin: 4px 0; opacity: 0.6; }
+
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
+  .closed-rows { padding: 0 12px 6px 24px; }
+  .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
+  .closed-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; }
+  .closed-row .id { color: var(--tk-fg-muted); }
+  .closed-row .date { color: var(--tk-fg-muted); font-size: 0.85em; }
+
+  .tackle-detail { padding: 8px 12px; display: flex; flex-direction: column; height: 100%; box-sizing: border-box; }
+  .tackle-detail-header { font-weight: bold; margin-bottom: 8px; }
+  .detail-header { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-title { flex: 1 1 auto; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-overflow { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
+  .detail-breadcrumb { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-identity { display: flex; gap: 6px; align-items: center; color: var(--tk-fg-muted); font-size: 0.9em; margin-bottom: 2px; }
+  .detail-branch { color: var(--tk-fg-muted); font-size: 0.85em; margin-bottom: 2px; }
+  .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; margin: 4px 0; }
+  .detail-description { max-height: 40vh; overflow-y: auto; padding: 6px 4px; margin: 6px 0; background: var(--tk-description-bg); border: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
+  .detail-description img { max-width: 100%; height: auto; }
+  .detail-description pre { overflow-x: auto; }
+  .detail-sessions { margin-top: 6px; flex-shrink: 0; }
+  .detail-sessions-header { display: flex; align-items: center; gap: 6px; padding: 4px 0; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); }
+  .detail-sessions-label { flex: 1 1 auto; font-weight: bold; font-size: 0.9em; }
+  .detail-sessions-add { background: transparent; color: var(--tk-accent); border: none; cursor: pointer; padding: 0 4px; font-size: 1.1em; }
+  .detail-sessions-empty { color: var(--tk-fg-muted); padding: 4px; font-size: 0.9em; }
+  .detail-footer { margin-top: 8px; }
+  .detail-footer-rule { border: none; border-top: var(--tk-stroke-width) solid var(--tk-stroke-muted); margin: 0 0 4px 0; }
+  .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 22px); overflow-y: auto; }
+  .detail-footer-row { display: flex; align-items: center; gap: 6px; padding: 3px 4px; cursor: pointer; color: var(--tk-fg); }
+  .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
+</style></head><body><div class="list-header">3 open · 1 closed</div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="2">
+  <span class="edge-bar edge-bar--soft" aria-hidden="true"></span>
+  <div class="line line1">
+    <span class="glyph">⏳</span>
+    <span class="title" data-action="enterDetail" data-task-id="2">Running task</span>
+    <button class="activate" title="Activate" data-action="activateTask" data-task-id="2">▶</button>
+    <button class="overflow" title="More" data-action="taskOverflow" data-task-id="2">⋯</button>
+  </div>
+  <div class="line line2">
+    <span class="ext-icon">GH</span>
+    <span class="id">#2</span>
+    
+  </div>
+  <div class="line line3"><span class="rollup"><span>⏳1</span></span></div>
+</li><li class="card card--active" data-action="toggleExpanded" data-task-id="1">
+  <span class="edge-bar edge-bar--solid" aria-hidden="true"></span>
+  <div class="line line1">
+    <span class="glyph">●</span>
+    <span class="title" data-action="enterDetail" data-task-id="1">Active task</span>
+    
+    <button class="overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
+  </div>
+  <div class="line line2">
+    <span class="ext-icon">GH</span>
+    <span class="id">#1</span>
+    
+  </div>
+  <div class="line line3"><span class="rollup"><span>●1</span></span></div>
+</li><li class="card" data-action="toggleExpanded" data-task-id="3">
+  
+  <div class="line line1">
+    <span class="glyph">○</span>
+    <span class="title" data-action="enterDetail" data-task-id="3">Idle task</span>
+    <button class="activate" title="Activate" data-action="activateTask" data-task-id="3">▶</button>
+    <button class="overflow" title="More" data-action="taskOverflow" data-task-id="3">⋯</button>
+  </div>
+  <div class="line line2">
+    <span class="ext-icon">GH</span>
+    <span class="id">#3</span>
+    
+  </div>
+  <div class="line line3"><span class="new-session" data-action="newSession" data-task-id="3">+ New session</span></div>
+</li></ul><div class="closed-folder" data-action="toggleClosedFolder">▾ Closed (1)</div><div class="closed-rows"><div class="closed-row card--closed" data-action="enterDetail" data-task-id="4">
+  <span class="title">Closed task</span>
+  <span class="id">#4</span>
+  <span class="date">2026-03-15</span>
+</div></div></body></html>"
 `;
 
 exports[`render snapshots — canonical List Mode states (#29) > mixed open+closed tasks, closed folder collapsed 1`] = `
@@ -860,6 +1299,51 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
     border-radius: var(--tk-radius-card);
     cursor: pointer;
     color: var(--tk-fg);
+    transition:
+      background-color var(--tk-dur-hover) var(--tk-ease),
+      transform var(--tk-dur-active) var(--tk-ease),
+      box-shadow var(--tk-dur-active) var(--tk-ease),
+      border-color var(--tk-dur-active) var(--tk-ease);
+  }
+  /* Hover: subtle bg tint, no lift. (#46) */
+  .card:hover, .card.card--hover {
+    background: var(--tk-card-bg-hover);
+  }
+  /* Active card (#46): lift + shadow + accent stroke + fill bump. */
+  .card.card--active {
+    transform: translateY(-1px);
+    box-shadow: var(--tk-shadow-active);
+    border-color: var(--tk-accent);
+    background: var(--tk-card-bg-active);
+  }
+  /* Closed Folder rows (#46): sunken treatment, no stroke, inset shadow,
+     reduced glyph/meta opacity. Rendered as .closed-row.card--closed. */
+  .card--closed {
+    background: var(--tk-card-bg-closed);
+    border: none;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  .card--closed .glyph, .card--closed .id, .card--closed .date {
+    opacity: 0.6;
+  }
+
+  /* Edge Bar (#46): inset 1 px from card stroke so the rounded corner does
+     not clip a hard 3 px rectangle. Sits at the left edge of card padding. */
+  .edge-bar {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    bottom: 1px;
+    width: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .edge-bar--soft { background: var(--tk-accent-soft); }
+  .edge-bar--solid { background: var(--tk-accent); }
+  .edge-bar--off { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
   }
   .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
@@ -911,6 +1395,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
 </style></head><body><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+  
   <div class="line line1">
     <span class="glyph">○</span>
     <span class="title" data-action="enterDetail" data-task-id="1">Open A</span>
@@ -924,6 +1409,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   </div>
   <div class="line line3"><span class="new-session" data-action="newSession" data-task-id="1">+ New session</span></div>
 </li><li class="card" data-action="toggleExpanded" data-task-id="3">
+  
   <div class="line line1">
     <span class="glyph">○</span>
     <span class="title" data-action="enterDetail" data-task-id="3">Open B</span>
@@ -1050,6 +1536,51 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
     border-radius: var(--tk-radius-card);
     cursor: pointer;
     color: var(--tk-fg);
+    transition:
+      background-color var(--tk-dur-hover) var(--tk-ease),
+      transform var(--tk-dur-active) var(--tk-ease),
+      box-shadow var(--tk-dur-active) var(--tk-ease),
+      border-color var(--tk-dur-active) var(--tk-ease);
+  }
+  /* Hover: subtle bg tint, no lift. (#46) */
+  .card:hover, .card.card--hover {
+    background: var(--tk-card-bg-hover);
+  }
+  /* Active card (#46): lift + shadow + accent stroke + fill bump. */
+  .card.card--active {
+    transform: translateY(-1px);
+    box-shadow: var(--tk-shadow-active);
+    border-color: var(--tk-accent);
+    background: var(--tk-card-bg-active);
+  }
+  /* Closed Folder rows (#46): sunken treatment, no stroke, inset shadow,
+     reduced glyph/meta opacity. Rendered as .closed-row.card--closed. */
+  .card--closed {
+    background: var(--tk-card-bg-closed);
+    border: none;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.08);
+  }
+  .card--closed .glyph, .card--closed .id, .card--closed .date {
+    opacity: 0.6;
+  }
+
+  /* Edge Bar (#46): inset 1 px from card stroke so the rounded corner does
+     not clip a hard 3 px rectangle. Sits at the left edge of card padding. */
+  .edge-bar {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    bottom: 1px;
+    width: 3px;
+    border-radius: 2px;
+    pointer-events: none;
+  }
+  .edge-bar--soft { background: var(--tk-accent-soft); }
+  .edge-bar--solid { background: var(--tk-accent); }
+  .edge-bar--off { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .card { transition: none; }
   }
   .card .line { display: flex; align-items: center; gap: var(--tk-gap-card); min-height: 18px; }
   .card .line1 .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
@@ -1101,6 +1632,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   .detail-footer-row .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .detail-footer-row .id { color: var(--tk-fg-muted); font-size: 0.85em; }
 </style></head><body><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+  
   <div class="line line1">
     <span class="glyph">○</span>
     <span class="title" data-action="enterDetail" data-task-id="1">Open A</span>
@@ -1114,6 +1646,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   </div>
   <div class="line line3"><span class="new-session" data-action="newSession" data-task-id="1">+ New session</span></div>
 </li><li class="card" data-action="toggleExpanded" data-task-id="3">
+  
   <div class="line line1">
     <span class="glyph">○</span>
     <span class="title" data-action="enterDetail" data-task-id="3">Open B</span>
@@ -1126,11 +1659,11 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
     
   </div>
   <div class="line line3"><span class="new-session" data-action="newSession" data-task-id="3">+ New session</span></div>
-</li></ul><div class="closed-folder" data-action="toggleClosedFolder">▾ Closed (2)</div><div class="closed-rows"><div class="closed-row" data-action="enterDetail" data-task-id="2">
+</li></ul><div class="closed-folder" data-action="toggleClosedFolder">▾ Closed (2)</div><div class="closed-rows"><div class="closed-row card--closed" data-action="enterDetail" data-task-id="2">
   <span class="title">Closed A</span>
   <span class="id">#2</span>
   <span class="date">2026-03-20</span>
-</div><div class="closed-row" data-action="enterDetail" data-task-id="4">
+</div><div class="closed-row card--closed" data-action="enterDetail" data-task-id="4">
   <span class="title">Closed B</span>
   <span class="id">#4</span>
   <span class="date">2026-03-15</span>

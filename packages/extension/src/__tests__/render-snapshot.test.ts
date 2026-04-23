@@ -106,4 +106,23 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
     };
     expect(render(state)).toMatchSnapshot();
   });
+
+  it('full state matrix — Active, Running-non-active, Idle, Closed (#46)', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [
+        task(1, 'Active task', { synced_at: '2026-04-10' }),
+        task(2, 'Running task', { synced_at: '2026-04-09' }),
+        task(3, 'Idle task', { synced_at: '2026-04-08' }),
+        task(4, 'Closed task', { status: 'closed', synced_at: '2026-03-15' }),
+      ],
+      sessions: [
+        sess(10, 1, { status: 'running', agent_state: 'idle' }),
+        sess(20, 2, { status: 'running', agent_state: 'working' }),
+      ],
+      activeTaskId: 1,
+      closedFolderOpen: true,
+    };
+    expect(render(state)).toMatchSnapshot();
+  });
 });
