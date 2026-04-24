@@ -85,6 +85,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
   }
 }
 
+  html, body { height: 100%; }
   body {
     color: var(--tk-fg);
     background: var(--tk-bg);
@@ -92,6 +93,16 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
     font-size: var(--vscode-font-size);
     margin: 0;
     padding: 0;
+  }
+  /* The webview host sets #root.innerHTML = body contents. So #root — not
+     body — is the flex parent for the rendered tree. Making it a column
+     flex container of full viewport height lets Detail Mode's card grow
+     while the footer hugs the bottom. */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
   }
   .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
@@ -225,7 +236,11 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
 
   /* Detail Mode (#47): the entire surface is one expanded Active card.
      Sections are separated by whitespace ONLY — no internal border or
-     border-top rules. */
+     border-top rules.
+
+     Layout: the card grows to fill the viewport so the description can
+     take as much room as it needs, while the footer (rendered as a
+     sibling) hugs the bottom. */
   .tackle-detail {
     /* Override card defaults that don't make sense for the full-surface card. */
     margin: 8px;
@@ -233,6 +248,9 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
     gap: 6px;
     box-sizing: border-box;
     cursor: default;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
   .detail-header { display: flex; align-items: center; gap: 6px; }
   .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
@@ -245,12 +263,15 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; }
 
   /* Description area (#47): inset surface inside the Detail card.
-     8 px x 10 px padding, 4 px radius, 40 vh max height with internal scroll. */
+     8 px x 10 px padding, 4 px radius. Flexes to take the remaining
+     height inside the detail card so the user gets the biggest possible
+     reading area; scrolls internally when content overflows. */
   .detail-description {
     background: var(--tk-description-bg);
     padding: 8px 10px;
     border-radius: 4px;
-    max-height: 40vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
   .detail-description img { max-width: 100%; height: auto; }
@@ -273,8 +294,10 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
 
   /* Task Footer (#47): vertical list of 1-line mini-cards using the .card
      primitive plus the .card--mini modifier. Renders OUTSIDE the detail
-     card on the plain sidebar background. */
-  .detail-footer { margin-top: 6px; }
+     card on the plain sidebar background. Pinned to the bottom of the
+     viewport by the #root flex column — the detail card above it grows
+     to fill remaining space. */
+  .detail-footer { margin-top: 6px; flex: 0 0 auto; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 28px); overflow-y: auto; }
   .card--mini {
     flex-direction: row;
@@ -397,6 +420,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
   }
 }
 
+  html, body { height: 100%; }
   body {
     color: var(--tk-fg);
     background: var(--tk-bg);
@@ -404,6 +428,16 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
     font-size: var(--vscode-font-size);
     margin: 0;
     padding: 0;
+  }
+  /* The webview host sets #root.innerHTML = body contents. So #root — not
+     body — is the flex parent for the rendered tree. Making it a column
+     flex container of full viewport height lets Detail Mode's card grow
+     while the footer hugs the bottom. */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
   }
   .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
@@ -537,7 +571,11 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
 
   /* Detail Mode (#47): the entire surface is one expanded Active card.
      Sections are separated by whitespace ONLY — no internal border or
-     border-top rules. */
+     border-top rules.
+
+     Layout: the card grows to fill the viewport so the description can
+     take as much room as it needs, while the footer (rendered as a
+     sibling) hugs the bottom. */
   .tackle-detail {
     /* Override card defaults that don't make sense for the full-surface card. */
     margin: 8px;
@@ -545,6 +583,9 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
     gap: 6px;
     box-sizing: border-box;
     cursor: default;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
   .detail-header { display: flex; align-items: center; gap: 6px; }
   .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
@@ -557,12 +598,15 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; }
 
   /* Description area (#47): inset surface inside the Detail card.
-     8 px x 10 px padding, 4 px radius, 40 vh max height with internal scroll. */
+     8 px x 10 px padding, 4 px radius. Flexes to take the remaining
+     height inside the detail card so the user gets the biggest possible
+     reading area; scrolls internally when content overflows. */
   .detail-description {
     background: var(--tk-description-bg);
     padding: 8px 10px;
     border-radius: 4px;
-    max-height: 40vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
   .detail-description img { max-width: 100%; height: auto; }
@@ -585,8 +629,10 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
 
   /* Task Footer (#47): vertical list of 1-line mini-cards using the .card
      primitive plus the .card--mini modifier. Renders OUTSIDE the detail
-     card on the plain sidebar background. */
-  .detail-footer { margin-top: 6px; }
+     card on the plain sidebar background. Pinned to the bottom of the
+     viewport by the #root flex column — the detail card above it grows
+     to fill remaining space. */
+  .detail-footer { margin-top: 6px; flex: 0 0 auto; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 28px); overflow-y: auto; }
   .card--mini {
     flex-direction: row;
@@ -723,6 +769,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
   }
 }
 
+  html, body { height: 100%; }
   body {
     color: var(--tk-fg);
     background: var(--tk-bg);
@@ -730,6 +777,16 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
     font-size: var(--vscode-font-size);
     margin: 0;
     padding: 0;
+  }
+  /* The webview host sets #root.innerHTML = body contents. So #root — not
+     body — is the flex parent for the rendered tree. Making it a column
+     flex container of full viewport height lets Detail Mode's card grow
+     while the footer hugs the bottom. */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
   }
   .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
@@ -863,7 +920,11 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
 
   /* Detail Mode (#47): the entire surface is one expanded Active card.
      Sections are separated by whitespace ONLY — no internal border or
-     border-top rules. */
+     border-top rules.
+
+     Layout: the card grows to fill the viewport so the description can
+     take as much room as it needs, while the footer (rendered as a
+     sibling) hugs the bottom. */
   .tackle-detail {
     /* Override card defaults that don't make sense for the full-surface card. */
     margin: 8px;
@@ -871,6 +932,9 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
     gap: 6px;
     box-sizing: border-box;
     cursor: default;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
   .detail-header { display: flex; align-items: center; gap: 6px; }
   .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
@@ -883,12 +947,15 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; }
 
   /* Description area (#47): inset surface inside the Detail card.
-     8 px x 10 px padding, 4 px radius, 40 vh max height with internal scroll. */
+     8 px x 10 px padding, 4 px radius. Flexes to take the remaining
+     height inside the detail card so the user gets the biggest possible
+     reading area; scrolls internally when content overflows. */
   .detail-description {
     background: var(--tk-description-bg);
     padding: 8px 10px;
     border-radius: 4px;
-    max-height: 40vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
   .detail-description img { max-width: 100%; height: auto; }
@@ -911,8 +978,10 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
 
   /* Task Footer (#47): vertical list of 1-line mini-cards using the .card
      primitive plus the .card--mini modifier. Renders OUTSIDE the detail
-     card on the plain sidebar background. */
-  .detail-footer { margin-top: 6px; }
+     card on the plain sidebar background. Pinned to the bottom of the
+     viewport by the #root flex column — the detail card above it grows
+     to fill remaining space. */
+  .detail-footer { margin-top: 6px; flex: 0 0 auto; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 28px); overflow-y: auto; }
   .card--mini {
     flex-direction: row;
@@ -1043,6 +1112,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
   }
 }
 
+  html, body { height: 100%; }
   body {
     color: var(--tk-fg);
     background: var(--tk-bg);
@@ -1050,6 +1120,16 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
     font-size: var(--vscode-font-size);
     margin: 0;
     padding: 0;
+  }
+  /* The webview host sets #root.innerHTML = body contents. So #root — not
+     body — is the flex parent for the rendered tree. Making it a column
+     flex container of full viewport height lets Detail Mode's card grow
+     while the footer hugs the bottom. */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
   }
   .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
@@ -1183,7 +1263,11 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
 
   /* Detail Mode (#47): the entire surface is one expanded Active card.
      Sections are separated by whitespace ONLY — no internal border or
-     border-top rules. */
+     border-top rules.
+
+     Layout: the card grows to fill the viewport so the description can
+     take as much room as it needs, while the footer (rendered as a
+     sibling) hugs the bottom. */
   .tackle-detail {
     /* Override card defaults that don't make sense for the full-surface card. */
     margin: 8px;
@@ -1191,6 +1275,9 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
     gap: 6px;
     box-sizing: border-box;
     cursor: default;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
   .detail-header { display: flex; align-items: center; gap: 6px; }
   .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
@@ -1203,12 +1290,15 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; }
 
   /* Description area (#47): inset surface inside the Detail card.
-     8 px x 10 px padding, 4 px radius, 40 vh max height with internal scroll. */
+     8 px x 10 px padding, 4 px radius. Flexes to take the remaining
+     height inside the detail card so the user gets the biggest possible
+     reading area; scrolls internally when content overflows. */
   .detail-description {
     background: var(--tk-description-bg);
     padding: 8px 10px;
     border-radius: 4px;
-    max-height: 40vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
   .detail-description img { max-width: 100%; height: auto; }
@@ -1231,8 +1321,10 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
 
   /* Task Footer (#47): vertical list of 1-line mini-cards using the .card
      primitive plus the .card--mini modifier. Renders OUTSIDE the detail
-     card on the plain sidebar background. */
-  .detail-footer { margin-top: 6px; }
+     card on the plain sidebar background. Pinned to the bottom of the
+     viewport by the #root flex column — the detail card above it grows
+     to fill remaining space. */
+  .detail-footer { margin-top: 6px; flex: 0 0 auto; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 28px); overflow-y: auto; }
   .card--mini {
     flex-direction: row;
@@ -1355,6 +1447,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
   }
 }
 
+  html, body { height: 100%; }
   body {
     color: var(--tk-fg);
     background: var(--tk-bg);
@@ -1362,6 +1455,16 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
     font-size: var(--vscode-font-size);
     margin: 0;
     padding: 0;
+  }
+  /* The webview host sets #root.innerHTML = body contents. So #root — not
+     body — is the flex parent for the rendered tree. Making it a column
+     flex container of full viewport height lets Detail Mode's card grow
+     while the footer hugs the bottom. */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
   }
   .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
@@ -1495,7 +1598,11 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
 
   /* Detail Mode (#47): the entire surface is one expanded Active card.
      Sections are separated by whitespace ONLY — no internal border or
-     border-top rules. */
+     border-top rules.
+
+     Layout: the card grows to fill the viewport so the description can
+     take as much room as it needs, while the footer (rendered as a
+     sibling) hugs the bottom. */
   .tackle-detail {
     /* Override card defaults that don't make sense for the full-surface card. */
     margin: 8px;
@@ -1503,6 +1610,9 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
     gap: 6px;
     box-sizing: border-box;
     cursor: default;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
   .detail-header { display: flex; align-items: center; gap: 6px; }
   .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
@@ -1515,12 +1625,15 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; }
 
   /* Description area (#47): inset surface inside the Detail card.
-     8 px x 10 px padding, 4 px radius, 40 vh max height with internal scroll. */
+     8 px x 10 px padding, 4 px radius. Flexes to take the remaining
+     height inside the detail card so the user gets the biggest possible
+     reading area; scrolls internally when content overflows. */
   .detail-description {
     background: var(--tk-description-bg);
     padding: 8px 10px;
     border-radius: 4px;
-    max-height: 40vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
   .detail-description img { max-width: 100%; height: auto; }
@@ -1543,8 +1656,10 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
 
   /* Task Footer (#47): vertical list of 1-line mini-cards using the .card
      primitive plus the .card--mini modifier. Renders OUTSIDE the detail
-     card on the plain sidebar background. */
-  .detail-footer { margin-top: 6px; }
+     card on the plain sidebar background. Pinned to the bottom of the
+     viewport by the #root flex column — the detail card above it grows
+     to fill remaining space. */
+  .detail-footer { margin-top: 6px; flex: 0 0 auto; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 28px); overflow-y: auto; }
   .card--mini {
     flex-direction: row;
@@ -1689,6 +1804,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail withou
   }
 }
 
+  html, body { height: 100%; }
   body {
     color: var(--tk-fg);
     background: var(--tk-bg);
@@ -1696,6 +1812,16 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail withou
     font-size: var(--vscode-font-size);
     margin: 0;
     padding: 0;
+  }
+  /* The webview host sets #root.innerHTML = body contents. So #root — not
+     body — is the flex parent for the rendered tree. Making it a column
+     flex container of full viewport height lets Detail Mode's card grow
+     while the footer hugs the bottom. */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
   }
   .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
@@ -1829,7 +1955,11 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail withou
 
   /* Detail Mode (#47): the entire surface is one expanded Active card.
      Sections are separated by whitespace ONLY — no internal border or
-     border-top rules. */
+     border-top rules.
+
+     Layout: the card grows to fill the viewport so the description can
+     take as much room as it needs, while the footer (rendered as a
+     sibling) hugs the bottom. */
   .tackle-detail {
     /* Override card defaults that don't make sense for the full-surface card. */
     margin: 8px;
@@ -1837,6 +1967,9 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail withou
     gap: 6px;
     box-sizing: border-box;
     cursor: default;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
   .detail-header { display: flex; align-items: center; gap: 6px; }
   .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
@@ -1849,12 +1982,15 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail withou
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; }
 
   /* Description area (#47): inset surface inside the Detail card.
-     8 px x 10 px padding, 4 px radius, 40 vh max height with internal scroll. */
+     8 px x 10 px padding, 4 px radius. Flexes to take the remaining
+     height inside the detail card so the user gets the biggest possible
+     reading area; scrolls internally when content overflows. */
   .detail-description {
     background: var(--tk-description-bg);
     padding: 8px 10px;
     border-radius: 4px;
-    max-height: 40vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
   .detail-description img { max-width: 100%; height: auto; }
@@ -1877,8 +2013,10 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail withou
 
   /* Task Footer (#47): vertical list of 1-line mini-cards using the .card
      primitive plus the .card--mini modifier. Renders OUTSIDE the detail
-     card on the plain sidebar background. */
-  .detail-footer { margin-top: 6px; }
+     card on the plain sidebar background. Pinned to the bottom of the
+     viewport by the #root flex column — the detail card above it grows
+     to fill remaining space. */
+  .detail-footer { margin-top: 6px; flex: 0 0 auto; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 28px); overflow-y: auto; }
   .card--mini {
     flex-direction: row;

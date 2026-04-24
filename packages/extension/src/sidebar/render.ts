@@ -20,6 +20,7 @@ import { renderDetail } from './render-detail';
 export { renderSessionRow } from './render-session-row';
 
 const COMPONENT_CSS = `
+  html, body { height: 100%; }
   body {
     color: var(--tk-fg);
     background: var(--tk-bg);
@@ -27,6 +28,16 @@ const COMPONENT_CSS = `
     font-size: var(--vscode-font-size);
     margin: 0;
     padding: 0;
+  }
+  /* The webview host sets #root.innerHTML = body contents. So #root — not
+     body — is the flex parent for the rendered tree. Making it a column
+     flex container of full viewport height lets Detail Mode's card grow
+     while the footer hugs the bottom. */
+  #root {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    box-sizing: border-box;
   }
   .tackle-empty { padding: 12px; color: var(--tk-fg-muted); }
   .card-list { list-style: none; margin: 0; padding: 0; }
@@ -160,7 +171,11 @@ const COMPONENT_CSS = `
 
   /* Detail Mode (#47): the entire surface is one expanded Active card.
      Sections are separated by whitespace ONLY — no internal border or
-     border-top rules. */
+     border-top rules.
+
+     Layout: the card grows to fill the viewport so the description can
+     take as much room as it needs, while the footer (rendered as a
+     sibling) hugs the bottom. */
   .tackle-detail {
     /* Override card defaults that don't make sense for the full-surface card. */
     margin: 8px;
@@ -168,6 +183,9 @@ const COMPONENT_CSS = `
     gap: 6px;
     box-sizing: border-box;
     cursor: default;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
   }
   .detail-header { display: flex; align-items: center; gap: 6px; }
   .detail-back { background: transparent; color: var(--tk-fg); border: none; cursor: pointer; padding: 2px 6px; }
@@ -180,12 +198,15 @@ const COMPONENT_CSS = `
   .detail-closed-indicator { color: var(--tk-fg-muted); font-style: italic; font-size: 0.85em; }
 
   /* Description area (#47): inset surface inside the Detail card.
-     8 px x 10 px padding, 4 px radius, 40 vh max height with internal scroll. */
+     8 px x 10 px padding, 4 px radius. Flexes to take the remaining
+     height inside the detail card so the user gets the biggest possible
+     reading area; scrolls internally when content overflows. */
   .detail-description {
     background: var(--tk-description-bg);
     padding: 8px 10px;
     border-radius: 4px;
-    max-height: 40vh;
+    flex: 1 1 auto;
+    min-height: 0;
     overflow-y: auto;
   }
   .detail-description img { max-width: 100%; height: auto; }
@@ -208,8 +229,10 @@ const COMPONENT_CSS = `
 
   /* Task Footer (#47): vertical list of 1-line mini-cards using the .card
      primitive plus the .card--mini modifier. Renders OUTSIDE the detail
-     card on the plain sidebar background. */
-  .detail-footer { margin-top: 6px; }
+     card on the plain sidebar background. Pinned to the bottom of the
+     viewport by the #root flex column — the detail card above it grows
+     to fill remaining space. */
+  .detail-footer { margin-top: 6px; flex: 0 0 auto; }
   .detail-footer-list { list-style: none; margin: 0; padding: 0; max-height: calc(5 * 28px); overflow-y: auto; }
   .card--mini {
     flex-direction: row;
