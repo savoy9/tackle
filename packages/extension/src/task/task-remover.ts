@@ -38,8 +38,14 @@ export type RemovePromptFn = (
 export interface TaskRemoverDeps {
   taskRepo: Pick<TaskRepository, 'get' | 'setWorktree'>;
   prompt: RemovePromptFn;
-  /** Override for the directory `git worktree remove` is invoked from. Defaults to the repo's main checkout (parent of `worktree_path`'s parent). */
-  workspaceRoot?: string;
+  /**
+   * Directory `git worktree remove` is invoked from. MUST be a path outside
+   * the worktree being removed — git refuses to remove a worktree from
+   * inside itself (`cannot remove the current working tree`). In practice
+   * this is the repo's main checkout, which `extension.ts` passes as the
+   * workspace root.
+   */
+  workspaceRoot: string;
 }
 
 /**
@@ -130,10 +136,11 @@ export class TaskRemover {
       return { promptShown: true, worktreeRemoved: false, cleanliness };
     }
 
-    // Choose where to invoke `git worktree remove` from. Prefer caller-supplied
-    // workspaceRoot; otherwise the worktree itself can `--force` remove itself
-    // by way of any git command run from inside it.
-    const cwd = this.deps.workspaceRoot ?? task.worktree_path;
+    // `git worktree remove` must run from outside the worktree it's
+    // removing; the caller-supplied workspaceRoot (the main checkout) is
+    // the canonical place. Fallback-to-worktree-self was a landmine — git
+    // rejects it — so the field is required.
+    const cwd = this.deps.workspaceRoot;
     const args = ['worktree', 'remove'];
     if (choice.force) args.push('--force');
     args.push(task.worktree_path);

@@ -203,8 +203,27 @@ describe('TerminalOrchestrator', () => {
       const psmuxName = PsmuxBridge.generateSessionName('gh', '42', 'implement', 1);
       expect(mockPsmux.sendKeys).toHaveBeenCalledWith(
         psmuxName,
-        'cd /wt/foo && agency-cc',
+        "cd '/wt/foo' && agency-cc",
       );
+    });
+
+    it('shell-quotes cwd so paths with spaces and metachars stay intact', async () => {
+      await orchestrator.createTerminal({
+        ...baseOpts,
+        worktreePath: "/wt/my repo; rm -rf /",
+      });
+      const sent = (mockPsmux.sendKeys as any).mock.calls[0][1] as string;
+      // Single-quoted → shell treats the whole path as one literal arg.
+      expect(sent).toBe("cd '/wt/my repo; rm -rf /' && agency-cc");
+    });
+
+    it('escapes embedded single quotes in cwd', async () => {
+      await orchestrator.createTerminal({
+        ...baseOpts,
+        worktreePath: "/wt/it's-fine",
+      });
+      const sent = (mockPsmux.sendKeys as any).mock.calls[0][1] as string;
+      expect(sent).toBe("cd '/wt/it'\\''s-fine' && agency-cc");
     });
 
     it('does not send agent keys for shell kind', async () => {
@@ -230,7 +249,7 @@ describe('TerminalOrchestrator', () => {
       expect(session.worktree_path).toBe('/wt/task-99');
       expect(mockPsmux.sendKeys).toHaveBeenCalledWith(
         expect.any(String),
-        'cd /wt/task-99 && agency-cc',
+        "cd '/wt/task-99' && agency-cc",
       );
     });
 
@@ -331,7 +350,7 @@ describe('TerminalOrchestrator', () => {
 
       const sent = (mockPsmux.sendKeys as any).mock.calls[0][1] as string;
       expect(sent).toContain('-r claude-xyz');
-      expect(sent).toContain('cd /wt/s');
+      expect(sent).toContain("cd '/wt/s'");
     });
 
     it('does not launch agent on restart for shell kind', async () => {

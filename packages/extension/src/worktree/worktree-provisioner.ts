@@ -267,7 +267,18 @@ export class WorktreeProvisioner {
     const all = out.stdout.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
     const needle = externalId.toLowerCase();
     const matches = all.filter((b) => b.toLowerCase().includes(needle));
-    return matches.length === 1 ? matches[0] : null;
+    if (matches.length === 1) return matches[0];
+    if (matches.length > 1) {
+      // Ambiguous reuse is unsafe (we'd silently pick whichever branch sorts
+      // first), so fall through to creating a fresh `<id>-<slug>` branch.
+      // Surface the ambiguity so the user understands why their expected
+      // branch wasn't reused.
+      console.info(
+        `Tackle: ${matches.length} local branches match external id "${externalId}" (${matches.join(', ')}). `
+        + `Creating a new branch instead of guessing.`,
+      );
+    }
+    return null;
   }
 }
 

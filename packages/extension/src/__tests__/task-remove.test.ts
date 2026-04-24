@@ -222,7 +222,7 @@ describe('TaskRemover.removeTask', () => {
 
   it('returns a no-op result when the Task does not exist', async () => {
     const prompt = vi.fn<RemovePromptFn>(async () => ({ remove: true, force: false }));
-    const remover = new TaskRemover({ taskRepo: repo, prompt });
+    const remover = new TaskRemover({ taskRepo: repo, prompt, workspaceRoot: fixture.repoDir });
     const result = await remover.removeTask(9999);
     expect(result.worktreeRemoved).toBe(false);
     expect(prompt).not.toHaveBeenCalled();

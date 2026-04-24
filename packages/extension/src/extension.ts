@@ -265,14 +265,7 @@ export function activate(context: vscode.ExtensionContext): void {
       vscode.window.showErrorMessage('Tackle must be activated first.');
       return;
     }
-    let taskId: number | undefined;
-    if (typeof arg === 'number') {
-      taskId = arg;
-    } else if (arg && typeof arg === 'object' && 'taskId' in (arg as any) && typeof (arg as any).taskId === 'number') {
-      taskId = (arg as any).taskId;
-    } else if (arg && typeof arg === 'object' && 'id' in (arg as any) && typeof (arg as any).id === 'number') {
-      taskId = (arg as any).id;
-    }
+    const taskId = extractTaskId(arg);
     if (taskId === undefined) {
       vscode.window.showErrorMessage('Tackle: removeTask requires a task id.');
       return;
@@ -316,6 +309,22 @@ export function activate(context: vscode.ExtensionContext): void {
       return (arg as any).id;
     }
     return pickSessionId(placeHolder);
+  }
+
+  /**
+   * Narrow a command argument to a task id. VS Code may pass a raw number,
+   * a webview message shaped as `{ taskId }`, or a sidebar row object
+   * shaped as `{ id }`. Returns undefined when no recognizable id is
+   * present — the caller is responsible for user-facing error messaging.
+   */
+  function extractTaskId(arg: unknown): number | undefined {
+    if (typeof arg === 'number') return arg;
+    if (arg && typeof arg === 'object') {
+      const obj = arg as Record<string, unknown>;
+      if (typeof obj.taskId === 'number') return obj.taskId;
+      if (typeof obj.id === 'number') return obj.id;
+    }
+    return undefined;
   }
 
   function ensureActions(): SessionActions | undefined {

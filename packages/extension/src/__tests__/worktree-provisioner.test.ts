@@ -160,6 +160,29 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     expect(branches).toContain('tackle/42');
   });
 
+  it('logs an info message when the branch-reuse match is ambiguous', async () => {
+    // Two branches both contain "42" → `findExistingMatchingBranch` refuses
+    // to guess and falls through to creating a fresh branch. The user should
+    // see a log line explaining why their expected branch wasn't reused.
+    git(repoDir, 'branch feature/42-one');
+    git(repoDir, 'branch feature/42-two');
+
+    const task = makeTask({ id: 1, external_id: '42', title: 'A different title' });
+    state.tasks.set(1, task);
+
+    const messages: string[] = [];
+    const originalInfo = console.info;
+    console.info = (msg: string) => { messages.push(msg); };
+    try {
+      const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+      await provisioner.ensureWorktreeForTask(task);
+    } finally {
+      console.info = originalInfo;
+    }
+    expect(messages.some((m) => /match.*external id "42"/i.test(m))).toBe(true);
+    expect(messages.some((m) => m.includes('feature/42-one') && m.includes('feature/42-two'))).toBe(true);
+  });
+
   it('hard-fails with a clear error when workspaceRoot is not a git repo', async () => {
     // Non-git directory: a fresh tempdir with no git init.
     const nonGit = mkdtempSync(join(tmpdir(), 'tackle-nogit-'));
@@ -505,7 +528,7 @@ describe('Integration: TerminalOrchestrator + WorktreeProvisioner', () => {
 
     const expectedPath = join(wtRoot, '42-wire-it-up');
     expect(session.worktree_path).toBe(expectedPath);
-    expect(sentKeys[0][1]).toContain(`cd ${expectedPath} `);
+    expect(sentKeys[0][1]).toContain(`cd '${expectedPath}' `);
     // Task row is updated with worktree fields
     const refreshed = await repo.get(1);
     expect(refreshed!.worktree_path).toBe(expectedPath);

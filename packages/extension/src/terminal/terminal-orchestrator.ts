@@ -17,6 +17,20 @@ export function resolveCwd(
   return session.worktree_path ?? task?.worktree_path ?? workspaceRoot;
 }
 
+/**
+ * POSIX single-quote a shell argument. Wraps the input in `'…'` and
+ * escapes embedded single quotes as `'\''`. Safe for any `bash`/`sh`
+ * context — which is what psmux (tmux under the hood) attaches to.
+ *
+ * Used to quote `cwd` before it's shell-interpolated into
+ * `cd <cwd> && <agent command>` via `psmux.sendKeys`. Workspace folders
+ * with spaces or shell metacharacters (`$`, `;`, backticks, …) would
+ * otherwise break the command or execute arbitrary input.
+ */
+export function shellQuote(s: string): string {
+  return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+
 export interface SessionWorktreeProvider {
   /**
    * Returns the worktree path/branch/baseBranch for `taskId`. Called lazily
@@ -155,7 +169,7 @@ export class TerminalOrchestrator {
     if (this.agentRegistry.shouldLaunch(opts.kind)) {
       const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
       const cwd = resolveCwd(session, workspaceRoot);
-      this.psmux.sendKeys(psmuxName, `cd ${cwd} && ${adapter.command}`);
+      this.psmux.sendKeys(psmuxName, `cd ${shellQuote(cwd)} && ${adapter.command}`);
     }
 
     this.trackTerminal(session.id, terminal);
@@ -284,7 +298,7 @@ export class TerminalOrchestrator {
       const resumeArgs = session.claude_session_id
         ? ' ' + adapter.resumeFlag(session.claude_session_id).join(' ')
         : '';
-      this.psmux.sendKeys(session.psmux_name, `cd ${cwd} && ${adapter.command}${resumeArgs}`);
+      this.psmux.sendKeys(session.psmux_name, `cd ${shellQuote(cwd)} && ${adapter.command}${resumeArgs}`);
     }
 
     await this.sessionRepo.update(sessionId, { status: 'running', ended_at: null });
