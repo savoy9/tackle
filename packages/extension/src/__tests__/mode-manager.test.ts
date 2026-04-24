@@ -89,5 +89,17 @@ describe('ModeManager', () => {
       await manager.deactivate();
       expect(manager.getDatabase()).toBeUndefined();
     });
+
+    it('uses TACKLE_TEST_DB env var when set', async () => {
+      const prev = process.env.TACKLE_TEST_DB;
+      try {
+        process.env.TACKLE_TEST_DB = '/tmp/override-tackle.db';
+        await manager.activate();
+        expect(createDatabase).toHaveBeenCalledWith('/tmp/override-tackle.db');
+      } finally {
+        if (prev === undefined) delete process.env.TACKLE_TEST_DB;
+        else process.env.TACKLE_TEST_DB = prev;
+      }
+    });
   });
 });
