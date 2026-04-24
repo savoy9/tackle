@@ -31,4 +31,24 @@ describe('TaskService.parseGitRemote', () => {
     expect(TaskService.parseGitRemote('https://gitlab.com/foo/bar')).toBeNull();
     expect(TaskService.parseGitRemote('')).toBeNull();
   });
+
+  it('handles repo names with dots (common for *.github.io repos)', () => {
+    const r = TaskService.parseGitRemote('https://github.com/octocat/some.repo.git');
+    expect(r).toEqual({ owner: 'octocat', repo: 'some.repo' });
+  });
+
+  it('handles HTTPS URL with embedded credentials', () => {
+    const r = TaskService.parseGitRemote('https://user:token@github.com/octocat/hello.git');
+    expect(r).toEqual({ owner: 'octocat', repo: 'hello' });
+  });
+
+  it('handles ssh:// scheme URLs', () => {
+    const r = TaskService.parseGitRemote('ssh://git@github.com/octocat/hello.git');
+    expect(r).toEqual({ owner: 'octocat', repo: 'hello' });
+  });
+
+  it('handles trailing slash', () => {
+    const r = TaskService.parseGitRemote('https://github.com/octocat/hello/');
+    expect(r).toEqual({ owner: 'octocat', repo: 'hello' });
+  });
 });
