@@ -1,4 +1,15 @@
 import type { SessionKind } from '@tackle/shared';
+import type { AgentStateDetector } from './agent-state-detector';
+
+/**
+ * Identifier for the `AgentStateDetector` implementation an Agent uses.
+ *
+ * A string tag (rather than an imported constructor) keeps the registry
+ * independent of detector wiring: the orchestrator (#43) looks up the
+ * detector instance by tag, so this module doesn't need to import
+ * detector code or carry its runtime dependencies.
+ */
+export type DetectorKind = 'ClaudeJsonlDetector';
 
 /**
  * Spawn adapter for a Tackle Agent.
@@ -8,11 +19,17 @@ import type { SessionKind } from '@tackle/shared';
  * Claude session id; both `agency-cc` and vanilla `claude` accept
  * `-r <id>` / `--resume <id>`, so the registry exposes this as a
  * uniform contract.
+ *
+ * `detector` names the `AgentStateDetector` implementation the agent
+ * uses to report `idle` / `working` / `waiting` transitions. Both
+ * built-in agents are Claude Code under the hood and share
+ * `ClaudeJsonlDetector`.
  */
 export interface AgentAdapter {
   name: string;
   command: string;
   resumeFlag(sessionId: string): string[];
+  detector: DetectorKind;
 }
 
 export interface ConfigReader {
@@ -38,23 +55,52 @@ export class UnknownAgentError extends Error {
 export interface AgentRegistry {
   resolve(agentName?: string | null): AgentAdapter;
   shouldLaunch(kind: SessionKind): boolean;
+  /**
+   * Returns the shared `AgentStateDetector` instance for the named
+   * agent's `DetectorKind`, lazily constructed on first access. The
+   * orchestrator (#43) calls this once per Session lifecycle to start
+   * and stop watchers; multiple Sessions on the same kind share one
+   * detector instance (and one event channel — consumers filter by
+   * `sessionId`).
+   *
+   * Returns `null` when no detector factory is registered for the
+   * agent's kind (e.g. a future agent we haven't shipped a detector
+   * for, or a `shell`-only configuration).
+   */
+  getDetector(agentName?: string | null): AgentStateDetector | null;
+  /** Dispose every constructed detector instance. */
+  disposeDetectors(): void;
 }
+
+/**
+ * Factory map: `DetectorKind` → constructor producing a fresh
+ * `AgentStateDetector`. Injected at registry creation so the registry
+ * itself is decoupled from any specific detector implementation
+ * (Claude Code today, future agents tomorrow).
+ */
+export type DetectorFactories = Partial<Record<DetectorKind, () => AgentStateDetector>>;
 
 const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
   'agency-cc': {
     name: 'agency-cc',
     command: 'agency-cc',
     resumeFlag: (sessionId: string) => ['-r', sessionId],
+    detector: 'ClaudeJsonlDetector',
   },
   claude: {
     name: 'claude',
     command: 'claude',
     resumeFlag: (sessionId: string) => ['-r', sessionId],
+    detector: 'ClaudeJsonlDetector',
   },
 };
 
-export function createAgentRegistry(config: ConfigReader): AgentRegistry {
-  return {
+export function createAgentRegistry(
+  config: ConfigReader,
+  detectorFactories: DetectorFactories = {},
+): AgentRegistry {
+  const detectorInstances = new Map<DetectorKind, AgentStateDetector>();
+  const registry: AgentRegistry = {
     resolve(agentName?: string | null): AgentAdapter {
       const name = agentName ?? config.getDefault();
       const adapter = BUILTIN_ADAPTERS[name];
@@ -64,5 +110,21 @@ export function createAgentRegistry(config: ConfigReader): AgentRegistry {
     shouldLaunch(kind: SessionKind): boolean {
       return kind !== 'shell';
     },
+    getDetector(agentName?: string | null): AgentStateDetector | null {
+      const adapter = registry.resolve(agentName);
+      const factory = detectorFactories[adapter.detector];
+      if (!factory) return null;
+      let inst = detectorInstances.get(adapter.detector);
+      if (!inst) {
+        inst = factory();
+        detectorInstances.set(adapter.detector, inst);
+      }
+      return inst;
+    },
+    disposeDetectors(): void {
+      for (const d of detectorInstances.values()) d.dispose();
+      detectorInstances.clear();
+    },
   };
+  return registry;
 }

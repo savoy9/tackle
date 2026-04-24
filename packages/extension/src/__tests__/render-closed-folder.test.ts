@@ -139,4 +139,21 @@ describe('render — Closed Issues Folder (#30)', () => {
     const html = render(state);
     expect(html).not.toMatch(/toggleClosedFolder/);
   });
+
+  it('expanded closed rows carry the card--closed modifier (#46)', () => {
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [
+        task(1, 'A'),
+        task(2, 'ClosedOne', { status: 'closed', synced_at: '2026-03-15' }),
+      ],
+      closedFolderOpen: true,
+    };
+    const html = render(state);
+    expect(html).toContain('card--closed');
+    // Closed rows have NO Edge Bar element (#46).
+    const rowsMatch = html.match(/<div class="closed-rows">([\s\S]*?)<\/div><\/body>/);
+    expect(rowsMatch).toBeTruthy();
+    expect(rowsMatch![1]).not.toContain('edge-bar');
+  });
 });

@@ -1,4 +1,4 @@
-import type { Session, SessionRepository, CreateSession, UpdateSession } from '@tackle/shared';
+import type { Session, SessionRepository, CreateSession, UpdateSession, AgentState } from '@tackle/shared';
 
 type Listener = () => void;
 
@@ -46,6 +46,10 @@ export class ObservableSessionRepository implements SessionRepository {
   }
   async softDelete(id: number): Promise<void> {
     await this.inner.softDelete(id);
+    this.fire();
+  }
+  async setAgentState(id: number, state: AgentState): Promise<void> {
+    await this.inner.setAgentState(id, state);
     this.fire();
   }
 }

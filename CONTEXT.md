@@ -93,7 +93,7 @@ The rendering of a Task in List Mode. Three-line dense format: (1) Activity Glyp
 _Avoid_: row, entry
 
 **Session Row**:
-The rendering of a Session inside an expanded Task Card or in Detail Mode's Sessions section. Single line: kind icon + `tab_label` + Activity Glyph + smart branch display + always-visible Stop icon + always-visible Mark as Done icon + overflow `⋯`. Row click attaches the terminal and activates the parent Task.
+The rendering of a Session inside an expanded Task Card or in Detail Mode's Sessions section. Single line: kind icon + `tab_label` + Activity Glyph + smart branch display + Stop icon + Mark as Done icon + overflow `⋯`. Action button visibility is **surface-dependent**: in **expanded-in-list** rows (under an expanded Task Card in List Mode) the Stop / Mark as Done / overflow icons are **always visible** — the row itself is already a hover-revealed surface, so further hover-gating would be unfindable. In **Detail Mode** rows the same buttons are **hidden by default and fade in on row hover** (120 ms ease-out, instant under `prefers-reduced-motion`); Detail Mode rows render as full-width pills (`border-radius 12px`, `4px × 10px` padding). Row click attaches the terminal and activates the parent Task.
 _Avoid_: session item, session line
 
 **Task Footer**:

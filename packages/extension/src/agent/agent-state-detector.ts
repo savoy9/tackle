@@ -1,0 +1,24 @@
+import type { Session, AgentState } from '@tackle/shared';
+
+export type { AgentState };
+
+export interface AgentStateEvent {
+  sessionId: number;
+  state: AgentState;
+}
+
+/**
+ * A pluggable per-Session state detector.
+ *
+ * `start(session)` begins observing whatever signal the implementation
+ * uses (file watcher, OSC sniffer, …) and produces transitions on the
+ * `onChange` channel. `stop(session)` tears down resources for one
+ * Session. The channel is shared across all Sessions managed by a
+ * single detector instance — consumers filter by `sessionId`.
+ */
+export interface AgentStateDetector {
+  start(session: Session): void;
+  stop(session: Session): void;
+  onChange(listener: (event: AgentStateEvent) => void): { dispose(): void };
+  dispose(): void;
+}

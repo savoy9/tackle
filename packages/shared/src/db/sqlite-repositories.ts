@@ -1,4 +1,4 @@
-import type { Task, Session, LayoutState, Plan, Phase } from '../index';
+import type { Task, Session, LayoutState, Plan, Phase, AgentState } from '../index';
 import type { Database } from './database';
 import type {
   TaskRepository,
@@ -9,6 +9,7 @@ import type {
   UpsertTask,
   CreateSession,
   UpdateSession,
+  TaskWorktreeFields,
 } from './repositories';
 
 function buildDynamicUpdate(
@@ -69,6 +70,15 @@ export class SqliteTaskRepository implements TaskRepository {
       this.db.exec('ROLLBACK');
       throw err;
     }
+    return Promise.resolve();
+  }
+
+  setWorktree(id: number, fields: TaskWorktreeFields): Promise<void> {
+    this.db
+      .prepare(
+        'UPDATE tasks SET worktree_path = ?, worktree_branch = ?, worktree_base_branch = ? WHERE id = ?',
+      )
+      .run(fields.worktree_path, fields.worktree_branch, fields.worktree_base_branch, id);
     return Promise.resolve();
   }
 }
@@ -141,6 +151,11 @@ export class SqliteSessionRepository implements SessionRepository {
 
   softDelete(id: number): Promise<void> {
     this.db.prepare(`UPDATE sessions SET deleted_at = datetime('now') WHERE id = ?`).run(id);
+    return Promise.resolve();
+  }
+
+  setAgentState(id: number, state: AgentState): Promise<void> {
+    this.db.prepare('UPDATE sessions SET agent_state = ? WHERE id = ?').run(state, id);
     return Promise.resolve();
   }
 }

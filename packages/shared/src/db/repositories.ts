@@ -1,4 +1,4 @@
-import type { Task, Session, LayoutState, Plan, Phase } from '../index';
+import type { Task, Session, LayoutState, Plan, Phase, AgentState } from '../index';
 
 export interface UpsertTask {
   external_id: string;
@@ -21,7 +21,7 @@ export interface CreateSession {
   worktree_path?: string | null;
   sort_order?: number;
   claude_session_id?: string | null;
-  agent_state?: 'idle' | 'working' | 'waiting';
+  agent_state?: AgentState;
   prior_claude_session_ids?: string[] | null;
 }
 
@@ -34,9 +34,15 @@ export interface UpdateSession {
   worktree_path?: string | null;
   sort_order?: number;
   claude_session_id?: string | null;
-  agent_state?: 'idle' | 'working' | 'waiting';
+  agent_state?: AgentState;
   prior_claude_session_ids?: string[] | null;
   ended_at?: string | null;
+}
+
+export interface TaskWorktreeFields {
+  worktree_path: string | null;
+  worktree_branch: string | null;
+  worktree_base_branch: string | null;
 }
 
 export interface TaskRepository {
@@ -44,6 +50,7 @@ export interface TaskRepository {
   get(id: number): Promise<Task | undefined>;
   upsert(task: UpsertTask): Promise<void>;
   upsertBatch(tasks: UpsertTask[]): Promise<void>;
+  setWorktree(id: number, fields: TaskWorktreeFields): Promise<void>;
 }
 
 export interface SessionRepository {
@@ -54,6 +61,12 @@ export interface SessionRepository {
   update(id: number, fields: UpdateSession): Promise<void>;
   complete(id: number): Promise<void>;
   softDelete(id: number): Promise<void>;
+  /**
+   * Hot-path write for AgentStateDetector transitions. Updates only the
+   * `agent_state` column without touching any other field, so we can fire
+   * cheaply on every detector event without rewriting the whole row.
+   */
+  setAgentState(id: number, state: AgentState): Promise<void>;
 }
 
 export interface LayoutStateRepository {

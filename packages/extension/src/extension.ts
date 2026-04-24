@@ -1,16 +1,21 @@
 import * as vscode from 'vscode';
 import { ModeManager } from './mode';
 import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateRepository, PsmuxBridge } from '@tackle/shared';
-import type { SessionKind } from '@tackle/shared';
-import { TaskService } from './task';
+import { TaskService, TaskRemover, type RemovePromptFn } from './task';
 import { TerminalOrchestrator } from './terminal';
+import { WorktreeProvisioner, createVscodeWorktreeConfigReader } from './worktree';
 import { createVscodeAgentRegistry } from './agent';
-import { SessionActions, ObservableSessionRepository, NewSessionFlow } from './session';
+import { SessionActions, ObservableSessionRepository, NewSessionFlow, buildKindQuickPickItems } from './session';
 import { LayoutManager } from './layout';
 import { ScopeManager } from './scope';
 import { SidebarController, SidebarViewProvider } from './sidebar';
 import { checkSingleRootWorkspace, ensureTackleDir } from './guards';
 import { runLatencyBenchmark, formatResult } from './bench';
+
+// Module-level reference so `deactivate()` can release detectors and
+// terminal handles cleanly when VS Code shuts down. Set inside
+// `activate()` once the orchestrator is constructed.
+let activeOrchestrator: TerminalOrchestrator | undefined;
 
 export function activate(context: vscode.ExtensionContext): void {
   console.log('Tackle: extension activate() called');
@@ -21,6 +26,9 @@ export function activate(context: vscode.ExtensionContext): void {
   let sessionActions: SessionActions | undefined;
   let scopeManager: ScopeManager | undefined;
   let sidebarController: SidebarController | undefined;
+  let taskRemover: TaskRemover | undefined;
+  let taskRepoRef: SqliteTaskRepository | undefined;
+  let worktreeProvisionerRef: WorktreeProvisioner | undefined;
 
   // Placeholder task repo for the sidebar until activation fills it in.
   const placeholderTaskRepo = { list: async () => [], get: async () => undefined, upsert: async () => {}, upsertBatch: async () => {} };
@@ -37,6 +45,7 @@ export function activate(context: vscode.ExtensionContext): void {
     scope: scopeStub,
     workspaceState: context.workspaceState,
     executeCommand: (cmd, ...args) => Promise.resolve(vscode.commands.executeCommand(cmd, ...args)),
+    colorTheme: vscode.window,
   });
   void sidebarController.start();
 
@@ -74,7 +83,23 @@ export function activate(context: vscode.ExtensionContext): void {
       const psmux = new PsmuxBridge();
 
       taskService = new TaskService(taskRepo);
-      terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry());
+      const worktreeProvisioner = new WorktreeProvisioner({
+        workspaceRoot,
+        taskRepo,
+        configReader: createVscodeWorktreeConfigReader((section) =>
+          vscode.workspace.getConfiguration(section),
+        ),
+      });
+      taskRepoRef = taskRepo;
+      worktreeProvisionerRef = worktreeProvisioner;
+      terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry(), {
+        ensureForTask: async (taskId: number) => {
+          const task = await taskRepo.get(taskId);
+          if (!task) throw new Error(`Task ${taskId} not found`);
+          return worktreeProvisioner.ensureWorktreeForTask(task);
+        },
+      });
+      activeOrchestrator = terminalOrchestrator;
 
       sessionRepoRef = sessionRepo;
       sessionActions = new SessionActions({
@@ -87,6 +112,23 @@ export function activate(context: vscode.ExtensionContext): void {
       });
 
       const layoutManager = new LayoutManager(layoutRepo);
+
+      const removePrompt: RemovePromptFn = async (task, cleanliness) => {
+        const summary = cleanliness.clean
+          ? 'The worktree is clean (no uncommitted changes, nothing ahead of base).'
+          : `The worktree is dirty: ${cleanliness.reason}.`;
+        const message =
+          `Remove worktree for task "${task.title}" at ${task.worktree_path}?\n\n${summary}`;
+        const defaultRemove = cleanliness.clean;
+        // Modal preselects the first action; order matches the safe default.
+        const items: string[] = defaultRemove
+          ? ['Remove worktree', 'Keep worktree']
+          : ['Keep worktree', 'Remove worktree'];
+        const pick = await vscode.window.showWarningMessage(message, { modal: true }, ...items);
+        const remove = pick === 'Remove worktree';
+        return { remove, force: remove && !cleanliness.clean };
+      };
+      taskRemover = new TaskRemover({ taskRepo, prompt: removePrompt, workspaceRoot });
       scopeManager = new ScopeManager({
         terminalOrchestrator,
         layoutManager,
@@ -100,12 +142,21 @@ export function activate(context: vscode.ExtensionContext): void {
         scope: scopeManager,
         workspaceState: context.workspaceState,
         executeCommand: (cmd, ...args) => Promise.resolve(vscode.commands.executeCommand(cmd, ...args)),
+        colorTheme: vscode.window,
+        isActivated: true,
       });
       await sidebarController.start();
       sidebarProvider.setController(sidebarController);
       prevController?.dispose();
 
       scopeManager.restoreActiveTask();
+
+      // Re-attach detectors to any Session rows still marked `running`
+      // (psmux survives VS Code restarts per ADR-0003). Fire-and-forget so
+      // activation isn't blocked by file reads for every running session.
+      terminalOrchestrator.resumeRunningDetectors().catch((err) => {
+        console.error('Tackle: resumeRunningDetectors failed', err);
+      });
 
       context.subscriptions.push(
         vscode.window.onDidCloseTerminal((t) => {
@@ -177,11 +228,23 @@ export function activate(context: vscode.ExtensionContext): void {
       sessions: sessionRepoRef,
       orchestrator: terminalOrchestrator,
       scope: scopeManager,
-      pickKind: async () =>
-        (await vscode.window.showQuickPick(
-          ['plan', 'implement', 'review', 'debug', 'test', 'pilot', 'shell'],
-          { placeHolder: 'Session kind' },
-        )) as SessionKind | undefined,
+      pickKind: async () => {
+        const items = buildKindQuickPickItems();
+        const picked = await vscode.window.showQuickPick(items, { placeHolder: 'Session kind' });
+        return picked?.kind;
+      },
+      pickIsolate: async (kind) => {
+        const picked = await vscode.window.showQuickPick(
+          [
+            { label: 'Share Task worktree', description: 'Default — siblings see each other\'s edits', isolate: false },
+            { label: '✂️  Isolate in new worktree', description: `Spawn ${kind} in a parallel sub-worktree`, isolate: true },
+          ],
+          { placeHolder: 'Worktree isolation' },
+        );
+        return picked?.isolate;
+      },
+      taskRepo: taskRepoRef,
+      worktreeProvisioner: worktreeProvisionerRef,
     });
 
     try {
@@ -197,6 +260,29 @@ export function activate(context: vscode.ExtensionContext): void {
   });
 
   context.subscriptions.push(activateCmd, deactivateCmd, syncTasksCmd, activateTaskCmd, focusSessionCmd, newSessionCmd);
+
+  const removeTaskCmd = vscode.commands.registerCommand('tackle.removeTask', async (arg?: unknown) => {
+    if (!taskRemover) {
+      vscode.window.showErrorMessage('Tackle must be activated first.');
+      return;
+    }
+    const taskId = extractTaskId(arg);
+    if (taskId === undefined) {
+      vscode.window.showErrorMessage('Tackle: removeTask requires a task id.');
+      return;
+    }
+    try {
+      const result = await taskRemover.removeTask(taskId);
+      if (result.worktreeRemoved) {
+        await sidebarController?.refresh();
+        vscode.window.showInformationMessage('Tackle: worktree removed.');
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      vscode.window.showErrorMessage(`Tackle: failed to remove task worktree: ${message}`);
+    }
+  });
+  context.subscriptions.push(removeTaskCmd);
 
   async function pickSessionId(placeHolder: string): Promise<number | undefined> {
     if (!sessionRepoRef) {
@@ -224,6 +310,22 @@ export function activate(context: vscode.ExtensionContext): void {
       return (arg as any).id;
     }
     return pickSessionId(placeHolder);
+  }
+
+  /**
+   * Narrow a command argument to a task id. VS Code may pass a raw number,
+   * a webview message shaped as `{ taskId }`, or a sidebar row object
+   * shaped as `{ id }`. Returns undefined when no recognizable id is
+   * present — the caller is responsible for user-facing error messaging.
+   */
+  function extractTaskId(arg: unknown): number | undefined {
+    if (typeof arg === 'number') return arg;
+    if (arg && typeof arg === 'object') {
+      const obj = arg as Record<string, unknown>;
+      if (typeof obj.taskId === 'number') return obj.taskId;
+      if (typeof obj.id === 'number') return obj.id;
+    }
+    return undefined;
   }
 
   function ensureActions(): SessionActions | undefined {
@@ -307,4 +409,10 @@ export function activate(context: vscode.ExtensionContext): void {
   context.subscriptions.push(benchCmd);
 }
 
-export function deactivate(): void {}
+export function deactivate(): void {
+  // Release detectors (file watchers, polling timers) and terminals so
+  // VS Code shutdown is clean — psmux sessions stay alive on disk and
+  // get re-attached on next activation via `resumeRunningDetectors`.
+  activeOrchestrator?.disposeAll();
+  activeOrchestrator = undefined;
+}

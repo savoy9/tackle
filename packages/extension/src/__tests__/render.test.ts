@@ -42,12 +42,36 @@ describe('render — general', () => {
     expect(typeof render(initialState)).toBe('string');
   });
 
-  it('uses VS Code theme CSS vars', () => {
-    expect(render(initialState)).toMatch(/var\(--vscode-/);
+  it('uses Tackle theme tokens (not VS Code color vars) (#45)', () => {
+    const html = render(initialState);
+    expect(html).toMatch(/var\(--tk-/);
+    // Component CSS for color uses --tk-* only. VS Code vars are still
+    // permitted for font props and inside HC token blocks as fallbacks.
+    // Spot-check: no .card or .session-row rule mentions --vscode- for color.
+    expect(html).not.toMatch(/var\(--vscode-list-/);
+    expect(html).not.toMatch(/var\(--vscode-focusBorder/);
   });
 
   it('renders an empty list', () => {
-    expect(render(initialState)).toContain('No tasks');
+    // When the extension is activated, empty task list shows "No tasks".
+    const activated: SidebarState = { ...initialState, isActivated: true };
+    expect(render(activated)).toContain('No tasks');
+  });
+
+  it('renders an Activate button when isActivated is false', () => {
+    const html = render(initialState);
+    expect(html).toContain('data-action="activateExtension"');
+    expect(html).toContain('Tackle is not activated');
+  });
+
+  it('does not render the Activate button when isActivated is true', () => {
+    const state: SidebarState = {
+      ...initialState,
+      isActivated: true,
+      tasks: [task(1, 'foo')],
+    };
+    const html = render(state);
+    expect(html).not.toContain('data-action="activateExtension"');
   });
 
   it('escapes HTML in task titles', () => {
@@ -143,11 +167,11 @@ describe('render — Card Line 3 (session rollup + branch | + New session)', () 
   });
 });
 
-describe('render — Active accent bar', () => {
-  it('active task has .active class', () => {
+describe('render — Active marker class (state matrix is #46)', () => {
+  it('active task has card--active class on the card element', () => {
     const state: SidebarState = { ...initialState, tasks: [task(1, 'A')], activeTaskId: 1 };
     const html = render(state);
-    expect(html).toMatch(/class="card active"[^>]*data-task-id="1"/);
+    expect(html).toMatch(/class="card card--active"[^>]*data-task-id="1"/);
   });
 
   it('non-active task does not have .active class', () => {
@@ -156,9 +180,10 @@ describe('render — Active accent bar', () => {
     expect(html).toMatch(/class="card"[^>]*data-task-id="2"/);
   });
 
-  it('CSS defines accent bar on .card.active via --vscode-focusBorder', () => {
+  it('idle Task Card primitive uses --tk-card-bg fill (#45)', () => {
     const html = render(initialState);
-    expect(html).toMatch(/\.card\.active\b[^}]*border-left:\s*3px\s+solid\s+var\(--vscode-focusBorder\)/);
+    expect(html).toMatch(/\.card\s*\{[^}]*background:\s*var\(--tk-card-bg\)/);
+    expect(html).toMatch(/\.card\s*\{[^}]*border-radius:\s*var\(--tk-radius-card\)/);
   });
 });
 

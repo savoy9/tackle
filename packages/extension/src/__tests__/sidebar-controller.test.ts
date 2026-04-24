@@ -189,6 +189,72 @@ describe('SidebarController', () => {
   });
 });
 
+// ── #45 additions: theme transport ──
+
+function makeColorTheme(initialKind: number) {
+  const listeners: Array<(t: { kind: number }) => void> = [];
+  return {
+    listeners,
+    activeColorTheme: { kind: initialKind },
+    onDidChangeActiveColorTheme(fn: (t: { kind: number }) => void) {
+      listeners.push(fn);
+      return { dispose: () => {} };
+    },
+    fire(kind: number) {
+      this.activeColorTheme = { kind };
+      for (const l of listeners) l({ kind });
+    },
+  };
+}
+
+describe('SidebarController — theme transport (#45)', () => {
+  let poster: { postMessage: ReturnType<typeof vi.fn> };
+  beforeEach(() => {
+    poster = { postMessage: vi.fn() };
+  });
+
+  it('posts a themeKind message at startup mapped from the active color theme', async () => {
+    const repo = makeRepo([task(1, 'A')]);
+    const scope = makeScope();
+    const ws = makeWorkspaceState();
+    const colorTheme = makeColorTheme(2 /* Dark */);
+    const c = new SidebarController({
+      taskRepo: repo,
+      scope: scope as any,
+      workspaceState: ws,
+      webview: poster,
+      colorTheme: colorTheme as any,
+    });
+    await c.start();
+    const themeMsgs = poster.postMessage.mock.calls
+      .map((c) => c[0])
+      .filter((m: any) => m && m.type === 'themeKind');
+    expect(themeMsgs).toHaveLength(1);
+    expect(themeMsgs[0]).toEqual({ type: 'themeKind', kind: 'dark' });
+  });
+
+  it('posts a themeKind message whenever the color theme changes', async () => {
+    const repo = makeRepo([task(1, 'A')]);
+    const scope = makeScope();
+    const ws = makeWorkspaceState();
+    const colorTheme = makeColorTheme(1 /* Light */);
+    const c = new SidebarController({
+      taskRepo: repo,
+      scope: scope as any,
+      workspaceState: ws,
+      webview: poster,
+      colorTheme: colorTheme as any,
+    });
+    await c.start();
+    poster.postMessage.mockClear();
+    colorTheme.fire(3 /* HighContrast */);
+    const themeMsgs = poster.postMessage.mock.calls
+      .map((c) => c[0])
+      .filter((m: any) => m && m.type === 'themeKind');
+    expect(themeMsgs).toEqual([{ type: 'themeKind', kind: 'hc-dark' }]);
+  });
+});
+
 // ── #29 additions ──
 
 const sessionRow = (id: number, task_id: number, over: Partial<Session> = {}): Session => ({

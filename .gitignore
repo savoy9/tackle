@@ -1,9 +1,11 @@
 node_modules/
 dist/
 out/
+out-test/
 .vite/
 *.tsbuildinfo
 .tackle/
 .env
 .env.local
 .claude/
+.vscode-test/

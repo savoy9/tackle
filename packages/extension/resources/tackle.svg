@@ -1,7 +1,14 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <circle cx="12" cy="5" r="3"/>
-  <line x1="12" y1="8" x2="12" y2="22"/>
-  <path d="M5 12h14"/>
-  <path d="M5 12c0 4 3.5 7 7 10"/>
-  <path d="M19 12c0 4-3.5 7-7 10"/>
+  <!-- Suspension from mount point -->
+  <path d="M12 2 L12 5" />
+  <!-- Top pulley wheel -->
+  <circle cx="12" cy="8" r="3" />
+  <!-- Rope strands wrapping between the two pulleys -->
+  <path d="M9 8 L9 16" />
+  <path d="M15 8 L15 16" />
+  <!-- Bottom pulley wheel -->
+  <circle cx="12" cy="16" r="3" />
+  <!-- Load hook hanging from bottom block -->
+  <path d="M12 19 L12 21" />
+  <path d="M10 21 A2 2 0 1 0 14 21" />
 </svg>

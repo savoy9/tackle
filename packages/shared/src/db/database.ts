@@ -93,6 +93,9 @@ const SCHEMA = `
     status TEXT NOT NULL DEFAULT 'open',
     assignee TEXT,
     parent_external_id TEXT,
+    worktree_path TEXT,
+    worktree_branch TEXT,
+    worktree_base_branch TEXT,
     synced_at TEXT NOT NULL DEFAULT (datetime('now')),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -197,6 +200,15 @@ function migrate(db: Database): void {
   if (tableExists('tasks')) {
     if (!columnExists('tasks', 'parent_external_id')) {
       db.exec('ALTER TABLE tasks ADD COLUMN parent_external_id TEXT');
+    }
+    if (!columnExists('tasks', 'worktree_path')) {
+      db.exec('ALTER TABLE tasks ADD COLUMN worktree_path TEXT');
+    }
+    if (!columnExists('tasks', 'worktree_branch')) {
+      db.exec('ALTER TABLE tasks ADD COLUMN worktree_branch TEXT');
+    }
+    if (!columnExists('tasks', 'worktree_base_branch')) {
+      db.exec('ALTER TABLE tasks ADD COLUMN worktree_base_branch TEXT');
     }
   }
 }

@@ -2,6 +2,8 @@
 
 export type SessionKind = 'plan' | 'implement' | 'review' | 'debug' | 'test' | 'pilot' | 'shell';
 
+export type AgentState = 'idle' | 'working' | 'waiting';
+
 export interface Task {
   id: number;
   external_id: string;
@@ -11,6 +13,9 @@ export interface Task {
   status: string;
   assignee: string | null;
   parent_external_id: string | null;
+  worktree_path: string | null;
+  worktree_branch: string | null;
+  worktree_base_branch: string | null;
   synced_at: string;
   created_at: string;
 }
@@ -28,7 +33,7 @@ export interface Session {
   worktree_path: string | null;
   sort_order: number;
   claude_session_id: string | null;
-  agent_state: 'idle' | 'working' | 'waiting';
+  agent_state: AgentState;
   prior_claude_session_ids: string[] | null;
   started_at: string;
   ended_at: string | null;
