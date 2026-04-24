@@ -35,7 +35,8 @@ export class PsmuxBridge {
   }
 
   static generateSessionName(source: string, taskId: string, kind: string, n: number): string {
-    return `tackle-${source}-${taskId}-${kind}${n}`;
+    const prefix = process.env.TACKLE_TEST_PSMUX_PREFIX ?? 'tackle-';
+    return `${prefix}${source}-${taskId}-${kind}${n}`;
   }
 
   static generateTabLabel(taskId: string, slug: string, kind: string, n: number, label?: string): string {
