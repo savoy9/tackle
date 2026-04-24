@@ -3,6 +3,9 @@ import type { Task, Session } from '@tackle/shared';
 import { render } from '../sidebar/render';
 import { initialState, type SidebarState } from '../sidebar/sidebar-state';
 
+// Detail Mode snapshots represent the post-activation sidebar.
+const activatedState: SidebarState = { ...initialState, isActivated: true };
+
 const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   id,
   external_id: String(id),
@@ -43,7 +46,7 @@ const sess = (id: number, task_id: number, over: Partial<Session> = {}): Session
 describe('render snapshots — canonical Detail Mode states (#31)', () => {
   it('Detail with populated description + mixed sessions + footer', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       mode: { kind: 'detail', taskId: 1 },
       tasks: [
         task(1, 'Main task', {
@@ -70,7 +73,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
 
   it('Detail with no sessions', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       mode: { kind: 'detail', taskId: 1 },
       tasks: [task(1, 'Lonely task', { external_id: '7', synced_at: '2026-04-10' })],
       descriptionsByTaskId: { 1: '' },
@@ -80,7 +83,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
 
   it('Detail with externally-closed indicator', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       mode: { kind: 'detail', taskId: 1 },
       tasks: [task(1, 'Closed task', { status: 'closed', worktree_branch: 'feat-zz', synced_at: '2026-04-10' })],
       sessions: [
@@ -94,7 +97,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
 
   it('Detail with description, no sessions, no other tasks (#47)', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       mode: { kind: 'detail', taskId: 1 },
       tasks: [task(1, 'With desc', { external_id: '8', synced_at: '2026-04-10' })],
       descriptionsByTaskId: { 1: '<p>A short description.</p>' },
@@ -104,7 +107,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
 
   it('Detail without description, with running sessions (#47)', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       mode: { kind: 'detail', taskId: 1 },
       tasks: [task(1, 'Running detail', { external_id: '9', synced_at: '2026-04-10' })],
       sessions: [
@@ -118,7 +121,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
 
   it('Detail with footer mini-cards: one running, one idle (#47)', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       mode: { kind: 'detail', taskId: 1 },
       tasks: [
         task(1, 'Focus', { external_id: '1', synced_at: '2026-04-10' }),

@@ -202,7 +202,20 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
     .session-row--detail .icon-btn { transition: none; }
   }
 
-  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+  .list-header .header-counts { flex: 1 1 auto; }
+  .header-activate {
+    background: var(--tk-accent);
+    color: var(--tk-bg);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .header-activate:hover { filter: brightness(1.05); }
+  .header-activate:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
   .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
   .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
@@ -273,7 +286,7 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style><div class="list-header">3 open · 0 closed</div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="3">
+</style><div class="list-header"><span class="header-counts">3 open · 0 closed</span></div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="3">
   <span class="edge-bar edge-bar--soft" aria-hidden="true"></span>
   <div class="line line1">
     <span class="glyph">✳️</span>
@@ -520,7 +533,20 @@ exports[`render snapshots — canonical List Mode states (#29) > card with zero 
     .session-row--detail .icon-btn { transition: none; }
   }
 
-  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+  .list-header .header-counts { flex: 1 1 auto; }
+  .header-activate {
+    background: var(--tk-accent);
+    color: var(--tk-bg);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .header-activate:hover { filter: brightness(1.05); }
+  .header-activate:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
   .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
   .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
@@ -591,7 +617,7 @@ exports[`render snapshots — canonical List Mode states (#29) > card with zero 
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+</style><div class="list-header"><span class="header-counts">1 open · 0 closed</span></div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
   
   <div class="line line1">
     <span class="glyph">○</span>
@@ -810,7 +836,20 @@ exports[`render snapshots — canonical List Mode states (#29) > empty list 1`] 
     .session-row--detail .icon-btn { transition: none; }
   }
 
-  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+  .list-header .header-counts { flex: 1 1 auto; }
+  .header-activate {
+    background: var(--tk-accent);
+    color: var(--tk-bg);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .header-activate:hover { filter: brightness(1.05); }
+  .header-activate:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
   .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
   .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
@@ -1086,7 +1125,20 @@ exports[`render snapshots — canonical List Mode states (#29) > expanded card w
     .session-row--detail .icon-btn { transition: none; }
   }
 
-  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+  .list-header .header-counts { flex: 1 1 auto; }
+  .header-activate {
+    background: var(--tk-accent);
+    color: var(--tk-bg);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .header-activate:hover { filter: brightness(1.05); }
+  .header-activate:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
   .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
   .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
@@ -1157,7 +1209,7 @@ exports[`render snapshots — canonical List Mode states (#29) > expanded card w
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card card--active" data-action="toggleExpanded" data-task-id="1">
+</style><div class="list-header"><span class="header-counts">1 open · 0 closed</span></div><ul class="card-list"><li class="card card--active" data-action="toggleExpanded" data-task-id="1">
   <span class="edge-bar edge-bar--solid" aria-hidden="true"></span>
   <div class="line line1">
     <span class="glyph">✳️</span>
@@ -1404,7 +1456,20 @@ exports[`render snapshots — canonical List Mode states (#29) > full state matr
     .session-row--detail .icon-btn { transition: none; }
   }
 
-  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+  .list-header .header-counts { flex: 1 1 auto; }
+  .header-activate {
+    background: var(--tk-accent);
+    color: var(--tk-bg);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .header-activate:hover { filter: brightness(1.05); }
+  .header-activate:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
   .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
   .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
@@ -1475,7 +1540,7 @@ exports[`render snapshots — canonical List Mode states (#29) > full state matr
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style><div class="list-header">3 open · 1 closed</div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="2">
+</style><div class="list-header"><span class="header-counts">3 open · 1 closed</span></div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="2">
   <span class="edge-bar edge-bar--soft" aria-hidden="true"></span>
   <div class="line line1">
     <span class="glyph">⏳</span>
@@ -1726,7 +1791,20 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
     .session-row--detail .icon-btn { transition: none; }
   }
 
-  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+  .list-header .header-counts { flex: 1 1 auto; }
+  .header-activate {
+    background: var(--tk-accent);
+    color: var(--tk-bg);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .header-activate:hover { filter: brightness(1.05); }
+  .header-activate:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
   .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
   .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
@@ -1797,7 +1875,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+</style><div class="list-header"><span class="header-counts">2 open · 2 closed</span></div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
   
   <div class="line line1">
     <span class="glyph">○</span>
@@ -2030,7 +2108,20 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
     .session-row--detail .icon-btn { transition: none; }
   }
 
-  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+  .list-header .header-counts { flex: 1 1 auto; }
+  .header-activate {
+    background: var(--tk-accent);
+    color: var(--tk-bg);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .header-activate:hover { filter: brightness(1.05); }
+  .header-activate:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
   .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
   .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
@@ -2101,7 +2192,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+</style><div class="list-header"><span class="header-counts">2 open · 2 closed</span></div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
   
   <div class="line line1">
     <span class="glyph">○</span>

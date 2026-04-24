@@ -2,6 +2,7 @@
 // Inbound: webview → host. Outbound: host → webview.
 
 export type InboundMessage =
+  | { type: 'activateExtension' }
   | { type: 'activateTask'; id: number }
   | { type: 'enterDetail'; id: number }
   | { type: 'exitDetail' }

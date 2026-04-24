@@ -143,6 +143,7 @@ export function activate(context: vscode.ExtensionContext): void {
         workspaceState: context.workspaceState,
         executeCommand: (cmd, ...args) => Promise.resolve(vscode.commands.executeCommand(cmd, ...args)),
         colorTheme: vscode.window,
+        isActivated: true,
       });
       await sidebarController.start();
       sidebarProvider.setController(sidebarController);

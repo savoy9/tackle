@@ -11,6 +11,13 @@ export interface SidebarState {
   closedFolderOpen: boolean;
   /** Precomputed markdown HTML for Task.description, keyed by task id. */
   descriptionsByTaskId: Record<number, string>;
+  /**
+   * Whether the extension has completed `tackle.activate`. Before that point
+   * the sidebar is rendered from a placeholder repo with no real data, and
+   * the header shows an Activate button so the user doesn't have to hunt
+   * through the command palette on every VS Code restart.
+   */
+  isActivated: boolean;
 }
 
 export type SidebarAction =
@@ -21,7 +28,8 @@ export type SidebarAction =
   | { type: 'exitDetail' }
   | { type: 'toggleExpanded'; taskId: number }
   | { type: 'toggleClosedFolder' }
-  | { type: 'setDescriptions'; descriptionsByTaskId: Record<number, string> };
+  | { type: 'setDescriptions'; descriptionsByTaskId: Record<number, string> }
+  | { type: 'setActivated'; isActivated: boolean };
 
 export const initialState: SidebarState = {
   mode: 'list',
@@ -31,6 +39,7 @@ export const initialState: SidebarState = {
   expandedCardIds: new Set<number>(),
   closedFolderOpen: false,
   descriptionsByTaskId: {},
+  isActivated: false,
 };
 
 export function reducer(state: SidebarState, action: SidebarAction): SidebarState {
@@ -55,6 +64,9 @@ export function reducer(state: SidebarState, action: SidebarAction): SidebarStat
       return { ...state, closedFolderOpen: !state.closedFolderOpen };
     case 'setDescriptions':
       return { ...state, descriptionsByTaskId: action.descriptionsByTaskId };
+    case 'setActivated':
+      if (state.isActivated === action.isActivated) return state;
+      return { ...state, isActivated: action.isActivated };
     default:
       return state;
   }

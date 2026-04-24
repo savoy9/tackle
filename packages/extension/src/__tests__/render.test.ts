@@ -53,7 +53,25 @@ describe('render — general', () => {
   });
 
   it('renders an empty list', () => {
-    expect(render(initialState)).toContain('No tasks');
+    // When the extension is activated, empty task list shows "No tasks".
+    const activated: SidebarState = { ...initialState, isActivated: true };
+    expect(render(activated)).toContain('No tasks');
+  });
+
+  it('renders an Activate button when isActivated is false', () => {
+    const html = render(initialState);
+    expect(html).toContain('data-action="activateExtension"');
+    expect(html).toContain('Tackle is not activated');
+  });
+
+  it('does not render the Activate button when isActivated is true', () => {
+    const state: SidebarState = {
+      ...initialState,
+      isActivated: true,
+      tasks: [task(1, 'foo')],
+    };
+    const html = render(state);
+    expect(html).not.toContain('data-action="activateExtension"');
   });
 
   it('escapes HTML in task titles', () => {

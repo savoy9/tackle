@@ -137,7 +137,20 @@ const COMPONENT_CSS = `
     .session-row--detail .icon-btn { transition: none; }
   }
 
-  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; }
+  .list-header { padding: 6px 12px; color: var(--tk-fg-muted); font-size: 0.9em; display: flex; align-items: center; gap: 8px; }
+  .list-header .header-counts { flex: 1 1 auto; }
+  .header-activate {
+    background: var(--tk-accent);
+    color: var(--tk-bg);
+    border: none;
+    border-radius: 4px;
+    padding: 3px 10px;
+    font-size: 0.9em;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .header-activate:hover { filter: brightness(1.05); }
+  .header-activate:focus-visible { outline: 2px solid var(--tk-accent); outline-offset: 2px; }
   .closed-folder { padding: 6px 12px; cursor: pointer; color: var(--tk-fg-muted); user-select: none; }
   .closed-rows { padding: 0 12px 6px 24px; }
   .closed-row { display: flex; align-items: center; gap: 6px; padding: 2px 4px; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--tk-fg); }
@@ -211,11 +224,19 @@ const COMPONENT_CSS = `
 `;
 
 function renderList(state: SidebarState): string {
+  const activateBtn = state.isActivated
+    ? ''
+    : `<button class="header-activate" data-action="activateExtension" title="Activate Tackle in this workspace">Activate</button>`;
   if (state.tasks.length === 0) {
+    // Keep the Activate button visible even on the empty state so the user
+    // can activate without needing any seed data.
+    if (!state.isActivated) {
+      return `<div class="list-header"><span class="header-counts">Tackle is not activated.</span>${activateBtn}</div>`;
+    }
     return `<div class="tackle-empty">No tasks.</div>`;
   }
   const { open, closed } = partitionTasks(state.tasks);
-  const header = `<div class="list-header">${open.length} open · ${closed.length} closed</div>`;
+  const header = `<div class="list-header"><span class="header-counts">${open.length} open · ${closed.length} closed</span>${activateBtn}</div>`;
   const byTask = sessionsByTask(state.sessions);
   const sorted = sortTasks(open, byTask);
   const items = sorted

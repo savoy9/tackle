@@ -3,6 +3,10 @@ import type { Task, Session } from '@tackle/shared';
 import { render } from '../sidebar/render';
 import { initialState, type SidebarState } from '../sidebar/sidebar-state';
 
+// All existing snapshot scenarios represent the post-activation sidebar.
+// Default every test to that by spreading an activated base.
+const activatedState: SidebarState = { ...initialState, isActivated: true };
+
 const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   id,
   external_id: String(id),
@@ -39,12 +43,12 @@ const sess = (id: number, task_id: number, over: Partial<Session> = {}): Session
 
 describe('render snapshots — canonical List Mode states (#29)', () => {
   it('empty list', () => {
-    expect(render(initialState)).toMatchSnapshot();
+    expect(render(activatedState)).toMatchSnapshot();
   });
 
   it('List with Active + idle + waiting-for-input tasks', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       tasks: [task(1, 'Active task', { synced_at: '2026-04-10' }), task(2, 'Idle task', { synced_at: '2026-04-05' }), task(3, 'Waiting task', { synced_at: '2026-04-01' })],
       sessions: [
         sess(10, 1, { status: 'running', agent_state: 'idle' }),
@@ -57,7 +61,7 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
 
   it('expanded card with mixed-state sessions', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       tasks: [task(1, 'Big task')],
       sessions: [
         sess(10, 1, { status: 'running', agent_state: 'working', tab_label: 'impl-1' }),
@@ -73,7 +77,7 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
 
   it('card with zero sessions shows + New session affordance', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       tasks: [task(1, 'Fresh task')],
     };
     expect(render(state)).toMatchSnapshot();
@@ -81,7 +85,7 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
 
   it('mixed open+closed tasks, closed folder collapsed', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       tasks: [
         task(1, 'Open A', { synced_at: '2026-04-10' }),
         task(2, 'Closed A', { status: 'closed', synced_at: '2026-03-20' }),
@@ -95,7 +99,7 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
 
   it('mixed open+closed tasks, closed folder expanded', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       tasks: [
         task(1, 'Open A', { synced_at: '2026-04-10' }),
         task(2, 'Closed A', { status: 'closed', synced_at: '2026-03-20' }),
@@ -109,7 +113,7 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
 
   it('full state matrix — Active, Running-non-active, Idle, Closed (#46)', () => {
     const state: SidebarState = {
-      ...initialState,
+      ...activatedState,
       tasks: [
         task(1, 'Active task', { synced_at: '2026-04-10' }),
         task(2, 'Running task', { synced_at: '2026-04-09' }),

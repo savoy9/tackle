@@ -17,6 +17,9 @@ function dispatch(action: string, el: HTMLElement): boolean {
   const taskId = taskIdStr != null ? Number(taskIdStr) : undefined;
   const sessionId = sessionIdStr != null ? Number(sessionIdStr) : undefined;
   switch (action) {
+    case 'activateExtension':
+      send({ type: 'activateExtension' });
+      return true;
     case 'exitDetail':
       send({ type: 'exitDetail' });
       return true;

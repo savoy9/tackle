@@ -78,6 +78,13 @@ export interface SidebarControllerDeps {
   executeCommand?: (command: string, ...args: unknown[]) => Promise<unknown>;
   /** Source of VS Code color-theme info. When omitted, no themeKind messages. */
   colorTheme?: SidebarColorTheme;
+  /**
+   * True when the extension has finished `tackle.activate` and the
+   * controller has real task/session repositories wired up. When false the
+   * header renders an Activate button. Defaults to false for the pre-activation
+   * controller and true for the post-activation one.
+   */
+  isActivated?: boolean;
 }
 
 const KEY_MODE = 'tackle.sidebar.mode';
@@ -116,6 +123,7 @@ export class SidebarController {
       expandedCardIds: new Set(expandedArr),
       closedFolderOpen: closed,
       descriptionsByTaskId: renderDescriptions(tasks),
+      isActivated: this.deps.isActivated ?? false,
     };
 
     this.scopeSub = this.deps.scope.onDidChangeActiveTask((id) => {
@@ -173,6 +181,9 @@ export class SidebarController {
   async handleMessage(msg: InboundMessage): Promise<void> {
     const exec = this.deps.executeCommand;
     switch (msg.type) {
+      case 'activateExtension':
+        if (exec) await exec('tackle.activate');
+        return;
       case 'activateTask':
         if (this.deps.scope.switchTask) {
           await this.deps.scope.switchTask(msg.id);
