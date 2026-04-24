@@ -17,6 +17,24 @@ describe('PsmuxBridge', () => {
       expect(PsmuxBridge.generateSessionName('gh', 'ABC-123', 'debug', 3))
         .toBe('tackle-gh-ABC-123-debug3');
     });
+
+    it('honors TACKLE_TEST_PSMUX_PREFIX env var when set', () => {
+      const prev = process.env.TACKLE_TEST_PSMUX_PREFIX;
+      try {
+        process.env.TACKLE_TEST_PSMUX_PREFIX = 'tackletest-';
+        expect(PsmuxBridge.generateSessionName('gh', '42', 'implement', 1))
+          .toBe('tackletest-gh-42-implement1');
+      } finally {
+        if (prev === undefined) delete process.env.TACKLE_TEST_PSMUX_PREFIX;
+        else process.env.TACKLE_TEST_PSMUX_PREFIX = prev;
+      }
+    });
+
+    it('default prefix unchanged when env var unset', () => {
+      delete process.env.TACKLE_TEST_PSMUX_PREFIX;
+      expect(PsmuxBridge.generateSessionName('gh', '42', 'implement', 1))
+        .toBe('tackle-gh-42-implement1');
+    });
   });
 
   describe('generateTabLabel', () => {

@@ -1,4 +1,6 @@
 import type { SessionKind } from '@tackle/shared';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { AgentStateDetector } from './agent-state-detector';
 
 /**
@@ -28,6 +30,12 @@ export type DetectorKind = 'ClaudeJsonlDetector';
 export interface AgentAdapter {
   name: string;
   command: string;
+  /**
+   * Positional args prepended before the resume flag (and any other
+   * orchestrator-supplied args) on every spawn. Used by the `stub` test
+   * harness adapter to pass the claude-stub.mjs path to `node`.
+   */
+  args?: string[];
   resumeFlag(sessionId: string): string[];
   detector: DetectorKind;
 }
@@ -91,6 +99,20 @@ const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
     name: 'claude',
     command: 'claude',
     resumeFlag: (sessionId: string) => ['-r', sessionId],
+    detector: 'ClaudeJsonlDetector',
+  },
+  // Test-harness adapter (#65). Engaged by setting
+  // `tackle.defaultAgent = 'stub'` in test fixtures. The stub script lives
+  // alongside the extension package's test fixtures and writes synthetic
+  // jsonl files that the real ClaudeJsonlDetector parses unchanged.
+  stub: {
+    name: 'stub',
+    command: 'node',
+    args: [path.resolve(
+      path.dirname(fileURLToPath(import.meta.url)),
+      '..', '..', 'test', 'fixtures', 'bin', 'claude-stub.mjs',
+    )],
+    resumeFlag: () => [],
     detector: 'ClaudeJsonlDetector',
   },
 };

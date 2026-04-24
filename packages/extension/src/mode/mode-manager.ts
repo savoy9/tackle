@@ -38,7 +38,8 @@ export class ModeManager {
 
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (workspaceFolder) {
-      const dbPath = join(workspaceFolder.uri.fsPath, '.tackle', 'tackle.db');
+      const dbPath = process.env.TACKLE_TEST_DB
+        ?? join(workspaceFolder.uri.fsPath, '.tackle', 'tackle.db');
       this.db = createDatabase(dbPath);
     }
 

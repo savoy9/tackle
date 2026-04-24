@@ -62,6 +62,32 @@ describe('agent-registry', () => {
     });
   });
 
+  describe('stub agent (test harness)', () => {
+    const registry = createAgentRegistry({ getDefault: () => 'agency-cc' });
+
+    it('is registered alongside the built-in adapters', () => {
+      const adapter = registry.resolve('stub');
+      expect(adapter.name).toBe('stub');
+      expect(adapter.command).toBe('node');
+    });
+
+    it('passes the claude-stub.mjs path as a positional arg', () => {
+      const adapter = registry.resolve('stub');
+      expect(adapter.args).toBeDefined();
+      expect(adapter.args!.length).toBe(1);
+      expect(adapter.args![0]).toMatch(/claude-stub\.mjs$/);
+    });
+
+    it('emits an empty resumeFlag (the stub does not honor session ids)', () => {
+      const adapter = registry.resolve('stub');
+      expect(adapter.resumeFlag('whatever')).toEqual([]);
+    });
+
+    it('declares ClaudeJsonlDetector so the existing detector path is exercised', () => {
+      expect(registry.resolve('stub').detector).toBe('ClaudeJsonlDetector');
+    });
+  });
+
   describe('createVscodeAgentRegistry', () => {
     it('reads the default agent from tackle.defaultAgent configuration', async () => {
       resetMocks();
