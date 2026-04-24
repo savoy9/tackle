@@ -68,6 +68,20 @@ export class TaskService {
     remote: { owner: string; repo: string } | null;
     diagnostics: string;
   }> {
+    // 0) Explicit setting wins. When the workspace isn't a git repo (or uses
+    //    a non-GitHub remote but the user still wants to sync against a
+    //    specific GitHub repo), `tackle.github.repo` gives them a direct
+    //    override — no git introspection required.
+    const configured = vscode.workspace.getConfiguration('tackle').get<string>('github.repo');
+    if (configured && configured.trim()) {
+      const parsed = TaskService.parseOwnerRepo(configured.trim());
+      if (parsed) return { remote: parsed, diagnostics: '' };
+      return {
+        remote: null,
+        diagnostics: `tackle.github.repo is set to "${configured}" but must be in "owner/repo" form.`,
+      };
+    }
+
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (!workspaceFolder) {
       return { remote: null, diagnostics: 'No workspace folder is open.' };
@@ -130,7 +144,19 @@ export class TaskService {
       notes.push(`git CLI: \`git remote\` at ${cwd} failed: ${err instanceof Error ? err.message : String(err)}`);
     }
 
-    return { remote: null, diagnostics: notes.join('; ') || 'No diagnostics available.' };
+    const suffix =
+      ' Set `tackle.github.repo` (e.g. "owner/repo") in Settings to sync against an explicit repository.';
+    return {
+      remote: null,
+      diagnostics: (notes.join('; ') || 'No diagnostics available.') + suffix,
+    };
+  }
+
+  /** Accept "owner/repo", tolerating a trailing `.git` or slash. */
+  static parseOwnerRepo(s: string): { owner: string; repo: string } | null {
+    const m = s.match(/^([^/\s]+)\/([^/\s]+?)(?:\.git)?\/?$/);
+    if (!m) return null;
+    return { owner: m[1], repo: m[2] };
   }
 
   static parseGitRemote(remoteUrl: string): { owner: string; repo: string } | null {

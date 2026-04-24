@@ -52,3 +52,17 @@ describe('TaskService.parseGitRemote', () => {
     expect(r).toEqual({ owner: 'octocat', repo: 'hello' });
   });
 });
+
+describe('TaskService.parseOwnerRepo', () => {
+  it('parses bare owner/repo', () => {
+    expect(TaskService.parseOwnerRepo('octocat/hello')).toEqual({ owner: 'octocat', repo: 'hello' });
+  });
+  it('tolerates trailing .git', () => {
+    expect(TaskService.parseOwnerRepo('octocat/hello.git')).toEqual({ owner: 'octocat', repo: 'hello' });
+  });
+  it('rejects bare strings', () => {
+    expect(TaskService.parseOwnerRepo('hello')).toBeNull();
+    expect(TaskService.parseOwnerRepo('')).toBeNull();
+    expect(TaskService.parseOwnerRepo('a/b/c')).toBeNull();
+  });
+});

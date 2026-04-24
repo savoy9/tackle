@@ -29,6 +29,11 @@
           "type": "string",
           "default": "../{repoName}.worktrees/",
           "description": "Directory where Tackle places per-Task worktrees. Relative paths are resolved against the workspace folder. Supports the {repoName} placeholder, which expands to the workspace folder name. Default places worktrees as siblings of the repo (idiomatic git layout)."
+        },
+        "tackle.github.repo": {
+          "type": "string",
+          "default": "",
+          "description": "GitHub repository to sync issues from, in `owner/repo` form (e.g. 'octocat/hello-world'). When set, this overrides auto-detection from the workspace's git remotes — useful when the workspace isn't itself a git repo but you still want to track issues against a specific GitHub repository."
         }
       }
     },
