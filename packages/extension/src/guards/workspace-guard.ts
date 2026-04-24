@@ -25,6 +25,14 @@ export async function checkSingleRootWorkspace(): Promise<boolean> {
 }
 
 /**
+ * Resolves the workspace root path. Returns `TACKLE_TEST_WORKSPACE` when set
+ * (test-mode escape hatch), else `vscode.workspace.workspaceFolders[0].uri.fsPath`.
+ */
+export function resolveWorkspaceRoot(): string | undefined {
+  return process.env.TACKLE_TEST_WORKSPACE ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+}
+
+/**
  * Ensures .tackle/ directory exists and is in .gitignore.
  * Creates .tackle/ if missing. Creates/updates .gitignore.
  */

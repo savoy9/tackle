@@ -9,7 +9,7 @@ import { SessionActions, ObservableSessionRepository, NewSessionFlow, buildKindQ
 import { LayoutManager } from './layout';
 import { ScopeManager } from './scope';
 import { SidebarController, SidebarViewProvider } from './sidebar';
-import { checkSingleRootWorkspace, ensureTackleDir } from './guards';
+import { checkSingleRootWorkspace, ensureTackleDir, resolveWorkspaceRoot } from './guards';
 import { runLatencyBenchmark, formatResult } from './bench';
 
 // Module-level reference so `deactivate()` can release detectors and
@@ -66,7 +66,7 @@ export function activate(context: vscode.ExtensionContext): void {
         return;
       }
 
-      const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+      const workspaceRoot = resolveWorkspaceRoot()!;
       await ensureTackleDir(workspaceRoot);
       await modeManager.activate();
 

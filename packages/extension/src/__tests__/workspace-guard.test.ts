@@ -18,7 +18,7 @@ vi.mock('vscode', () => ({
   },
 }));
 
-import { checkSingleRootWorkspace, ensureTackleDir } from '../guards/workspace-guard';
+import { checkSingleRootWorkspace, ensureTackleDir, resolveWorkspaceRoot } from '../guards/workspace-guard';
 
 describe('checkSingleRootWorkspace', () => {
   beforeEach(() => {
@@ -53,6 +53,31 @@ describe('checkSingleRootWorkspace', () => {
     const result = await checkSingleRootWorkspace();
     expect(result).toBe(true);
     expect(mockShowErrorMessage).not.toHaveBeenCalled();
+  });
+});
+
+describe('resolveWorkspaceRoot', () => {
+  beforeEach(() => {
+    delete process.env.TACKLE_TEST_WORKSPACE;
+    mockWorkspaceFolders.value = [{ uri: { fsPath: '/real/workspace' } }];
+  });
+
+  afterEach(() => {
+    delete process.env.TACKLE_TEST_WORKSPACE;
+  });
+
+  it('returns TACKLE_TEST_WORKSPACE when set', () => {
+    process.env.TACKLE_TEST_WORKSPACE = '/tmp/override-ws';
+    expect(resolveWorkspaceRoot()).toBe('/tmp/override-ws');
+  });
+
+  it('falls back to vscode workspaceFolders[0] when env var unset', () => {
+    expect(resolveWorkspaceRoot()).toBe('/real/workspace');
+  });
+
+  it('returns undefined when env var unset and no workspace folder', () => {
+    mockWorkspaceFolders.value = undefined;
+    expect(resolveWorkspaceRoot()).toBeUndefined();
   });
 });
 
