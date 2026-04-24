@@ -2,7 +2,7 @@
 
 exports[`render snapshots — canonical Detail Mode states (#31) > Detail with description, no sessions, no other tasks (#47) 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -273,7 +273,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="tackle-detail card card--active">
+</style><div class="tackle-detail card card--active">
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">With desc</span>
@@ -301,7 +301,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
 
 exports[`render snapshots — canonical Detail Mode states (#31) > Detail with externally-closed indicator 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -572,7 +572,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="tackle-detail card card--active">
+</style><div class="tackle-detail card card--active">
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Closed task</span>
@@ -614,7 +614,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
 
 exports[`render snapshots — canonical Detail Mode states (#31) > Detail with footer mini-cards: one running, one idle (#47) 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -885,7 +885,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="tackle-detail card card--active">
+</style><div class="tackle-detail card card--active">
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Focus</span>
@@ -921,7 +921,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
 
 exports[`render snapshots — canonical Detail Mode states (#31) > Detail with no sessions 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -1192,7 +1192,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="tackle-detail card card--active">
+</style><div class="tackle-detail card card--active">
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Lonely task</span>
@@ -1220,7 +1220,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
 
 exports[`render snapshots — canonical Detail Mode states (#31) > Detail with populated description + mixed sessions + footer 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -1491,7 +1491,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="tackle-detail card card--active">
+</style><div class="tackle-detail card card--active">
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Main task</span>
@@ -1541,7 +1541,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
 
 exports[`render snapshots — canonical Detail Mode states (#31) > Detail without description, with running sessions (#47) 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -1812,7 +1812,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail withou
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="tackle-detail card card--active">
+</style><div class="tackle-detail card card--active">
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Running detail</span>

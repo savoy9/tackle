@@ -2,7 +2,7 @@
 
 exports[`render snapshots — canonical List Mode states (#29) > List with Active + idle + waiting-for-input tasks 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -273,7 +273,7 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="list-header">3 open · 0 closed</div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="3">
+</style><div class="list-header">3 open · 0 closed</div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="3">
   <span class="edge-bar edge-bar--soft" aria-hidden="true"></span>
   <div class="line line1">
     <span class="glyph">✳️</span>
@@ -320,7 +320,7 @@ exports[`render snapshots — canonical List Mode states (#29) > List with Activ
 
 exports[`render snapshots — canonical List Mode states (#29) > card with zero sessions shows + New session affordance 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -591,7 +591,7 @@ exports[`render snapshots — canonical List Mode states (#29) > card with zero 
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+</style><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
   
   <div class="line line1">
     <span class="glyph">○</span>
@@ -610,7 +610,7 @@ exports[`render snapshots — canonical List Mode states (#29) > card with zero 
 
 exports[`render snapshots — canonical List Mode states (#29) > empty list 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -881,12 +881,12 @@ exports[`render snapshots — canonical List Mode states (#29) > empty list 1`] 
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="tackle-empty">No tasks.</div></body></html>"
+</style><div class="tackle-empty">No tasks.</div></body></html>"
 `;
 
 exports[`render snapshots — canonical List Mode states (#29) > expanded card with mixed-state sessions 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -1157,7 +1157,7 @@ exports[`render snapshots — canonical List Mode states (#29) > expanded card w
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card card--active" data-action="toggleExpanded" data-task-id="1">
+</style><div class="list-header">1 open · 0 closed</div><ul class="card-list"><li class="card card--active" data-action="toggleExpanded" data-task-id="1">
   <span class="edge-bar edge-bar--solid" aria-hidden="true"></span>
   <div class="line line1">
     <span class="glyph">✳️</span>
@@ -1204,7 +1204,7 @@ exports[`render snapshots — canonical List Mode states (#29) > expanded card w
 
 exports[`render snapshots — canonical List Mode states (#29) > full state matrix — Active, Running-non-active, Idle, Closed (#46) 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -1475,7 +1475,7 @@ exports[`render snapshots — canonical List Mode states (#29) > full state matr
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="list-header">3 open · 1 closed</div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="2">
+</style><div class="list-header">3 open · 1 closed</div><ul class="card-list"><li class="card card--running" data-action="toggleExpanded" data-task-id="2">
   <span class="edge-bar edge-bar--soft" aria-hidden="true"></span>
   <div class="line line1">
     <span class="glyph">⏳</span>
@@ -1526,7 +1526,7 @@ exports[`render snapshots — canonical List Mode states (#29) > full state matr
 
 exports[`render snapshots — canonical List Mode states (#29) > mixed open+closed tasks, closed folder collapsed 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -1797,7 +1797,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+</style><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
   
   <div class="line line1">
     <span class="glyph">○</span>
@@ -1830,7 +1830,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
 
 exports[`render snapshots — canonical List Mode states (#29) > mixed open+closed tasks, closed folder expanded 1`] = `
 "<!doctype html>
-<html><head><meta charset="utf-8"><style>
+<html><head><meta charset="utf-8"></head><body><style>
 :root {
   --tk-bg: #f5f1ea;
   --tk-card-bg: #faf7f1;
@@ -2101,7 +2101,7 @@ exports[`render snapshots — canonical List Mode states (#29) > mixed open+clos
   }
   .card--mini .title { flex: 1 1 auto; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .card--mini .id { color: var(--tk-fg-muted); font-size: 0.85em; }
-</style></head><body><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
+</style><div class="list-header">2 open · 2 closed</div><ul class="card-list"><li class="card" data-action="toggleExpanded" data-task-id="1">
   
   <div class="line line1">
     <span class="glyph">○</span>

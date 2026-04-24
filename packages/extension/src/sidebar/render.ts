@@ -268,6 +268,11 @@ function renderClosedFolder(closed: import('@tackle/shared').Task[], open: boole
 export function render(state: SidebarState): string {
   const body =
     state.mode === 'list' ? renderList(state) : renderDetail(state);
+  // The `<style>` block lives INSIDE the body so it survives the
+  // innerHTML extraction in handle-outbound.ts (which pulls only the
+  // body contents into #root). If we put it in <head> the tokens and
+  // component CSS would silently vanish on every render and the sidebar
+  // would paint as unstyled plain text.
   return `<!doctype html>
-<html><head><meta charset="utf-8"><style>${THEME_CSS}${COMPONENT_CSS}</style></head><body>${body}</body></html>`;
+<html><head><meta charset="utf-8"></head><body><style>${THEME_CSS}${COMPONENT_CSS}</style>${body}</body></html>`;
 }
