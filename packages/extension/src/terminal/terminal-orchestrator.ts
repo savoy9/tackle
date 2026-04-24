@@ -50,9 +50,12 @@ export class TerminalOrchestrator {
    * call the right `stop(session)` when a Session transitions out of
    * `running` (or when we restart it). A single detector instance may
    * watch many Sessions — the registry returns shared instances per
-   * `DetectorKind`.
+   * `DetectorKind`. We keep the full Session object alongside the
+   * detector so `stop()` always receives a real row — never a
+   * `{ id } as Session` cast — in case a future detector needs more
+   * than the id for teardown.
    */
-  private sessionDetector = new Map<number, AgentStateDetector>();
+  private sessionDetector = new Map<number, { detector: AgentStateDetector; session: Session }>();
   private detectorListeners: Array<{ dispose(): void }> = [];
   private wiredDetectors = new WeakSet<AgentStateDetector>();
 
@@ -74,6 +77,11 @@ export class TerminalOrchestrator {
     if (this.wiredDetectors.has(detector)) return;
     this.wiredDetectors.add(detector);
     const sub = detector.onChange((event) => {
+      // Guard against late events: a detector may emit after `stop()` if
+      // an fs.watch callback or debounce timer was already queued. If
+      // we're no longer tracking this session, drop the event rather
+      // than resurrecting `agent_state` on a stopped row.
+      if (!this.sessionDetector.has(event.sessionId)) return;
       // fire-and-forget: detector events are high-frequency, and a
       // failed write should not stall the watcher.
       void this.sessionRepo.setAgentState(event.sessionId, event.state);
@@ -91,7 +99,7 @@ export class TerminalOrchestrator {
     const detector = this.agentRegistry.getDetector(session.agent);
     if (!detector) return;
     this.ensureDetectorWired(detector);
-    this.sessionDetector.set(session.id, detector);
+    this.sessionDetector.set(session.id, { detector, session });
     detector.start(session);
   }
 
@@ -102,10 +110,10 @@ export class TerminalOrchestrator {
    * restarted.
    */
   private stopDetectorFor(session: Session): void {
-    const detector = this.sessionDetector.get(session.id);
-    if (!detector) return;
+    const entry = this.sessionDetector.get(session.id);
+    if (!entry) return;
     this.sessionDetector.delete(session.id);
-    detector.stop(session);
+    entry.detector.stop(entry.session);
   }
 
   async createTerminal(opts: {
@@ -251,10 +259,10 @@ export class TerminalOrchestrator {
     // Only touch the detector if one was tracked for this session
     // (shell-kind never has one, and avoiding the extra repo.get() keeps
     // the synchronous `update` call where existing tests expect it).
-    const detector = this.sessionDetector.get(sessionId);
-    if (detector) {
+    const entry = this.sessionDetector.get(sessionId);
+    if (entry) {
       this.sessionDetector.delete(sessionId);
-      detector.stop({ id: sessionId } as Session);
+      entry.detector.stop(entry.session);
     }
     await this.sessionRepo.update(sessionId, { status: 'stopped' });
   }

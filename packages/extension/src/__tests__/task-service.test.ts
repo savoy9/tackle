@@ -66,3 +66,24 @@ describe('TaskService.parseOwnerRepo', () => {
     expect(TaskService.parseOwnerRepo('a/b/c')).toBeNull();
   });
 });
+
+describe('TaskService.redactRemoteUrl', () => {
+  it('strips user:token from https URLs', () => {
+    expect(TaskService.redactRemoteUrl('https://user:token@github.com/octocat/hello.git')).toBe('https://github.com/octocat/hello.git');
+  });
+  it('strips bare token from https URLs', () => {
+    expect(TaskService.redactRemoteUrl('https://ghp_abcd1234@github.com/octocat/hello.git')).toBe('https://github.com/octocat/hello.git');
+  });
+  it('leaves plain https URLs untouched', () => {
+    expect(TaskService.redactRemoteUrl('https://github.com/octocat/hello.git')).toBe('https://github.com/octocat/hello.git');
+  });
+  it('leaves ssh URLs untouched (no userinfo@ pattern)', () => {
+    expect(TaskService.redactRemoteUrl('git@github.com:octocat/hello.git')).toBe('git@github.com:octocat/hello.git');
+  });
+  it('truncates pathologically long URLs', () => {
+    const long = 'https://github.com/' + 'a'.repeat(500);
+    const out = TaskService.redactRemoteUrl(long);
+    expect(out.length).toBeLessThanOrEqual(200);
+    expect(out.endsWith('...')).toBe(true);
+  });
+});

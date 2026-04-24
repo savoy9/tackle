@@ -79,9 +79,21 @@ export function assessWorktreeCleanliness(
   const unstagedFiles = status.stdout.split(/\r?\n/).filter((l) => l.length > 0).length;
 
   const ahead = gitTry(worktreePath, ['rev-list', '--count', `${baseBranch}..HEAD`]);
-  // If the base ref isn't reachable (rare during teardown / detached repos),
-  // treat ahead as 0 rather than refusing to assess.
-  const commitsAhead = ahead.ok ? Number.parseInt(ahead.stdout.trim() || '0', 10) : 0;
+  // If rev-list fails (unreachable base ref, missing branch, detached repo)
+  // prefer dirty: declaring clean here would default the confirmation
+  // toward deletion even when there may be unmerged commits we just can't
+  // count. The failure mode is explicit in `reason`.
+  if (!ahead.ok) {
+    const base = unstagedFiles > 0 ? [`${unstagedFiles} uncommitted file(s)`] : [];
+    base.push(`could not compare to ${baseBranch}: ${ahead.stderr.trim() || 'git rev-list failed'}`);
+    return {
+      clean: false,
+      reason: base.join(', '),
+      unstagedFiles,
+      commitsAhead: 0,
+    };
+  }
+  const commitsAhead = Number.parseInt(ahead.stdout.trim() || '0', 10);
 
   const clean = unstagedFiles === 0 && commitsAhead === 0;
   const reasonParts: string[] = [];

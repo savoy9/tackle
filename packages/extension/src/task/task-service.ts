@@ -64,6 +64,16 @@ export class TaskService {
    * GitHub remote?" was unactionable when the real problem was, say, a
    * detached workspace folder or an SSH URL we didn't recognize).
    */
+  /**
+   * Strip any `user:token@` userinfo from a URL so it's safe to log. We
+   * also cap length at 200 chars so a runaway remote URL can't blow out
+   * an error toast. Exported for testing.
+   */
+  static redactRemoteUrl(url: string): string {
+    const redacted = url.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^@\s/]+@/i, '$1');
+    return redacted.length > 200 ? redacted.slice(0, 197) + '...' : redacted;
+  }
+
   private async getRemote(): Promise<{
     remote: { owner: string; repo: string } | null;
     diagnostics: string;
@@ -103,7 +113,7 @@ export class TaskService {
             if (!url) continue;
             const parsed = TaskService.parseGitRemote(url);
             if (parsed) return { remote: parsed, diagnostics: '' };
-            notes.push(`git-ext remote ${r.name ?? '?'}=${url} did not match a GitHub URL`);
+            notes.push(`git-ext remote ${r.name ?? '?'}=${TaskService.redactRemoteUrl(url)} did not match a GitHub URL`);
           }
         }
         if (repos.length === 0) {
@@ -135,7 +145,7 @@ export class TaskService {
           const url = execFileSync('git', ['remote', 'get-url', name], { cwd, encoding: 'utf-8' }).trim();
           const parsed = TaskService.parseGitRemote(url);
           if (parsed) return { remote: parsed, diagnostics: '' };
-          notes.push(`git CLI remote ${name}=${url} did not match a GitHub URL`);
+          notes.push(`git CLI remote ${name}=${TaskService.redactRemoteUrl(url)} did not match a GitHub URL`);
         } catch (err) {
           notes.push(`git CLI: \`git remote get-url ${name}\` failed: ${err instanceof Error ? err.message : String(err)}`);
         }

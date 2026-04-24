@@ -22,12 +22,10 @@
 
 import type { SidebarState } from './sidebar-state';
 import type { Task } from '@tackle/shared';
-import { rollupGlyph } from './glyph';
 import { sortTasks } from './sort';
 import { isClosedStatus } from './closed';
 import { escapeHtml, EXT_ICON } from './html';
 import {
-  deriveEdgeBarState,
   edgeBarClassFor,
   EDGE_BAR_CLASS,
 } from './edge-bar';
@@ -148,10 +146,9 @@ export function renderDetail(state: SidebarState): string {
       .map((t) => {
         const sessions = byTask.get(t.id) ?? [];
         const hasRunning = sessions.some((s) => s.status === 'running');
-        // Use rollupGlyph indirectly: mini-card primitive shows title + #id only.
-        // (Glyph parity with full card is intentionally deferred to keep the
-        //  mini-card to one line at 24px height — see #47 acceptance criteria.)
-        void rollupGlyph;
+        // Mini-card primitive shows title + #id only (glyph parity with the
+        // full card is intentionally deferred to keep the row to one line
+        // at 24px height — see #47 acceptance criteria).
         return renderFooterMiniCard(t, hasRunning);
       })
       .join('');

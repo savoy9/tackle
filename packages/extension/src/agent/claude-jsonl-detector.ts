@@ -38,6 +38,13 @@ interface PerSessionState {
   lastState: AgentState | null;
   poll: NodeJS.Timeout | null;
   pendingTimer: NodeJS.Timeout | null;
+  /**
+   * Set to true in `stop()` before the watcher/poll teardown so any
+   * in-flight callback (fs.watch event already queued, debounce timer
+   * about to fire) short-circuits instead of emitting a late state
+   * transition against a stopped session.
+   */
+  stopped: boolean;
 }
 
 /**
@@ -76,6 +83,7 @@ export function createClaudeJsonlDetector(opts: ClaudeJsonlDetectorOptions): Age
   };
 
   const transition = (st: PerSessionState, next: AgentState) => {
+    if (st.stopped) return;
     if (st.lastState === next) return;
     st.lastState = next;
     emit(st.session.id, next);
@@ -100,6 +108,7 @@ export function createClaudeJsonlDetector(opts: ClaudeJsonlDetectorOptions): Age
   };
 
   const reassess = (st: PerSessionState) => {
+    if (st.stopped) return;
     let stat: fs.Stats | null = null;
     try {
       stat = fs.statSync(st.filePath);
@@ -148,6 +157,7 @@ export function createClaudeJsonlDetector(opts: ClaudeJsonlDetectorOptions): Age
         lastState: null,
         poll: null,
         pendingTimer: null,
+        stopped: false,
       };
       sessions.set(session.id, st);
 
@@ -158,9 +168,11 @@ export function createClaudeJsonlDetector(opts: ClaudeJsonlDetectorOptions): Age
       const onChange = () => {
         // Debounce: filesystem events often arrive in bursts (especially
         // on Windows). Coalesce within a small window before re-reading.
+        if (st.stopped) return;
         if (st.pendingTimer) return;
         st.pendingTimer = setTimeout(() => {
           st.pendingTimer = null;
+          if (st.stopped) return;
           reassess(st);
         }, 25);
       };
@@ -188,6 +200,10 @@ export function createClaudeJsonlDetector(opts: ClaudeJsonlDetectorOptions): Age
     stop(session: Session): void {
       const st = sessions.get(session.id);
       if (!st) return;
+      // Mark stopped BEFORE teardown — any in-flight watcher event or
+      // debounce timer that fires mid-teardown will short-circuit via
+      // the st.stopped guards in onChange / reassess / transition.
+      st.stopped = true;
       st.watcher?.close();
       if (st.poll) clearInterval(st.poll);
       if (st.pendingTimer) clearTimeout(st.pendingTimer);
@@ -205,6 +221,7 @@ export function createClaudeJsonlDetector(opts: ClaudeJsonlDetectorOptions): Age
 
     dispose() {
       for (const st of sessions.values()) {
+        st.stopped = true;
         st.watcher?.close();
         if (st.poll) clearInterval(st.poll);
         if (st.pendingTimer) clearTimeout(st.pendingTimer);

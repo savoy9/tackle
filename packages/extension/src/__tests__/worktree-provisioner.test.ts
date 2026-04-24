@@ -349,9 +349,11 @@ describe('WorktreeProvisioner config plumbing', () => {
   });
 
   it('falls back to defaults when configReader returns undefined for both keys', async () => {
-    // Default rootPath escapes our temp dir into a shared `myrepo.worktrees`
-    // sibling, so use a process-unique external id to avoid colliding with
-    // stale state from prior test runs.
+    // Default rootPath `../{repoName}.worktrees/` is resolved against the
+    // workspace folder itself, so it lands as a SIBLING of the repo (one
+    // level up from the worktree-per-task dir we get inside it). Use a
+    // process-unique external id to avoid colliding with stale state from
+    // prior test runs of sibling worktrees.
     const uniqueId = `def-${process.pid}-${Date.now()}`;
     const task = makeTask({ id: 1, external_id: uniqueId, title: 'defaulty' });
     state.tasks.set(1, task);
@@ -368,11 +370,10 @@ describe('WorktreeProvisioner config plumbing', () => {
     const result = await provisioner.ensureWorktreeForTask(task);
     try {
       expect(result.baseBranch).toBe('main');
-      // Default rootPath template `../{repoName}.worktrees/` is resolved
-      // against `dirname(workspaceRoot)`, then ascends one more level due
-      // to the leading `..`.
-      const { dirname } = await import('node:path');
-      const defaultRoot = join(dirname(rootDir), 'myrepo.worktrees');
+      // Default `../{repoName}.worktrees/` resolved against workspaceRoot
+      // (= rootDir/myrepo) collapses to rootDir/myrepo.worktrees — a sibling
+      // of the repo, the idiomatic git layout.
+      const defaultRoot = join(rootDir, 'myrepo.worktrees');
       expect(result.path.startsWith(defaultRoot)).toBe(true);
     } finally {
       // Clean up the worktree dir that escaped our tmpdir sandbox.

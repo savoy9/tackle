@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { basename, dirname, join, resolve } from 'node:path';
+import { basename, join, resolve } from 'node:path';
 import type { Task, TaskRepository } from '@tackle/shared';
 import { git, gitTry } from './git';
 
@@ -252,10 +252,13 @@ export class WorktreeProvisioner {
 
   private resolveWorktreePath(workspaceRoot: string, dirName: string): string {
     const repoName = basename(workspaceRoot);
-    const parent = dirname(workspaceRoot);
     const template = this.resolveRootPathTemplate();
     const rel = template.replace(/\{repoName\}/g, repoName);
-    const root = resolve(parent, rel);
+    // Relative `rootPath` values are resolved against the workspace folder
+    // itself (as documented in package.json), NOT its parent. The default
+    // `../{repoName}.worktrees/` still lands as a sibling of the repo —
+    // `resolve('/a/b/repo', '../repo.worktrees/')` → `/a/b/repo.worktrees/`.
+    const root = resolve(workspaceRoot, rel);
     // Sanitize directory name (strip path separators introduced by branch names like `tackle/42`).
     const safe = dirName.replace(/[\\/]/g, '-');
     return join(root, safe);
