@@ -62,6 +62,12 @@ export function defaultJsonlPathResolver(getCwd: (s: Session) => string | null):
   return {
     resolve(session: Session): string | null {
       if (!session.claude_session_id) return null;
+      // Test-mode escape hatch: bypass the ~/.claude/projects/<hash>/ layout
+      // and emit files into a fixture-controlled directory instead.
+      const overrideDir = process.env.TACKLE_TEST_JSONL_DIR;
+      if (overrideDir) {
+        return path.join(overrideDir, `${session.claude_session_id}.jsonl`);
+      }
       const cwd = getCwd(session);
       if (!cwd) return null;
       // Claude Code uses an md5 of the absolute path, lowercased hex.

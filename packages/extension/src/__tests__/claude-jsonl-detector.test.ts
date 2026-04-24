@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import type { Session } from '@tackle/shared';
 import {
   createClaudeJsonlDetector,
+  defaultJsonlPathResolver,
   deriveStateFromEntry,
   type JsonlPathResolver,
 } from '../agent/claude-jsonl-detector';
@@ -358,5 +359,32 @@ describe('ClaudeJsonlDetector — waiting transitions (#42)', () => {
     const states = events.map((e) => e.state);
     expect(states).toEqual(['idle', 'working']);
     expect(states).not.toContain('waiting');
+  });
+});
+
+describe('defaultJsonlPathResolver', () => {
+  afterEach(() => {
+    delete process.env.TACKLE_TEST_JSONL_DIR;
+  });
+
+  it('uses TACKLE_TEST_JSONL_DIR when set, replacing the projects/<hash>/ part', () => {
+    process.env.TACKLE_TEST_JSONL_DIR = '/tmp/jsonl-override';
+    const resolver = defaultJsonlPathResolver(() => '/some/cwd');
+    const out = resolver.resolve(baseSession({ claude_session_id: 'abc' }));
+    expect(out).toBe(path.join('/tmp/jsonl-override', 'abc.jsonl'));
+  });
+
+  it('falls back to ~/.claude/projects/<hash>/<id>.jsonl when env var unset', () => {
+    delete process.env.TACKLE_TEST_JSONL_DIR;
+    const resolver = defaultJsonlPathResolver(() => '/some/cwd');
+    const out = resolver.resolve(baseSession({ claude_session_id: 'abc' }));
+    expect(out).toContain(path.join('.claude', 'projects'));
+    expect(out!.endsWith('abc.jsonl')).toBe(true);
+  });
+
+  it('returns null when claude_session_id is missing, regardless of env', () => {
+    process.env.TACKLE_TEST_JSONL_DIR = '/tmp/jsonl-override';
+    const resolver = defaultJsonlPathResolver(() => '/some/cwd');
+    expect(resolver.resolve(baseSession({ claude_session_id: null }))).toBeNull();
   });
 });
