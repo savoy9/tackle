@@ -133,7 +133,7 @@
   "scripts": {
     "vscode:prepublish": "bun run compile",
     "compile": "bun build src/extension.ts --outdir dist --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite && bun build src/sidebar/webview/main.ts --outdir dist --target browser --format iife --entry-naming sidebar-webview.js",
-    "compile:tests": "bun build ./test/runner/run-bench.ts ./test/runner/run-integration.ts ./test/suite/index.ts ./test/suite/integration-index.ts ./test/bench/latency.test.ts ./test/integration/smoke.test.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron --external mocha-junit-reporter",
+    "compile:tests": "bun build ./test/runner/run-bench.ts ./test/runner/run-integration.ts ./test/suite/index.ts ./test/suite/integration-index.ts ./test/bench/latency.test.ts ./test/integration/smoke.test.ts ./test/integration/activate.test.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron --external mocha-junit-reporter",
     "test:integration": "bun run compile && bun run compile:tests && node out-test/runner/run-integration.js",
     "typecheck": "tsc --noEmit",
     "test": "bun --bun vitest run",
