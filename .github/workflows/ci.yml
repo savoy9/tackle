@@ -110,3 +110,99 @@ jobs:
           key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
           restore-keys: |
             vscode-test-${{ runner.os }}-
+
+  # Perf — windows-only, advisory (never gates merge per ADR-0012).
+  # Mirrors the windows-bootstrap shape: gated on `changes.extension`,
+  # depends on the `changes` job, installs psmux, then runs the perf
+  # suite via the VS Code extension host. Posts a single PR comment
+  # keyed by `<!-- perf-comment -->` (updated in place across re-runs).
+  perf:
+    name: perf
+    runs-on: windows-latest
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: oven-sh/setup-bun@v2
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Install psmux via winget (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          retry_wait_seconds: 120
+          shell: pwsh
+          command: |
+            winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+      - name: Verify psmux is on PATH
+        shell: pwsh
+        run: |
+          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) {
+            Write-Error "psmux not found on PATH after winget install"
+            exit 1
+          }
+          psmux -V
+      - name: Cache @vscode/test-electron VS Code download
+        uses: actions/cache@v4
+        with:
+          path: ~/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+      - name: Run perf suite (advisory — does not gate merge)
+        shell: pwsh
+        # Refresh PATH so psmux (winget-installed) is visible in this shell.
+        run: |
+          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          bun run test:perf
+        working-directory: packages/extension
+        # Perf is observational; a failed run shouldn't fail the job.
+        continue-on-error: true
+      - name: Upload perf-results.json artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results
+          path: packages/extension/perf-results.json
+          if-no-files-found: warn
+      - name: Format PR comment body
+        if: github.event_name == 'pull_request' && always()
+        shell: bash
+        run: |
+          if [ -f packages/extension/perf-results.json ]; then
+            node scripts/format-perf-comment.js packages/extension/perf-results.json > perf-comment.md
+          else
+            {
+              echo '<!-- perf-comment -->'
+              echo '## Tackle perf measurement'
+              echo ''
+              echo '_Perf suite did not produce results — see job logs._'
+              echo ''
+              echo '> Perf is **advisory** (ADR-0012). This does not gate merge.'
+            } > perf-comment.md
+          fi
+      - name: Post / update perf PR comment
+        if: github.event_name == 'pull_request' && always()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: perf-comment.md
+          edit-mode: replace
+          # Match the marker in scripts/format-perf-comment.js so repeat
+          # runs update a single comment in place.
+          body-includes: '<!-- perf-comment -->'
