@@ -2,7 +2,7 @@
 /**
  * Format the perf-results.json into a PR-comment markdown body.
  *
- * Usage: node scripts/format-perf-comment.js path/to/perf-results.json
+ * Usage: node scripts/format-perf-comment.cjs path/to/perf-results.json
  *
  * Emits the markdown body to stdout. The CI workflow pipes the output
  * into a file consumed by `peter-evans/create-or-update-comment@v4`.
