@@ -9,9 +9,16 @@
  *   3. Returns a `{ taskAId?, taskBId }` handle the runner uses to fire
  *      the activate-task command and start the timing clock.
  *
- * Sessions all use the `stub` Agent registered in #65 — no test reaches
- * Anthropic. The stub is selected via `tackle.defaultAgent = 'stub'` in
- * the perf VS Code launch args (see run-perf.ts).
+ * Sessions all use the `stub` Agent registered in the perf workspace
+ * settings — no test reaches Anthropic.
+ *
+ * KNOWN-BROKEN (deferred follow-up): the `tackle._perfSeedTask` and
+ * `tackle._perfSpawnSession` commands referenced below are not yet
+ * registered by the extension. The perf job is `continue-on-error: true`
+ * (advisory per ADR-0012) so this does not gate merge. Wiring tracked as
+ * a follow-up to #68: the perf-test build needs to register these
+ * commands as deterministic shims around TaskRepository.upsert and the
+ * orchestrator's session-creation path.
  */
 import * as vscode from 'vscode';
 

@@ -36,11 +36,15 @@ suite('Integration: new session', () => {
 
     // Fire newSession; the QuickPicks are answered by accepting the
     // first highlighted item (which is `plan` — fine for stub).
+    //
+    // FIXME (follow-up): this drives QuickPicks via timing-based command
+    // dispatch because NewSessionFlow doesn't expose a pickProvider seam.
+    // Add an injection seam in production code so tests don't race the UI.
     const newSessionPromise = vscode.commands.executeCommand('tackle.newSession', { taskId: task.id });
-    // Two QuickPicks (kind, then isolate). Give VS Code a few ms to mount each.
-    await new Promise((r) => setTimeout(r, 250));
+    // Two QuickPicks (kind, then isolate). Give VS Code time to mount each.
+    await new Promise((r) => setTimeout(r, 500));
     await vscode.commands.executeCommand('workbench.action.acceptSelectedQuickOpenItem');
-    await new Promise((r) => setTimeout(r, 250));
+    await new Promise((r) => setTimeout(r, 500));
     // Second QuickPick only fires for impl-like kinds; default `plan` skips it.
     // Fire the accept anyway; if no QuickPick is open it's a no-op.
     await vscode.commands.executeCommand('workbench.action.acceptSelectedQuickOpenItem').then(() => {}, () => {});

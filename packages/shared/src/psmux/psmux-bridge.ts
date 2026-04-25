@@ -34,8 +34,13 @@ export class PsmuxBridge {
     return detectBinary() !== '';
   }
 
-  static generateSessionName(source: string, taskId: string, kind: string, n: number): string {
-    const prefix = process.env.TACKLE_TEST_PSMUX_PREFIX ?? 'tackle-';
+  static generateSessionName(
+    source: string,
+    taskId: string,
+    kind: string,
+    n: number,
+    prefix = 'tackle-',
+  ): string {
     return `${prefix}${source}-${taskId}-${kind}${n}`;
   }
 

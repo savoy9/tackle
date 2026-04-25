@@ -8,6 +8,7 @@ import type {
   AgentStateDetector,
   AgentStateEvent,
 } from './agent-state-detector';
+import { TestOverride } from '../test-overrides';
 
 /**
  * Resolves a Session to the absolute path of its Claude JSONL file.
@@ -64,9 +65,8 @@ export function defaultJsonlPathResolver(getCwd: (s: Session) => string | null):
       if (!session.claude_session_id) return null;
       // Test-mode escape hatch: bypass the ~/.claude/projects/<hash>/ layout
       // and emit files into a fixture-controlled directory instead.
-      const overrideDir = process.env.TACKLE_TEST_JSONL_DIR;
-      if (overrideDir) {
-        return path.join(overrideDir, `${session.claude_session_id}.jsonl`);
+      if (TestOverride.jsonlDir) {
+        return path.join(TestOverride.jsonlDir, `${session.claude_session_id}.jsonl`);
       }
       const cwd = getCwd(session);
       if (!cwd) return null;

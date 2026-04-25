@@ -18,20 +18,12 @@ describe('PsmuxBridge', () => {
         .toBe('tackle-gh-ABC-123-debug3');
     });
 
-    it('honors TACKLE_TEST_PSMUX_PREFIX env var when set', () => {
-      const prev = process.env.TACKLE_TEST_PSMUX_PREFIX;
-      try {
-        process.env.TACKLE_TEST_PSMUX_PREFIX = 'tackletest-';
-        expect(PsmuxBridge.generateSessionName('gh', '42', 'implement', 1))
-          .toBe('tackletest-gh-42-implement1');
-      } finally {
-        if (prev === undefined) delete process.env.TACKLE_TEST_PSMUX_PREFIX;
-        else process.env.TACKLE_TEST_PSMUX_PREFIX = prev;
-      }
+    it('honors prefix override when provided', () => {
+      expect(PsmuxBridge.generateSessionName('gh', '42', 'implement', 1, 'tackletest-'))
+        .toBe('tackletest-gh-42-implement1');
     });
 
-    it('default prefix unchanged when env var unset', () => {
-      delete process.env.TACKLE_TEST_PSMUX_PREFIX;
+    it('default prefix unchanged when prefix arg omitted', () => {
       expect(PsmuxBridge.generateSessionName('gh', '42', 'implement', 1))
         .toBe('tackle-gh-42-implement1');
     });

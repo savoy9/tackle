@@ -3,6 +3,7 @@ import { PsmuxBridge } from '@tackle/shared';
 import type { SessionRepository, Session, SessionKind } from '@tackle/shared';
 import type { AgentRegistry } from '../agent/agent-registry';
 import type { AgentStateDetector } from '../agent/agent-state-detector';
+import { TestOverride } from '../test-overrides';
 
 /**
  * Pure helper: resolve cwd for a session, preferring its worktree_path
@@ -132,7 +133,7 @@ export class TerminalOrchestrator {
     const existing = await this.sessionRepo.listForTask(opts.taskId);
     const n = existing.filter(s => s.kind === opts.kind).length + 1;
 
-    const psmuxName = PsmuxBridge.generateSessionName(source, String(opts.taskId), opts.kind, n);
+    const psmuxName = PsmuxBridge.generateSessionName(source, String(opts.taskId), opts.kind, n, TestOverride.psmuxPrefix);
     const tabLabel = opts.tabLabel
       ?? PsmuxBridge.generateTabLabel(String(opts.taskId), opts.taskSlug, opts.kind, n, opts.label);
 

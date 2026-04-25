@@ -2,7 +2,7 @@ import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { runTests } from '@vscode/test-electron';
+import { launchVsCodeSuite } from './launch';
 
 /**
  * Integration test entry point — peer of `run-bench.ts` (#62).
@@ -25,11 +25,10 @@ async function main(): Promise<void> {
   // out-test root and re-derive the suite path so the same script works
   // regardless of nesting.
   const outTestRoot = runtimeDir.replace(/[\\/](?:test[\\/])?runner$/, '');
-  const extensionDevelopmentPath = path.resolve(outTestRoot, '..');
   const suiteSubdir = fs.existsSync(path.join(outTestRoot, 'test', 'suite', 'integration-index.js'))
     ? path.join('test', 'suite')
     : 'suite';
-  const extensionTestsPath = path.resolve(outTestRoot, suiteSubdir, 'integration-index.js');
+  const suiteRelativeToOutTest = path.join(suiteSubdir, 'integration-index.js');
 
   // Per-run scratch root. Each test file mkdtemp's its own workspace
   // under here in suite-setup so cleanup is by-process.
@@ -53,35 +52,28 @@ async function main(): Promise<void> {
 
   // Worktree-aware flows (#2, #5) require the workspace to be a real git
   // repo. Initialize one with a single commit on `main` so worktree
-  // `add` / `prune` succeed without network or remote setup.
+  // `add` / `prune` succeed without network or remote setup. If git
+  // setup fails the integration suite cannot meaningfully run, so let
+  // the error propagate rather than leaving the harness in a half-state.
   const git = (...args: string[]): void => {
     cp.execSync(`git ${args.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`, {
       cwd: workspaceDir, stdio: 'ignore',
     });
   };
-  try {
-    git('init', '-b', 'main');
-    git('config', 'user.email', 'tackle-it@example.com');
-    git('config', 'user.name', 'Tackle Integration');
-    git('config', 'commit.gpgsign', 'false');
-    fs.writeFileSync(path.join(workspaceDir, 'README.md'), '# fixture\n');
-    git('add', '.');
-    git('commit', '-m', 'initial');
-  } catch (err) {
-    console.error('git init failed', err);
-  }
+  git('init', '-b', 'main');
+  git('config', 'user.email', 'tackle-it@example.com');
+  git('config', 'user.name', 'Tackle Integration');
+  git('config', 'commit.gpgsign', 'false');
+  fs.writeFileSync(path.join(workspaceDir, 'README.md'), '# fixture\n');
+  git('add', '.');
+  git('commit', '-m', 'initial');
 
-  const exitCode = await runTests({
-    extensionDevelopmentPath,
-    extensionTestsPath,
-    launchArgs: [
-      workspaceDir,
-      '--disable-extensions',
-      '--disable-workspace-trust',
-      '--enable-proposed-api=tackle.tackle',
-    ],
-    extensionTestsEnv: {
-      TACKLE_SUITE_DIR: path.dirname(extensionTestsPath),
+  const exitCode = await launchVsCodeSuite({
+    suiteRelativeToOutTest,
+    outTestRootOverride: outTestRoot,
+    extraLaunchArgs: [workspaceDir],
+    env: {
+      TACKLE_SUITE_DIR: path.resolve(outTestRoot, suiteSubdir),
       TACKLE_SUITE_KIND: 'integration',
       TACKLE_TEST_SCRATCH_ROOT: scratchRoot,
       TACKLE_TEST_WORKSPACE: workspaceDir,

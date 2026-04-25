@@ -67,47 +67,6 @@ jobs:
       - name: Run unit tests
         run: bun --filter '*' test
 
-  windows-bootstrap:
-    name: windows-bootstrap
-    runs-on: windows-latest
-    needs: changes
-    if: needs.changes.outputs.extension == 'true'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - uses: oven-sh/setup-bun@v2
-      - name: Install psmux via winget (with retry)
-        uses: nick-fields/retry@v3
-        with:
-          max_attempts: 3
-          timeout_minutes: 5
-          retry_wait_seconds: 120
-          shell: pwsh
-          # NOTE: If `psmux` is not yet published to winget, this step will fail.
-          # The documented fallback is `choco install psmux -y` (chocolatey is
-          # preinstalled on windows-latest runners). Update this command once the
-          # publishing channel is confirmed; per ADR-0012 we try winget first.
-          command: |
-            winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
-      - name: Verify psmux is on PATH
-        shell: pwsh
-        run: |
-          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
-          if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) {
-            Write-Error "psmux not found on PATH after winget install"
-            exit 1
-          }
-          psmux -V
-      - name: Cache @vscode/test-electron VS Code download
-        uses: actions/cache@v4
-        with:
-          path: ~/.vscode-test
-          key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
-          restore-keys: |
-            vscode-test-${{ runner.os }}-
-
   integration:
     name: integration (advisory)
     runs-on: windows-latest

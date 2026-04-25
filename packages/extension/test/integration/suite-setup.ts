@@ -1,8 +1,8 @@
-import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
+import { PsmuxBridge } from '@tackle/shared';
 
 /**
  * Per-suite test fixture for integration tests (#66).
@@ -59,37 +59,19 @@ export async function waitFor(
   return false;
 }
 
-function detectMuxBinary(): string | undefined {
-  for (const cmd of ['psmux', 'tmux']) {
-    try {
-      cp.execSync(process.platform === 'win32' ? `where ${cmd}` : `which ${cmd}`, {
-        encoding: 'utf-8',
-        timeout: 5000,
-        stdio: ['ignore', 'pipe', 'ignore'],
-      });
-      return cmd;
-    } catch { /* try next */ }
-  }
-  return undefined;
-}
-
 /** Best-effort kill of every psmux session matching `${prefix}*`. Never throws. */
 function killSessionsWithPrefix(prefix: string): void {
-  const bin = detectMuxBinary();
-  if (!bin) return;
-  let raw = '';
+  const bridge = new PsmuxBridge();
+  if (!bridge.binary) return;
+  let names: string[];
   try {
-    raw = cp.execSync(`${bin} list-sessions`, { encoding: 'utf-8', timeout: 5000, stdio: ['ignore', 'pipe', 'ignore'] }).toString();
+    names = bridge.listSessions();
   } catch {
-    return; // no server / no sessions
+    return;
   }
-  for (const line of raw.split('\n')) {
-    const colonIdx = line.indexOf(':');
-    const name = colonIdx >= 0 ? line.substring(0, colonIdx) : line.trim();
+  for (const name of names) {
     if (!name.startsWith(prefix)) continue;
-    try {
-      cp.execSync(`${bin} kill-session -t "${name}"`, { encoding: 'utf-8', timeout: 5000, stdio: 'ignore' });
-    } catch { /* ignore */ }
+    try { bridge.killSession(name); } catch { /* ignore */ }
   }
 }
 

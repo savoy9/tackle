@@ -101,10 +101,9 @@ const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
     resumeFlag: (sessionId: string) => ['-r', sessionId],
     detector: 'ClaudeJsonlDetector',
   },
-  // Test-harness adapter (#65). Engaged by setting
-  // `tackle.defaultAgent = 'stub'` in test fixtures. The stub script lives
-  // alongside the extension package's test fixtures and writes synthetic
-  // jsonl files that the real ClaudeJsonlDetector parses unchanged.
+  // Test-harness adapter. Engaged by setting `tackle.defaultAgent = 'stub'`
+  // in test fixtures. The stub script writes synthetic jsonl files that the
+  // real ClaudeJsonlDetector parses unchanged.
   stub: {
     name: 'stub',
     command: 'node',
