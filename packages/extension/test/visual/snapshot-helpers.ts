@@ -21,8 +21,9 @@ function resolveSnapshotsDir(): string {
   if (process.env.TACKLE_EXT_ROOT) {
     return path.resolve(process.env.TACKLE_EXT_ROOT, 'test', 'visual', 'snapshots');
   }
-  // Fallback: ../../../test/visual/snapshots from this compiled file's dir,
-  // which becomes packages/extension/test/visual/snapshots.
+  // Fallback: from the compiled file's directory (out-test/visual/),
+  // walk up two levels to the extension root, then into
+  // test/visual/snapshots.
   const compiledDir = path.dirname(__filename);
   return path.resolve(compiledDir, '..', '..', 'test', 'visual', 'snapshots');
 }

@@ -6,19 +6,30 @@
  * that mutate env vars between cases working without re-importing the
  * module. One discoverable surface for the four overrides
  * (`grep TestOverride` finds every consumer).
+ *
+ * Empty/whitespace-only env values are treated as unset — an empty
+ * `TACKLE_TEST_DB` should fall back to the workspace-derived path, not
+ * silently open a DB at the host's CWD.
  */
+
+function readEnv(key: string): string | undefined {
+  const v = process.env[key];
+  if (v === undefined) return undefined;
+  const trimmed = v.trim();
+  return trimmed === '' ? undefined : trimmed;
+}
 
 export const TestOverride = {
   get workspace(): string | undefined {
-    return process.env.TACKLE_TEST_WORKSPACE;
+    return readEnv('TACKLE_TEST_WORKSPACE');
   },
   get db(): string | undefined {
-    return process.env.TACKLE_TEST_DB;
+    return readEnv('TACKLE_TEST_DB');
   },
   get psmuxPrefix(): string | undefined {
-    return process.env.TACKLE_TEST_PSMUX_PREFIX;
+    return readEnv('TACKLE_TEST_PSMUX_PREFIX');
   },
   get jsonlDir(): string | undefined {
-    return process.env.TACKLE_TEST_JSONL_DIR;
+    return readEnv('TACKLE_TEST_JSONL_DIR');
   },
 } as const;

@@ -32,6 +32,16 @@ export function shellQuote(s: string): string {
   return `'${s.replace(/'/g, `'\\''`)}'`;
 }
 
+/**
+ * Formats an adapter's command line: `<command> [args...]`. Each arg is
+ * shell-quoted so paths with spaces (notably the bundled stub script
+ * path on Windows) round-trip through psmux send-keys correctly.
+ */
+function formatAdapterCommand(command: string, args: readonly string[] | undefined): string {
+  if (!args || args.length === 0) return command;
+  return `${command} ${args.map(shellQuote).join(' ')}`;
+}
+
 export interface SessionWorktreeProvider {
   /**
    * Returns the worktree path/branch/baseBranch for `taskId`. Called lazily
@@ -185,7 +195,10 @@ export class TerminalOrchestrator {
     if (this.agentRegistry.shouldLaunch(opts.kind)) {
       const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
       const cwd = resolveCwd(session, workspaceRoot);
-      this.psmux.sendKeys(psmuxName, `cd ${shellQuote(cwd)} && ${adapter.command}`);
+      this.psmux.sendKeys(
+        psmuxName,
+        `cd ${shellQuote(cwd)} && ${formatAdapterCommand(adapter.command, adapter.args)}`,
+      );
     }
 
     this.trackTerminal(session.id, terminal);
@@ -316,7 +329,7 @@ export class TerminalOrchestrator {
         : '';
       this.psmux.sendKeys(
         session.psmux_name,
-        `cd ${shellQuote(cwd)} && ${adapter.command}${resumeArgs}`,
+        `cd ${shellQuote(cwd)} && ${formatAdapterCommand(adapter.command, adapter.args)}${resumeArgs}`,
       );
     }
 

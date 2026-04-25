@@ -86,6 +86,14 @@ async function main(): Promise<void> {
       TACKLE_TEST_WORKSPACE: workspaceDir,
       TACKLE_TEST_PSMUX_PREFIX: psmuxPrefix,
       TACKLE_TEST_JSONL_DIR: jsonlDir,
+      TACKLE_TEST_STUB_PATH: path.resolve(
+        outTestRoot,
+        '..',
+        'test',
+        'fixtures',
+        'bin',
+        'claude-stub.mjs',
+      ),
       TACKLE_TEST_STUB_SCENARIO: process.env.TACKLE_TEST_STUB_SCENARIO ?? 'idle-working-idle',
     },
   });

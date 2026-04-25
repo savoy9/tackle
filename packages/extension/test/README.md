@@ -14,8 +14,8 @@ catches *what*. This file is a how-to.
 | Unit        | `bun --bun vitest run`  | Bun (no VS Code)                    | required    |
 | Integration | `bun run test:integration` | Real VS Code via `@vscode/test-electron` (Windows) | advisory |
 | Bench       | `bun run test:bench`    | Real VS Code, real psmux, hot path  | manual / PR |
-| Visual      | _(not yet — #67)_       | Real VS Code, screenshot diff       | TBD         |
-| Perf        | _(not yet — #68)_       | Real VS Code, real workload         | TBD         |
+| Visual      | `bun run test:visual`   | Real VS Code, screenshot diff       | required    |
+| Perf        | `bun run test:perf`     | Real VS Code, real workload         | advisory    |
 
 ## Unit (`src/__tests__/**/*.test.ts`)
 
@@ -127,13 +127,42 @@ cd packages/extension
 bun run test:bench
 ```
 
-## Visual / Perf (placeholders)
+## Visual (`test/visual/**/*.test.ts`)
 
-Issue #67 will add a Playwright-driven visual diff suite. Issue #68 will
-add a perf suite that runs longer workloads. Both will live alongside
-`test/integration/` but probably with their own runner entry points
-(`test/runner/run-visual.ts`, `test/runner/run-perf.ts`) so they can be
-gated independently in CI.
+- Driven by Mocha + `@vscode/test-electron`. Renders sidebar/quickpick
+  fixtures into HTML, normalizes via `node-html-parser`, and asserts
+  byte-equal against snapshots in `test/visual/snapshots/`.
+- Required CI check (`visual` job, Windows). On mismatch, the runner
+  writes side-by-side diffs to `out-test/visual-diffs/` and the workflow
+  uploads them as an artifact + posts a sticky PR comment.
+- Update snapshots locally with `UPDATE_SNAPSHOTS=1 bun run test:visual`
+  (or `UPDATE_SNAPSHOT_NAME=<name>` for a single snapshot) and commit.
+
+```
+cd packages/extension
+bun run compile && bun run compile:visual
+bun run test:visual
+```
+
+## Perf (`test/perf/**/*.test.ts`)
+
+- Driven by Mocha + `@vscode/test-electron`. Runs three task-switch
+  scenarios (baseline, heavy-fanout, cold-start) ~6× each via the timing
+  harness in `test/perf/timing.ts`; writes results to
+  `perf-results.json`.
+- Advisory CI check (`perf` job, Windows, `continue-on-error: true`).
+  On every PR the workflow posts a sticky comment summarizing per-
+  scenario min/max/mean for `t_responsive` and `t_visible`.
+- Currently a known-broken follow-up to #68: scenarios depend on
+  `tackle._perfSeedTask` / `_perfSpawnSession` shims that aren't yet
+  registered. The suite probes for them and writes sentinel results
+  when missing — distinguishes "perf regressed" from "perf never ran".
+
+```
+cd packages/extension
+bun run compile && bun run compile:perf
+bun run test:perf
+```
 
 ## See also
 

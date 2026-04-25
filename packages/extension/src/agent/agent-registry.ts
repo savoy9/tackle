@@ -1,6 +1,5 @@
 import type { SessionKind } from '@tackle/shared';
 import * as path from 'node:path';
-import { fileURLToPath } from 'node:url';
 import type { AgentStateDetector } from './agent-state-detector';
 
 /**
@@ -101,37 +100,41 @@ const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
     resumeFlag: (sessionId: string) => ['-r', sessionId],
     detector: 'ClaudeJsonlDetector',
   },
-  // Test-harness adapter. Engaged by setting `tackle.defaultAgent = 'stub'`
-  // in test fixtures. The stub script writes synthetic jsonl files that the
-  // real ClaudeJsonlDetector parses unchanged.
-  stub: {
+};
+
+/**
+ * Builds the stub Agent adapter when the test harness has wired it up.
+ *
+ * Returns `null` in production builds: the stub script lives under
+ * `test/fixtures/` and is not included in the packaged extension, so we
+ * deliberately don't advertise an adapter we can't execute. The runner
+ * (`run-integration.ts`) opts in by setting `TACKLE_TEST_STUB_PATH` to
+ * the absolute path of `claude-stub.mjs` before launching VS Code.
+ */
+function buildStubAdapter(): AgentAdapter | null {
+  const stubPath = process.env.TACKLE_TEST_STUB_PATH;
+  if (!stubPath) return null;
+  return {
     name: 'stub',
     command: 'node',
-    args: [
-      path.resolve(
-        path.dirname(fileURLToPath(import.meta.url)),
-        '..',
-        '..',
-        'test',
-        'fixtures',
-        'bin',
-        'claude-stub.mjs',
-      ),
-    ],
+    args: [path.resolve(stubPath)],
     resumeFlag: () => [],
     detector: 'ClaudeJsonlDetector',
-  },
-};
+  };
+}
 
 export function createAgentRegistry(
   config: ConfigReader,
   detectorFactories: DetectorFactories = {},
 ): AgentRegistry {
   const detectorInstances = new Map<DetectorKind, AgentStateDetector>();
+  const adapters: Record<string, AgentAdapter> = { ...BUILTIN_ADAPTERS };
+  const stub = buildStubAdapter();
+  if (stub) adapters[stub.name] = stub;
   const registry: AgentRegistry = {
     resolve(agentName?: string | null): AgentAdapter {
       const name = agentName ?? config.getDefault();
-      const adapter = BUILTIN_ADAPTERS[name];
+      const adapter = adapters[name];
       if (!adapter) throw new UnknownAgentError(name);
       return adapter;
     },

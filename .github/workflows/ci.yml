@@ -204,6 +204,7 @@ jobs:
             If the change is intentional, regenerate snapshots locally with
             `UPDATE_SNAPSHOTS=1 bun --filter tackle test:visual` and commit.
           edit-mode: replace
+          body-includes: '<!-- visual-diff-comment -->'
 
   # Perf — windows-only, advisory (never gates merge per ADR-0012).
   # Posts a single PR comment keyed by `<!-- perf-comment -->` (updated
