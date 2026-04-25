@@ -26,6 +26,8 @@ export async function run(): Promise<void> {
   });
 
   const suiteDir = process.env.TACKLE_SUITE_DIR ?? path.dirname(require.resolve('./integration-index.js'));
+  // suite dir is sibling of `integration` dir (both under out-test or under
+  // out-test/test depending on bun's common-prefix output layout).
   const testsRoot = path.resolve(suiteDir, '..');
   const files = await glob('integration/**/*.test.js', { cwd: testsRoot });
   for (const f of files) mocha.addFile(path.resolve(testsRoot, f));

@@ -20,9 +20,16 @@ import { runTests } from '@vscode/test-electron';
  */
 async function main(): Promise<void> {
   const runtimeDir = path.dirname(process.argv[1]);
-  // runtimeDir = out-test/runner
-  const extensionDevelopmentPath = path.resolve(runtimeDir, '..', '..');
-  const extensionTestsPath = path.resolve(runtimeDir, '..', 'suite', 'integration-index.js');
+  // runtimeDir = out-test/test/runner (or out-test/runner — depends on bun's
+  // common-prefix stripping for the entry-point set). Walk up to the
+  // out-test root and re-derive the suite path so the same script works
+  // regardless of nesting.
+  const outTestRoot = runtimeDir.replace(/[\\/](?:test[\\/])?runner$/, '');
+  const extensionDevelopmentPath = path.resolve(outTestRoot, '..');
+  const suiteSubdir = fs.existsSync(path.join(outTestRoot, 'test', 'suite', 'integration-index.js'))
+    ? path.join('test', 'suite')
+    : 'suite';
+  const extensionTestsPath = path.resolve(outTestRoot, suiteSubdir, 'integration-index.js');
 
   // Per-run scratch root. Each test file mkdtemp's its own workspace
   // under here in suite-setup so cleanup is by-process.
