@@ -110,3 +110,75 @@ jobs:
           key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
           restore-keys: |
             vscode-test-${{ runner.os }}-
+
+  integration:
+    name: integration (advisory)
+    runs-on: windows-latest
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
+    # Per ADR-0012 the integration suite is advisory: real VS Code +
+    # real psmux is inherently flaky in CI, so a failure here surfaces
+    # in logs but does NOT block merge. Required-for-merge gates are
+    # quality + unit only.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: oven-sh/setup-bun@v2
+      - name: Install psmux via winget (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          retry_wait_seconds: 120
+          shell: pwsh
+          command: |
+            winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+      - name: Verify psmux is on PATH
+        shell: pwsh
+        run: |
+          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) {
+            Write-Error "psmux not found on PATH after winget install"
+            exit 1
+          }
+          psmux -V
+      - name: Cache @vscode/test-electron VS Code download
+        uses: actions/cache@v4
+        with:
+          path: ~/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Compile extension + test bundles
+        run: |
+          bun run compile
+          bun run compile:tests
+        working-directory: packages/extension
+      - name: Run integration suite
+        shell: pwsh
+        # Re-resolve PATH so the freshly-installed psmux is callable, then
+        # invoke the runner directly (bypass package.json's `compile` step
+        # which we already ran above).
+        run: |
+          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          node out-test/runner/run-integration.js 2>&1 | Tee-Object -FilePath integration.log
+        working-directory: packages/extension
+      - name: Upload integration log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-log
+          path: packages/extension/integration.log
+          if-no-files-found: warn
