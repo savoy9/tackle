@@ -487,6 +487,88 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
   context.subscriptions.push(benchCmd);
+
+  // ---------------------------------------------------------------------
+  // Perf shims (test-only, gated on TACKLE_TEST_STUB_PATH).
+  //
+  // The perf scenarios in `test/perf/scenarios.ts` need a deterministic,
+  // QuickPick-free way to seed tasks and spawn sessions so the timing
+  // harness measures the activate-task path, not human interaction. We
+  // wire two internal commands here:
+  //
+  //   tackle._perfSeedTask(title)             → returns numeric task id
+  //   tackle._perfSpawnSession({ taskId, kind: 'agent' | 'shell' })
+  //
+  // They're registered only when the harness env var is set, matching
+  // the `stub` agent's gating in `agent-registry.ts`. Production builds
+  // never see these commands.
+  // ---------------------------------------------------------------------
+  if (process.env.TACKLE_TEST_STUB_PATH) {
+    const ensureActivated = async (): Promise<void> => {
+      if (!taskRepoRef || !terminalOrchestrator) {
+        await vscode.commands.executeCommand('tackle.activate');
+      }
+    };
+
+    const perfSeedTaskCmd = vscode.commands.registerCommand(
+      'tackle._perfSeedTask',
+      async (title: string): Promise<number> => {
+        await ensureActivated();
+        if (!taskRepoRef) {
+          throw new Error('tackle._perfSeedTask: task repo unavailable after activate.');
+        }
+        // External_id must be safe for git branch names (the worktree
+        // provisioner builds a branch from it). Avoid `:` and other
+        // refspec metacharacters; the title is already deterministic.
+        const externalId = `perf-${title}`;
+        await taskRepoRef.upsert({
+          external_id: externalId,
+          external_system: 'github',
+          title,
+          description: '',
+          status: 'open',
+          assignee: null,
+        });
+        const all = await taskRepoRef.list();
+        const found = all.find((t) => t.external_id === externalId);
+        if (!found) {
+          throw new Error(`tackle._perfSeedTask: row missing after upsert (${externalId}).`);
+        }
+        await sidebarController?.refresh();
+        return found.id;
+      },
+    );
+
+    const perfSpawnSessionCmd = vscode.commands.registerCommand(
+      'tackle._perfSpawnSession',
+      async (arg: { taskId: number; kind: 'agent' | 'shell' }): Promise<void> => {
+        await ensureActivated();
+        if (!terminalOrchestrator || !taskRepoRef) {
+          throw new Error('tackle._perfSpawnSession: orchestrator unavailable after activate.');
+        }
+        const task = await taskRepoRef.get(arg.taskId);
+        if (!task) {
+          throw new Error(`tackle._perfSpawnSession: unknown taskId ${arg.taskId}.`);
+        }
+        // Map the harness-level kind to a real SessionKind. 'agent' picks
+        // 'implement' (any non-shell kind triggers the agent launch via
+        // AgentRegistry.shouldLaunch).
+        const kind = arg.kind === 'shell' ? 'shell' : 'implement';
+        // Slug is a label component (psmux tab label only); derive a
+        // safe-ish one from the task title.
+        const slug = task.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'task';
+        await terminalOrchestrator.createTerminal({
+          taskId: task.id,
+          taskSlug: slug,
+          kind,
+          source: 'perf',
+          agent: 'stub',
+        });
+      },
+    );
+
+    context.subscriptions.push(perfSeedTaskCmd, perfSpawnSessionCmd);
+  }
 }
 
 export function deactivate(): void {

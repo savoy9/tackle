@@ -109,8 +109,16 @@ export async function measureScenario(
   // Subscribe to onDidWriteData on the focused terminal as soon as one
   // is available. Some scenarios (cold-start) don't have a focused
   // terminal until setup progresses, so we may need to wait.
+  //
+  // Activation paths that involve a scope switch (e.g. baseline:
+  // activate Task B after both A and B were spawned) call disposeAll
+  // → reattachForTask asynchronously. There's a short window where
+  // `vscode.window.activeTerminal` still points at a being-disposed
+  // terminal that's no longer in `vscode.window.terminals`. We
+  // therefore wait for a focused terminal that is *also* present in
+  // the current snapshot before subscribing.
   let focused = provider.getFocusedTerminal();
-  while (!focused) {
+  while (!focused || !provider.listTerminals().includes(focused)) {
     await sleep(5);
     if (provider.now() - startedAt > timeoutMs) {
       throw new Error('measureScenario: timed out waiting for a focused terminal');

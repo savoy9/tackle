@@ -12,13 +12,13 @@
  * Sessions all use the `stub` Agent registered in the perf workspace
  * settings — no test reaches Anthropic.
  *
- * KNOWN-BROKEN (deferred follow-up): the `tackle._perfSeedTask` and
- * `tackle._perfSpawnSession` commands referenced below are not yet
- * registered by the extension. The perf job is `continue-on-error: true`
- * (advisory per ADR-0012) so this does not gate merge. Wiring tracked as
- * a follow-up to #68: the perf-test build needs to register these
- * commands as deterministic shims around TaskRepository.upsert and the
- * orchestrator's session-creation path.
+ * The `tackle._perfSeedTask` and `tackle._perfSpawnSession` shims
+ * referenced below are registered in `extension.ts` only when
+ * `TACKLE_TEST_STUB_PATH` is set (the perf runner sets it). They are
+ * thin wrappers over the public TaskRepository.upsert and
+ * TerminalOrchestrator.createTerminal paths so the perf scenarios
+ * exercise the same code as the user-facing `newSession` flow without
+ * the QuickPick interactions.
  */
 import * as vscode from 'vscode';
 
@@ -49,12 +49,10 @@ async function ensureTackleActivated(): Promise<void> {
 }
 
 async function seedTask(title: string): Promise<number> {
-  // The PRD-aligned way to make a task is `tackle.syncTasks`, but for
-  // perf we want determinism, not GitHub. We poke the task repo through
-  // the extension's exported helpers via an internal command shim. This
-  // command is provided by the perf-test build only — see comment in
-  // `extension.ts` (added under #68 as a no-op in production builds).
-  // For now, fall back to syncTasks if the helper isn't present.
+  // For perf we want determinism, not GitHub. We poke the task repo
+  // through the extension's perf shim. The shim is registered by
+  // `extension.ts` only when `TACKLE_TEST_STUB_PATH` is set —
+  // production builds never expose this command.
   const id = await vscode.commands.executeCommand<number>('tackle._perfSeedTask', title);
   if (typeof id !== 'number') {
     throw new Error(

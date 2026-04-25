@@ -80,11 +80,12 @@ suite('perf', () => {
   test('measures three scenarios and writes perf-results.json', async function () {
     this.timeout(20 * 60_000);
 
-    // KNOWN-BROKEN follow-up: scenarios depend on `tackle._perfSeedTask`
-    // and `tackle._perfSpawnSession` shims that aren't yet registered
-    // (tracked as a follow-up to #68). Probe the command list and bail
-    // with a sentinel results file if they're missing — distinguishes
-    // "perf regressed" from "perf never ran" in the artifact + PR comment.
+    // Probe the command list before running scenarios. The shims must
+    // be registered by `extension.ts` (gated on TACKLE_TEST_STUB_PATH);
+    // a missing command means the runner didn't set the env var or
+    // the build didn't include the test-only branch. Bail with sentinel
+    // results in that case so the artifact + PR comment distinguishes
+    // "perf regressed" from "perf never ran".
     const cmds = new Set(await vscode.commands.getCommands(true));
     const missing = ['tackle._perfSeedTask', 'tackle._perfSpawnSession'].filter(
       (c) => !cmds.has(c),

@@ -52,10 +52,18 @@ export function createVSCodeProvider(): TimingTerminalProvider {
   return {
     getFocusedTerminal(): TimingTerminal | null {
       const t = vscode.window.activeTerminal;
-      return t ? wrap(t) : null;
+      // VS Code can briefly retain a disposed terminal as activeTerminal
+      // during scope-switch races (`disposeAll` → `reattachForTask`).
+      // Filter on `exitStatus` — set the moment a terminal is closed —
+      // so the harness retries until a fresh one arrives.
+      if (!t || t.exitStatus !== undefined) return null;
+      return wrap(t);
     },
     listTerminals(): readonly TimingTerminal[] {
-      return vscode.window.terminals.map(wrap);
+      // Same disposed-but-still-listed window applies to the global list.
+      return vscode.window.terminals
+        .filter((t) => t.exitStatus === undefined)
+        .map(wrap);
     },
     now(): number {
       return performance.now();
