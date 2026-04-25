@@ -82,6 +82,50 @@ describe('Database schema', () => {
     expect(row?.agent_state).toBe('idle');
   });
 
+  it('tasks.tackle_status defaults to not_started and rejects invalid values', () => {
+    const cols = db
+      .prepare<{ name: string }>("PRAGMA table_info('tasks')")
+      .all()
+      .map((r) => r.name);
+    expect(cols).toContain('tackle_status');
+
+    db.prepare(
+      "INSERT INTO tasks (external_id, external_system, title) VALUES ('1', 'github', 't')",
+    ).run();
+    const row = db
+      .prepare<{ tackle_status: string }>('SELECT tackle_status FROM tasks WHERE id = 1')
+      .get();
+    expect(row?.tackle_status).toBe('not_started');
+
+    expect(() =>
+      db
+        .prepare(
+          "INSERT INTO tasks (external_id, external_system, title, tackle_status) VALUES ('2', 'github', 't2', 'bogus')",
+        )
+        .run(),
+    ).toThrow();
+
+    const valid = [
+      'not_started',
+      'plan_started',
+      'plan_awaiting_approval',
+      'plan_approved',
+      'implementation_started',
+      'in_review',
+      'pr_created',
+      'merged',
+    ];
+    for (const [i, v] of valid.entries()) {
+      expect(() =>
+        db
+          .prepare(
+            'INSERT INTO tasks (external_id, external_system, title, tackle_status) VALUES (?, ?, ?, ?)',
+          )
+          .run(`v${i}`, 'github', `tv${i}`, v),
+      ).not.toThrow();
+    }
+  });
+
   it('sessions kind CHECK allows all 7 values', () => {
     // Insert a task first for FK
     db.prepare(

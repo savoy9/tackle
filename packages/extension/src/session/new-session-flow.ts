@@ -3,6 +3,14 @@ import type { TerminalOrchestrator } from '../terminal/terminal-orchestrator';
 import { shouldOfferIsolation } from './pick-kind';
 
 /**
+ * Minimal Event Bus surface this flow depends on. Decoupled from
+ * `@tackle/shared` so tests can pass a `vi.fn()` shim.
+ */
+export interface EventBusLike {
+  dispatch(event: { type: 'task.plan_started'; task_id: number; source: 'ui' }): void;
+}
+
+/**
  * Compute the auto-generated tab_label for a new session.
  * Format: bare kind name for the first session of that kind on the task,
  * then `<kind>-2`, `<kind>-3`, ... for subsequent sessions.
@@ -45,6 +53,13 @@ export interface NewSessionFlowDeps {
   taskRepo?: Pick<TaskRepository, 'get'>;
   /** Provisioner used to materialize α-isolation sub-worktrees on demand. */
   worktreeProvisioner?: IsolationProvisioner;
+  /**
+   * Event Bus to receive Tackle Status transition events. When a `plan`
+   * Session is created, the flow dispatches `task.plan_started` so the
+   * Task lifecycle advances. The bus is the sole writer of
+   * `tasks.tackle_status`.
+   */
+  eventBus?: EventBusLike;
 }
 
 /**
@@ -100,6 +115,21 @@ export class NewSessionFlow {
       tabLabel: label,
       worktreePath: isolatedWorktreePath ?? undefined,
     });
+
+    // Dispatch Tackle Status transition for plan Sessions. The bus validates
+    // the transition; if illegal (e.g., re-planning from a later state),
+    // swallow so Session creation still succeeds — see PRD #72 user story 49.
+    if (kind === 'plan' && this.deps.eventBus) {
+      try {
+        this.deps.eventBus.dispatch({
+          type: 'task.plan_started',
+          task_id: taskId,
+          source: 'ui',
+        });
+      } catch {
+        // illegal-transition or no-handler — non-fatal for Session creation
+      }
+    }
 
     return created;
   }

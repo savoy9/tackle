@@ -313,6 +313,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">With desc</span>
+    <span class="tackle-status-badge" data-tackle-status="not_started" title="Tackle Status">not_started</span>
     <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
   </div>
   
@@ -648,6 +649,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Closed task</span>
+    <span class="tackle-status-badge" data-tackle-status="not_started" title="Tackle Status">not_started</span>
     <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
   </div>
   
@@ -997,6 +999,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Focus</span>
+    <span class="tackle-status-badge" data-tackle-status="not_started" title="Tackle Status">not_started</span>
     <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
   </div>
   
@@ -1340,6 +1343,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Lonely task</span>
+    <span class="tackle-status-badge" data-tackle-status="not_started" title="Tackle Status">not_started</span>
     <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
   </div>
   
@@ -1675,6 +1679,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Main task</span>
+    <span class="tackle-status-badge" data-tackle-status="not_started" title="Tackle Status">not_started</span>
     <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
   </div>
   <div class="detail-breadcrumb">↳ #10</div>
@@ -2032,6 +2037,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail withou
   <div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">Running detail</span>
+    <span class="tackle-status-badge" data-tackle-status="not_started" title="Tackle Status">not_started</span>
     <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="1">⋯</button>
   </div>
   

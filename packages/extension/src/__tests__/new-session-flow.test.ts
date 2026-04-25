@@ -160,6 +160,7 @@ describe('NewSessionFlow.start', () => {
           worktree_path: taskWorktreePath,
           worktree_branch: '42-foo',
           worktree_base_branch: 'main',
+        tackle_status: "not_started",
         })),
       };
     }
@@ -281,6 +282,63 @@ describe('NewSessionFlow.start', () => {
       const result = await flow.start(42);
       expect(result).toBeUndefined();
       expect(orchestrator.createTerminal).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Tackle Status dispatch on plan kind', () => {
+    it('dispatches task.plan_started when a plan Session is created', async () => {
+      const sessions = mockSessions([]);
+      const orchestrator = makeOrchestrator();
+      const scope = makeScope(42);
+      const dispatch = vi.fn();
+      const flow = new NewSessionFlow({
+        sessions,
+        orchestrator: orchestrator as any,
+        scope,
+        pickKind: async () => 'plan' as SessionKind,
+        eventBus: { dispatch } as any,
+      });
+      await flow.start(42);
+      expect(dispatch).toHaveBeenCalledTimes(1);
+      expect(dispatch).toHaveBeenCalledWith({
+        type: 'task.plan_started',
+        task_id: 42,
+        source: 'ui',
+      });
+    });
+
+    it('does not dispatch task.plan_started for non-plan kinds', async () => {
+      const sessions = mockSessions([]);
+      const orchestrator = makeOrchestrator();
+      const scope = makeScope(42);
+      const dispatch = vi.fn();
+      const flow = new NewSessionFlow({
+        sessions,
+        orchestrator: orchestrator as any,
+        scope,
+        pickKind: async () => 'implement' as SessionKind,
+        eventBus: { dispatch } as any,
+      });
+      await flow.start(42);
+      expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    it('swallows dispatch errors (illegal-transition) to keep Session creation succeeding', async () => {
+      const sessions = mockSessions([]);
+      const orchestrator = makeOrchestrator();
+      const scope = makeScope(42);
+      const dispatch = vi.fn(() => {
+        throw new Error('illegal transition plan_approved → plan_started');
+      });
+      const flow = new NewSessionFlow({
+        sessions,
+        orchestrator: orchestrator as any,
+        scope,
+        pickKind: async () => 'plan' as SessionKind,
+        eventBus: { dispatch } as any,
+      });
+      const result = await flow.start(42);
+      expect(result?.id).toBe(99);
     });
   });
 });

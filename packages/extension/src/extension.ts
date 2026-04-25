@@ -5,6 +5,9 @@ import {
   SqliteSessionRepository,
   SqliteLayoutStateRepository,
   PsmuxBridge,
+  createEventBus,
+  registerTaskPlanStartedHandler,
+  type EventBus,
 } from '@tackle/shared';
 import { TaskService, TaskRemover, type RemovePromptFn } from './task';
 import { TerminalOrchestrator } from './terminal';
@@ -39,6 +42,7 @@ export function activate(context: vscode.ExtensionContext): void {
   let taskRemover: TaskRemover | undefined;
   let taskRepoRef: SqliteTaskRepository | undefined;
   let worktreeProvisionerRef: WorktreeProvisioner | undefined;
+  let eventBusRef: EventBus | undefined;
 
   // Placeholder task repo for the sidebar until activation fills it in.
   const placeholderTaskRepo = {
@@ -100,6 +104,11 @@ export function activate(context: vscode.ExtensionContext): void {
       const sessionRepo = new ObservableSessionRepository(baseSessionRepo);
       const layoutRepo = new SqliteLayoutStateRepository(db);
       const psmux = new PsmuxBridge();
+
+      // Event Bus — sole writer of Tackle Status / Phase Status.
+      const eventBus = createEventBus();
+      registerTaskPlanStartedHandler(eventBus, db);
+      eventBusRef = eventBus;
 
       taskService = new TaskService(taskRepo);
       const worktreeProvisioner = new WorktreeProvisioner({
@@ -287,6 +296,7 @@ export function activate(context: vscode.ExtensionContext): void {
         },
         taskRepo: taskRepoRef,
         worktreeProvisioner: worktreeProvisionerRef,
+        eventBus: eventBusRef,
       });
 
       try {

@@ -4,6 +4,16 @@ export type SessionKind = 'plan' | 'implement' | 'review' | 'debug' | 'test' | '
 
 export type AgentState = 'idle' | 'working' | 'waiting';
 
+export type TackleStatus =
+  | 'not_started'
+  | 'plan_started'
+  | 'plan_awaiting_approval'
+  | 'plan_approved'
+  | 'implementation_started'
+  | 'in_review'
+  | 'pr_created'
+  | 'merged';
+
 export interface Task {
   id: number;
   external_id: string;
@@ -16,6 +26,7 @@ export interface Task {
   worktree_path: string | null;
   worktree_branch: string | null;
   worktree_base_branch: string | null;
+  tackle_status: TackleStatus;
   synced_at: string;
   created_at: string;
 }
@@ -81,6 +92,18 @@ export interface SyncResult {
 
 // ── Database layer ──
 export * from './db/index';
+
+// ── Event Bus ──
+export {
+  createEventBus,
+  type EventBus,
+  type TackleEvent,
+  type TaskPlanStartedEvent,
+  type EventSource,
+  type Handler,
+} from './events/event-bus';
+export { isLegalTackleTransition, isAtOrAfter } from './events/status-transition';
+export { registerTaskPlanStartedHandler } from './events/handlers/task-plan-started';
 
 // ── Psmux ──
 export { PsmuxBridge } from './psmux/index';

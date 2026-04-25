@@ -96,6 +96,10 @@ const SCHEMA = `
     worktree_path TEXT,
     worktree_branch TEXT,
     worktree_base_branch TEXT,
+    tackle_status TEXT NOT NULL DEFAULT 'not_started' CHECK(tackle_status IN (
+      'not_started','plan_started','plan_awaiting_approval','plan_approved',
+      'implementation_started','in_review','pr_created','merged'
+    )),
     synced_at TEXT NOT NULL DEFAULT (datetime('now')),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -205,6 +209,14 @@ function migrate(db: Database): void {
     }
     if (!columnExists('tasks', 'worktree_base_branch')) {
       db.exec('ALTER TABLE tasks ADD COLUMN worktree_base_branch TEXT');
+    }
+    if (!columnExists('tasks', 'tackle_status')) {
+      db.exec(
+        `ALTER TABLE tasks ADD COLUMN tackle_status TEXT NOT NULL DEFAULT 'not_started' CHECK(tackle_status IN (
+          'not_started','plan_started','plan_awaiting_approval','plan_approved',
+          'implementation_started','in_review','pr_created','merged'
+        ))`,
+      );
     }
   }
 }

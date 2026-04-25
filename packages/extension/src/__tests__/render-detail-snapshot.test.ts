@@ -18,6 +18,7 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   worktree_path: null,
   worktree_branch: null,
   worktree_base_branch: null,
+  tackle_status: "not_started",
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,

@@ -15,6 +15,7 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   worktree_path: null,
   worktree_branch: null,
   worktree_base_branch: null,
+  tackle_status: 'not_started',
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,
@@ -65,6 +66,23 @@ describe('render — Detail Header', () => {
   it('renders ⋯ overflow button for the task', () => {
     const html = render(detailState());
     expect(html).toMatch(/data-action="taskOverflow"[^>]*data-task-id="1"/);
+  });
+
+  it('renders Tackle Status badge reflecting task.tackle_status (not_started)', () => {
+    const html = render(detailState());
+    expect(html).toMatch(
+      /class="tackle-status-badge"[^>]*data-tackle-status="not_started"[^>]*>not_started</,
+    );
+  });
+
+  it('Tackle Status badge updates when status is plan_started', () => {
+    const state = detailState({
+      tasks: [task(1, 'Primary task', { external_id: '42', tackle_status: 'plan_started' })],
+    });
+    const html = render(state);
+    expect(html).toMatch(
+      /class="tackle-status-badge"[^>]*data-tackle-status="plan_started"[^>]*>plan_started</,
+    );
   });
 });
 

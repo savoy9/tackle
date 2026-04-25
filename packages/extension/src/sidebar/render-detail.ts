@@ -79,6 +79,7 @@ export function renderDetail(state: SidebarState): string {
   const header = `<div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">${title}</span>
+    <span class="tackle-status-badge" data-tackle-status="${escapeHtml(task.tackle_status ?? 'not_started')}" title="Tackle Status">${escapeHtml(task.tackle_status ?? 'not_started')}</span>
     <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="${task.id}">⋯</button>
   </div>`;
 
