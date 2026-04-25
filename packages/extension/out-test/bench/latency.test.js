@@ -63,7 +63,7 @@ var __export = (target, all) => {
 // test/bench/latency.test.ts
 var assert = __toESM(require("node:assert"));
 var vscode2 = __toESM(require("vscode"));
-// ../shared/src/psmux/psmux-bridge.ts
+// ../../../../../packages/shared/src/psmux/psmux-bridge.ts
 var import_child_process = require("child_process");
 function detectBinary() {
   const which = (cmd) => {
@@ -102,7 +102,8 @@ class PsmuxBridge {
     return detectBinary() !== "";
   }
   static generateSessionName(source, taskId, kind, n) {
-    return `tackle-${source}-${taskId}-${kind}${n}`;
+    const prefix = process.env.TACKLE_TEST_PSMUX_PREFIX ?? "tackle-";
+    return `${prefix}${source}-${taskId}-${kind}${n}`;
   }
   static generateTabLabel(taskId, slug, kind, n, label) {
     const base = `${taskId}-${slug}|${kind}${n}`;
