@@ -122,7 +122,7 @@ jobs:
         timeout-minutes: 15
         shell: pwsh
         run: |
-          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          $env:Path = $env:Path + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
           node out-test/runner/run-integration.js 2>&1 | Tee-Object -FilePath integration.log
         working-directory: packages/extension
       - name: Upload integration log
@@ -182,7 +182,7 @@ jobs:
         working-directory: packages/extension
         shell: pwsh
         run: |
-          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          $env:Path = $env:Path + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
           node out-test/runner/run-visual.js
       - name: Build diff index (on failure)
         if: failure() && steps.visual.outcome == 'failure'
@@ -249,7 +249,7 @@ jobs:
       - name: Verify psmux is on PATH
         shell: pwsh
         run: |
-          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          $env:Path = $env:Path + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
           if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) {
             Write-Error "psmux not found on PATH after winget install"
             exit 1
@@ -274,7 +274,7 @@ jobs:
       - name: Run perf suite (advisory — does not gate merge)
         shell: pwsh
         run: |
-          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          $env:Path = $env:Path + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
           bun run test:perf
         working-directory: packages/extension
         continue-on-error: true
