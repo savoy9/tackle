@@ -5,6 +5,12 @@ on:
   push:
     branches: [main]
 
+# Cancel in-flight runs on the same PR / branch when a new push lands.
+# Saves runner minutes and keeps PR status reflecting the latest commit.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   changes:
     name: changes
