@@ -119,7 +119,7 @@ jobs:
     # Per ADR-0012 the integration suite is advisory: real VS Code +
     # real psmux is inherently flaky in CI, so a failure here surfaces
     # in logs but does NOT block merge. Required-for-merge gates are
-    # quality + unit only.
+    # quality + unit + visual only.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -136,15 +136,6 @@ jobs:
           shell: pwsh
           command: |
             winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
-      - name: Verify psmux is on PATH
-        shell: pwsh
-        run: |
-          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
-          if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) {
-            Write-Error "psmux not found on PATH after winget install"
-            exit 1
-          }
-          psmux -V
       - name: Cache @vscode/test-electron VS Code download
         uses: actions/cache@v4
         with:
@@ -182,3 +173,83 @@ jobs:
           name: integration-log
           path: packages/extension/integration.log
           if-no-files-found: warn
+
+  visual:
+    name: visual
+    runs-on: windows-latest
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: oven-sh/setup-bun@v2
+      - name: Install psmux via winget (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          retry_wait_seconds: 120
+          shell: pwsh
+          command: |
+            winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+      - name: Cache @vscode/test-electron VS Code download
+        uses: actions/cache@v4
+        with:
+          path: ~/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Build extension + visual suite
+        working-directory: packages/extension
+        run: |
+          bun run compile
+          bun run compile:visual
+      - name: Run visual snapshot suite
+        id: visual
+        working-directory: packages/extension
+        shell: pwsh
+        run: |
+          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          node out-test/runner/run-visual.js
+      - name: Build diff index (on failure)
+        if: failure() && steps.visual.outcome == 'failure'
+        working-directory: packages/extension
+        run: node out-test/visual/build-diff-index.js
+      - name: Upload visual diffs artifact
+        if: failure() && steps.visual.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: packages/extension/out-test/visual-diffs/**
+          if-no-files-found: ignore
+      - name: Comment on PR with diff link
+        if: failure() && steps.visual.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          # The marker keys idempotent updates: each new run replaces the prior comment.
+          body: |
+            <!-- visual-diff-comment -->
+            **Visual snapshot mismatch.**
+
+            Download the side-by-side diffs (`visual-diffs.zip`) from the
+            `visual` job's artifacts on this run:
+            <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}>
+
+            If the change is intentional, regenerate snapshots locally with
+            `UPDATE_SNAPSHOTS=1 bun --filter tackle test:visual` and commit.
+          edit-mode: replace
