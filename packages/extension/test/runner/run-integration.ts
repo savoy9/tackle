@@ -1,3 +1,4 @@
+import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
@@ -42,6 +43,26 @@ async function main(): Promise<void> {
     JSON.stringify({ 'tackle.defaultAgent': 'stub' }, null, 2),
   );
   fs.mkdirSync(path.join(workspaceDir, '.tackle'), { recursive: true });
+
+  // Worktree-aware flows (#2, #5) require the workspace to be a real git
+  // repo. Initialize one with a single commit on `main` so worktree
+  // `add` / `prune` succeed without network or remote setup.
+  const git = (...args: string[]): void => {
+    cp.execSync(`git ${args.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`, {
+      cwd: workspaceDir, stdio: 'ignore',
+    });
+  };
+  try {
+    git('init', '-b', 'main');
+    git('config', 'user.email', 'tackle-it@example.com');
+    git('config', 'user.name', 'Tackle Integration');
+    git('config', 'commit.gpgsign', 'false');
+    fs.writeFileSync(path.join(workspaceDir, 'README.md'), '# fixture\n');
+    git('add', '.');
+    git('commit', '-m', 'initial');
+  } catch (err) {
+    console.error('git init failed', err);
+  }
 
   const exitCode = await runTests({
     extensionDevelopmentPath,
