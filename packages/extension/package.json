@@ -134,7 +134,7 @@
     "vscode:prepublish": "bun run compile",
     "compile": "bun build src/extension.ts --outdir dist --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite && bun build src/sidebar/webview/main.ts --outdir dist --target browser --format iife --entry-naming sidebar-webview.js",
     "compile:tests": "bun build ./test/runner/run-bench.ts ./test/suite/index.ts ./test/bench/latency.test.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron",
-    "compile:visual": "bun build ./test/runner/run-visual.ts ./test/visual/index.ts ./test/visual/snapshots.test.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron --external node-html-parser",
+    "compile:visual": "bun build ./test/runner/run-visual.ts ./test/visual/index.ts ./test/visual/snapshots.test.ts ./test/visual/build-diff-index.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron --external node-html-parser",
     "typecheck": "tsc --noEmit",
     "test": "bun --bun vitest run",
     "test:watch": "bun --bun vitest",
