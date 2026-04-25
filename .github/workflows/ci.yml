@@ -113,6 +113,7 @@ jobs:
           bun run compile:tests
         working-directory: packages/extension
       - name: Run integration suite
+        timeout-minutes: 15
         shell: pwsh
         run: |
           $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
@@ -188,10 +189,18 @@ jobs:
           name: visual-diffs
           path: packages/extension/out-test/visual-diffs/**
           if-no-files-found: ignore
+      - name: Find existing visual-diff comment
+        id: find-visual-comment
+        if: failure() && steps.visual.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '<!-- visual-diff-comment -->'
       - name: Comment on PR with diff link
         if: failure() && steps.visual.outcome == 'failure' && github.event_name == 'pull_request'
         uses: peter-evans/create-or-update-comment@v4
         with:
+          comment-id: ${{ steps.find-visual-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body: |
             <!-- visual-diff-comment -->
@@ -204,7 +213,6 @@ jobs:
             If the change is intentional, regenerate snapshots locally with
             `UPDATE_SNAPSHOTS=1 bun --filter tackle test:visual` and commit.
           edit-mode: replace
-          body-includes: '<!-- visual-diff-comment -->'
 
   # Perf — windows-only, advisory (never gates merge per ADR-0012).
   # Posts a single PR comment keyed by `<!-- perf-comment -->` (updated
@@ -287,11 +295,18 @@ jobs:
               echo '> Perf is **advisory** (ADR-0012). This does not gate merge.'
             } > perf-comment.md
           fi
+      - name: Find existing perf comment
+        id: find-perf-comment
+        if: github.event_name == 'pull_request' && always()
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '<!-- perf-comment -->'
       - name: Post / update perf PR comment
         if: github.event_name == 'pull_request' && always()
         uses: peter-evans/create-or-update-comment@v4
         with:
+          comment-id: ${{ steps.find-perf-comment.outputs.comment-id }}
           issue-number: ${{ github.event.pull_request.number }}
           body-path: perf-comment.md
           edit-mode: replace
-          body-includes: '<!-- perf-comment -->'
