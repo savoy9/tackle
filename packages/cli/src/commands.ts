@@ -3,9 +3,7 @@ import type { TaskRepository, SessionRepository } from '@tackle/shared';
 export async function taskList(taskRepo: TaskRepository): Promise<string> {
   const tasks = await taskRepo.list();
   if (tasks.length === 0) return 'No tasks found.';
-  return tasks
-    .map((t) => `#${t.id}  [${t.status}]  ${t.title}`)
-    .join('\n');
+  return tasks.map((t) => `#${t.id}  [${t.status}]  ${t.title}`).join('\n');
 }
 
 export async function taskShow(taskRepo: TaskRepository, id: number): Promise<string> {
@@ -24,12 +22,13 @@ export async function taskShow(taskRepo: TaskRepository, id: number): Promise<st
 export async function sessionList(sessionRepo: SessionRepository, taskId: number): Promise<string> {
   const sessions = await sessionRepo.listForTask(taskId);
   if (sessions.length === 0) return `No sessions for task #${taskId}.`;
-  return sessions
-    .map((s) => `#${s.id}  [${s.status}]  ${s.kind}  ${s.name}`)
-    .join('\n');
+  return sessions.map((s) => `#${s.id}  [${s.status}]  ${s.kind}  ${s.name}`).join('\n');
 }
 
-export async function sessionComplete(sessionRepo: SessionRepository, sessionId: number): Promise<string> {
+export async function sessionComplete(
+  sessionRepo: SessionRepository,
+  sessionId: number,
+): Promise<string> {
   const session = await sessionRepo.get(sessionId);
   if (!session) return `Session #${sessionId} not found.`;
   await sessionRepo.complete(sessionId);

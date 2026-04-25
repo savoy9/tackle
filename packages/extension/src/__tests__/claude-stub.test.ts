@@ -3,10 +3,7 @@ import { spawnSync } from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import {
-  defaultJsonlPathResolver,
-  deriveStateFromEntry,
-} from '../agent/claude-jsonl-detector';
+import { defaultJsonlPathResolver, deriveStateFromEntry } from '../agent/claude-jsonl-detector';
 import type { Session } from '@tackle/shared';
 
 const STUB = path.join(__dirname, '..', '..', 'test', 'fixtures', 'bin', 'claude-stub.mjs');

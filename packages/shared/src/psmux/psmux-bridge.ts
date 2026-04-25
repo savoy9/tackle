@@ -9,8 +9,18 @@ function detectBinary(): string {
     });
   };
   // Prefer psmux (Windows-friendly tmux-alike), fall back to tmux
-  try { which('psmux'); return 'psmux'; } catch { /* try tmux */ }
-  try { which('tmux'); return 'tmux'; } catch { /* none */ }
+  try {
+    which('psmux');
+    return 'psmux';
+  } catch {
+    /* try tmux */
+  }
+  try {
+    which('tmux');
+    return 'tmux';
+  } catch {
+    /* none */
+  }
   return '';
 }
 
@@ -44,14 +54,22 @@ export class PsmuxBridge {
     return `${prefix}${source}-${taskId}-${kind}${n}`;
   }
 
-  static generateTabLabel(taskId: string, slug: string, kind: string, n: number, label?: string): string {
+  static generateTabLabel(
+    taskId: string,
+    slug: string,
+    kind: string,
+    n: number,
+    label?: string,
+  ): string {
     const base = `${taskId}-${slug}|${kind}${n}`;
     return label ? `${base}-${label}` : base;
   }
 
   private assertBinary(): void {
     if (!this.binary) {
-      throw new Error('No terminal multiplexer found. Install psmux or tmux and reactivate Tackle.');
+      throw new Error(
+        'No terminal multiplexer found. Install psmux or tmux and reactivate Tackle.',
+      );
     }
   }
 
@@ -79,10 +97,13 @@ export class PsmuxBridge {
     if (!this.binary) return [];
     const output = this.exec(`${this.binary} list-sessions`);
     if (!output) return [];
-    return output.split('\n').filter(Boolean).map((line) => {
-      const colonIdx = line.indexOf(':');
-      return colonIdx >= 0 ? line.substring(0, colonIdx) : line;
-    });
+    return output
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const colonIdx = line.indexOf(':');
+        return colonIdx >= 0 ? line.substring(0, colonIdx) : line;
+      });
   }
 
   sendKeys(sessionName: string, keys: string, target?: string): void {

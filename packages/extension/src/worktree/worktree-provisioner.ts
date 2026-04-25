@@ -115,10 +115,10 @@ export class WorktreeProvisioner {
     // dirty tree or a manually-checked-out branch is preserved as-is.
     const fresh = (await this.deps.taskRepo.get(task.id)) ?? task;
     if (
-      fresh.worktree_path
-      && fresh.worktree_branch
-      && fresh.worktree_base_branch
-      && existsSync(fresh.worktree_path)
+      fresh.worktree_path &&
+      fresh.worktree_branch &&
+      fresh.worktree_base_branch &&
+      existsSync(fresh.worktree_path)
     ) {
       return {
         path: fresh.worktree_path,
@@ -131,14 +131,19 @@ export class WorktreeProvisioner {
     // was deleted from disk. Prune the stale registration and recreate it at
     // the same path on the same branch. Silent — no user prompt.
     if (
-      fresh.worktree_path
-      && fresh.worktree_branch
-      && fresh.worktree_base_branch
-      && !existsSync(fresh.worktree_path)
+      fresh.worktree_path &&
+      fresh.worktree_branch &&
+      fresh.worktree_base_branch &&
+      !existsSync(fresh.worktree_path)
     ) {
       // Clear any stale `git worktree` registration for the missing path.
       gitTry(workspaceRoot, ['worktree', 'prune']);
-      const add = gitTry(workspaceRoot, ['worktree', 'add', fresh.worktree_path, fresh.worktree_branch]);
+      const add = gitTry(workspaceRoot, [
+        'worktree',
+        'add',
+        fresh.worktree_path,
+        fresh.worktree_branch,
+      ]);
       if (!add.ok) {
         throw new Error(`git worktree add (recovery) failed: ${add.stderr}`);
       }
@@ -191,9 +196,20 @@ export class WorktreeProvisioner {
     // Collision → fall back to `tackle/<external-id>`.
     const fallbackBranch = `tackle/${task.external_id}`;
     const fallbackPath = this.resolveWorktreePath(workspaceRoot, `tackle-${task.external_id}`);
-    add = gitTry(workspaceRoot, ['worktree', 'add', '-b', fallbackBranch, fallbackPath, baseBranch]);
+    add = gitTry(workspaceRoot, [
+      'worktree',
+      'add',
+      '-b',
+      fallbackBranch,
+      fallbackPath,
+      baseBranch,
+    ]);
     if (!add.ok) throw new Error(`git worktree add failed (fallback): ${add.stderr}`);
-    const result: WorktreeProvisionResult = { path: fallbackPath, branch: fallbackBranch, baseBranch };
+    const result: WorktreeProvisionResult = {
+      path: fallbackPath,
+      branch: fallbackBranch,
+      baseBranch,
+    };
     await this.persist(task.id, result);
     return result;
   }
@@ -216,8 +232,8 @@ export class WorktreeProvisioner {
   ): Promise<WorktreeProvisionResult> {
     if (!task.worktree_path || !task.worktree_branch) {
       throw new Error(
-        `Cannot α-isolate session: Task ${task.id} has no worktree yet. `
-        + `Call ensureWorktreeForTask first.`,
+        `Cannot α-isolate session: Task ${task.id} has no worktree yet. ` +
+          `Call ensureWorktreeForTask first.`,
       );
     }
     const workspaceRoot = this.deps.workspaceRoot;
@@ -226,7 +242,12 @@ export class WorktreeProvisioner {
     const subPath = this.resolveWorktreePath(workspaceRoot, subDir);
 
     const add = gitTry(workspaceRoot, [
-      'worktree', 'add', '-b', subBranch, subPath, task.worktree_branch,
+      'worktree',
+      'add',
+      '-b',
+      subBranch,
+      subPath,
+      task.worktree_branch,
     ]);
     if (!add.ok) {
       throw new Error(`git worktree add (α-isolation) failed: ${add.stderr}`);
@@ -267,7 +288,10 @@ export class WorktreeProvisioner {
   private findExistingMatchingBranch(cwd: string, externalId: string): string | null {
     const out = gitTry(cwd, ['for-each-ref', '--format=%(refname:short)', 'refs/heads/']);
     if (!out.ok) return null;
-    const all = out.stdout.split(/\r?\n/).map((s) => s.trim()).filter(Boolean);
+    const all = out.stdout
+      .split(/\r?\n/)
+      .map((s) => s.trim())
+      .filter(Boolean);
     const needle = externalId.toLowerCase();
     const matches = all.filter((b) => b.toLowerCase().includes(needle));
     if (matches.length === 1) return matches[0];
@@ -277,8 +301,8 @@ export class WorktreeProvisioner {
       // Surface the ambiguity so the user understands why their expected
       // branch wasn't reused.
       console.info(
-        `Tackle: ${matches.length} local branches match external id "${externalId}" (${matches.join(', ')}). `
-        + `Creating a new branch instead of guessing.`,
+        `Tackle: ${matches.length} local branches match external id "${externalId}" (${matches.join(', ')}). ` +
+          `Creating a new branch instead of guessing.`,
       );
     }
     return null;

@@ -11,6 +11,9 @@ const task = (id: number, title: string): Task => ({
   status: 'open',
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '',
   created_at: '',
 });

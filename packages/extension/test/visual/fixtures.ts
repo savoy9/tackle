@@ -156,7 +156,7 @@ export const FIXTURES: NamedFixture[] = [
     html: () => {
       const items = buildKindQuickPickItems();
       const lis = items
-        .map((it) => `<li data-kind="${it.kind}">${it.label}</li>`)
+        .map((it) => `<li data-kind="${it.sessionKind}">${it.label}</li>`)
         .join('');
       return `<div class="quickpick session-kind-quickpick"><ul>${lis}</ul></div>`;
     },

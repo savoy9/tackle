@@ -16,6 +16,9 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   status: 'open',
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,
@@ -49,7 +52,11 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
   it('List with Active + idle + waiting-for-input tasks', () => {
     const state: SidebarState = {
       ...activatedState,
-      tasks: [task(1, 'Active task', { synced_at: '2026-04-10' }), task(2, 'Idle task', { synced_at: '2026-04-05' }), task(3, 'Waiting task', { synced_at: '2026-04-01' })],
+      tasks: [
+        task(1, 'Active task', { synced_at: '2026-04-10' }),
+        task(2, 'Idle task', { synced_at: '2026-04-05' }),
+        task(3, 'Waiting task', { synced_at: '2026-04-01' }),
+      ],
       sessions: [
         sess(10, 1, { status: 'running', agent_state: 'idle' }),
         sess(20, 3, { status: 'running', agent_state: 'waiting' }),

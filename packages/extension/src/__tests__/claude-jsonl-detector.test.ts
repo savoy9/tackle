@@ -174,9 +174,9 @@ describe('deriveStateFromEntry (conservative defaults)', () => {
     );
   });
   it('returns idle only on assistant end_turn / stop_sequence', () => {
-    expect(
-      deriveStateFromEntry({ type: 'assistant', message: { stop_reason: 'end_turn' } }),
-    ).toBe('idle');
+    expect(deriveStateFromEntry({ type: 'assistant', message: { stop_reason: 'end_turn' } })).toBe(
+      'idle',
+    );
     expect(
       deriveStateFromEntry({ type: 'assistant', message: { stop_reason: 'stop_sequence' } }),
     ).toBe('idle');
@@ -235,9 +235,9 @@ describe('deriveStateFromEntry — waiting state (#42)', () => {
     // Documented assumption: when Claude Code surfaces a tool-approval
     // pause it writes a system entry with a recognisable subtype. If
     // this shape ever changes the detector falls back to `working`.
-    expect(
-      deriveStateFromEntry({ type: 'system', subtype: 'tool_approval_request' }),
-    ).toBe('waiting');
+    expect(deriveStateFromEntry({ type: 'system', subtype: 'tool_approval_request' })).toBe(
+      'waiting',
+    );
   });
 
   it('stays working for an assistant entry that has tool_use but no AskUserQuestion', () => {
@@ -258,12 +258,8 @@ describe('deriveStateFromEntry — waiting state (#42)', () => {
   it('stays working for ambiguous system subtypes', () => {
     // Conservative: anything we don't recognise as an explicit pause
     // signal must NOT flip to waiting.
-    expect(deriveStateFromEntry({ type: 'system', subtype: 'turn_duration' })).toBe(
-      'working',
-    );
-    expect(deriveStateFromEntry({ type: 'system', subtype: 'away_summary' })).toBe(
-      'working',
-    );
+    expect(deriveStateFromEntry({ type: 'system', subtype: 'turn_duration' })).toBe('working');
+    expect(deriveStateFromEntry({ type: 'system', subtype: 'away_summary' })).toBe('working');
   });
 });
 
@@ -321,13 +317,7 @@ describe('ClaudeJsonlDetector — waiting transitions (#42)', () => {
 
     detector.stop(baseSession({ id: 42 }));
 
-    expect(events.map((e) => e.state)).toEqual([
-      'idle',
-      'working',
-      'waiting',
-      'working',
-      'idle',
-    ]);
+    expect(events.map((e) => e.state)).toEqual(['idle', 'working', 'waiting', 'working', 'idle']);
     for (const e of events) expect(e.sessionId).toBe(42);
   });
 

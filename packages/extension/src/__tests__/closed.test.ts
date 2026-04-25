@@ -11,17 +11,17 @@ const task = (id: number, status: string): Task => ({
   status,
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
 });
 
 describe('isClosedStatus', () => {
-  it.each(['closed', 'done', 'completed', 'resolved', 'removed'])(
-    'treats %s as closed',
-    (s) => {
-      expect(isClosedStatus(s)).toBe(true);
-    },
-  );
+  it.each(['closed', 'done', 'completed', 'resolved', 'removed'])('treats %s as closed', (s) => {
+    expect(isClosedStatus(s)).toBe(true);
+  });
 
   it.each(['Closed', 'DONE', 'Completed', 'Resolved', 'ReMoved'])(
     'is case-insensitive: %s',

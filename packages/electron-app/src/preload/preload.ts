@@ -37,7 +37,8 @@ contextBridge.exposeInMainWorld('chartroom', {
     switchTask: (taskId: number) => ipcRenderer.invoke('workspace:switchTask', taskId),
     currentTaskId: () => ipcRenderer.invoke('workspace:currentTaskId'),
     selectPhase: (phaseId: number | null) => ipcRenderer.invoke('workspace:selectPhase', phaseId),
-    ensurePhaseWindow: (phaseId: number) => ipcRenderer.invoke('workspace:ensurePhaseWindow', phaseId),
+    ensurePhaseWindow: (phaseId: number) =>
+      ipcRenderer.invoke('workspace:ensurePhaseWindow', phaseId),
   },
   plans: {
     link: (taskId: number, sourcePath: string, content: string) =>

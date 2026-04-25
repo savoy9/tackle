@@ -3,11 +3,7 @@ import * as path from 'node:path';
 import * as os from 'node:os';
 import * as crypto from 'node:crypto';
 import type { Session } from '@tackle/shared';
-import type {
-  AgentState,
-  AgentStateDetector,
-  AgentStateEvent,
-} from './agent-state-detector';
+import type { AgentState, AgentStateDetector, AgentStateEvent } from './agent-state-detector';
 import { TestOverride } from '../test-overrides';
 
 /**
@@ -72,7 +68,13 @@ export function defaultJsonlPathResolver(getCwd: (s: Session) => string | null):
       if (!cwd) return null;
       // Claude Code uses an md5 of the absolute path, lowercased hex.
       const hash = crypto.createHash('md5').update(cwd).digest('hex');
-      return path.join(os.homedir(), '.claude', 'projects', hash, `${session.claude_session_id}.jsonl`);
+      return path.join(
+        os.homedir(),
+        '.claude',
+        'projects',
+        hash,
+        `${session.claude_session_id}.jsonl`,
+      );
     },
   };
 }

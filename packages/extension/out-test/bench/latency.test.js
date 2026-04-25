@@ -63,7 +63,7 @@ var __export = (target, all) => {
 // test/bench/latency.test.ts
 var assert = __toESM(require("node:assert"));
 var vscode2 = __toESM(require("vscode"));
-// ../../../../../packages/shared/src/psmux/psmux-bridge.ts
+// ../shared/src/psmux/psmux-bridge.ts
 var import_child_process = require("child_process");
 function detectBinary() {
   const which = (cmd) => {
@@ -101,8 +101,7 @@ class PsmuxBridge {
   static hasExecutable() {
     return detectBinary() !== "";
   }
-  static generateSessionName(source, taskId, kind, n) {
-    const prefix = process.env.TACKLE_TEST_PSMUX_PREFIX ?? "tackle-";
+  static generateSessionName(source, taskId, kind, n, prefix = "tackle-") {
     return `${prefix}${source}-${taskId}-${kind}${n}`;
   }
   static generateTabLabel(taskId, slug, kind, n, label) {
@@ -164,7 +163,9 @@ async function runLatencyBenchmark(psmux, iterations = 10) {
     for (let i = 0;i < iterations; i++) {
       const lineSentinel = `BD${i}L${randomId()}`;
       const tLine = performance.now();
-      import_node_child_process.execSync(`${psmux.binary} send-keys -t "${sessionName}" "${lineSentinel}" Enter`, { timeout: 5000 });
+      import_node_child_process.execSync(`${psmux.binary} send-keys -t "${sessionName}" "${lineSentinel}" Enter`, {
+        timeout: 5000
+      });
       samples.push({
         iteration: i,
         method: "psmux-direct-line",
@@ -176,7 +177,9 @@ async function runLatencyBenchmark(psmux, iterations = 10) {
       for (let c = 0;c < keySentinel.length; c++) {
         const prefix = keySentinel.slice(0, c + 1);
         const t = performance.now();
-        import_node_child_process.execSync(`${psmux.binary} send-keys -l -t "${sessionName}" "${keySentinel[c]}"`, { timeout: 5000 });
+        import_node_child_process.execSync(`${psmux.binary} send-keys -l -t "${sessionName}" "${keySentinel[c]}"`, {
+          timeout: 5000
+        });
         samples.push({
           iteration: i,
           method: "psmux-direct-key",
@@ -264,8 +267,16 @@ async function measureTerminalRoundTrip(opts) {
         terminal.sendText(ch, false);
       }
       const burst = await dataBuf.waitForBurst(burstSentinel, tBurst);
-      opts.samples.push({ iteration: i, method: opts.methods.burstFirst, latencyMs: burst.firstCharMs });
-      opts.samples.push({ iteration: i, method: opts.methods.burstLast, latencyMs: burst.lastCharMs });
+      opts.samples.push({
+        iteration: i,
+        method: opts.methods.burstFirst,
+        latencyMs: burst.firstCharMs
+      });
+      opts.samples.push({
+        iteration: i,
+        method: opts.methods.burstLast,
+        latencyMs: burst.lastCharMs
+      });
       opts.samples.push({ iteration: i, method: opts.methods.burstGap, latencyMs: burst.maxGapMs });
       resetInputLine(terminal);
     }

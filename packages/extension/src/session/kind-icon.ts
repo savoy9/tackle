@@ -17,7 +17,13 @@ export const KIND_ICON: Record<SessionKind, string> = {
 
 /** Canonical order in which Session Kinds are presented to users. */
 export const KIND_ORDER: readonly SessionKind[] = [
-  'plan', 'implement', 'review', 'debug', 'test', 'pilot', 'shell',
+  'plan',
+  'implement',
+  'review',
+  'debug',
+  'test',
+  'pilot',
+  'shell',
 ];
 
 /** Render a kind label as `<icon> <kind>`. */

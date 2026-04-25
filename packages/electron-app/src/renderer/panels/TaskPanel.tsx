@@ -36,11 +36,7 @@ export function TaskPanel({
         }
       />
       <div style={{ flex: 1, overflow: 'auto', padding: '8px 12px' }}>
-        <TaskList
-          tasks={tasks}
-          selectedId={selectedTask?.id ?? null}
-          onSelect={onSelectTask}
-        />
+        <TaskList tasks={tasks} selectedId={selectedTask?.id ?? null} onSelect={onSelectTask} />
         {selectedTask && (
           <TaskDetail
             task={selectedTask}

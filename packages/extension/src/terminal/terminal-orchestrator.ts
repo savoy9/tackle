@@ -131,11 +131,18 @@ export class TerminalOrchestrator {
     const source = opts.source ?? 'gh';
 
     const existing = await this.sessionRepo.listForTask(opts.taskId);
-    const n = existing.filter(s => s.kind === opts.kind).length + 1;
+    const n = existing.filter((s) => s.kind === opts.kind).length + 1;
 
-    const psmuxName = PsmuxBridge.generateSessionName(source, String(opts.taskId), opts.kind, n, TestOverride.psmuxPrefix);
-    const tabLabel = opts.tabLabel
-      ?? PsmuxBridge.generateTabLabel(String(opts.taskId), opts.taskSlug, opts.kind, n, opts.label);
+    const psmuxName = PsmuxBridge.generateSessionName(
+      source,
+      String(opts.taskId),
+      opts.kind,
+      n,
+      TestOverride.psmuxPrefix,
+    );
+    const tabLabel =
+      opts.tabLabel ??
+      PsmuxBridge.generateTabLabel(String(opts.taskId), opts.taskSlug, opts.kind, n, opts.label);
 
     this.psmux.createSession(psmuxName);
 
@@ -148,9 +155,9 @@ export class TerminalOrchestrator {
     // provisioning (no Agent → spawn in workspaceRoot).
     let effectiveWorktreePath: string | null = opts.worktreePath ?? null;
     if (
-      effectiveWorktreePath === null
-      && this.agentRegistry.shouldLaunch(opts.kind)
-      && this.worktreeProvider
+      effectiveWorktreePath === null &&
+      this.agentRegistry.shouldLaunch(opts.kind) &&
+      this.worktreeProvider
     ) {
       const wt = await this.worktreeProvider.ensureForTask(opts.taskId);
       effectiveWorktreePath = wt.path;
@@ -203,7 +210,7 @@ export class TerminalOrchestrator {
 
   async reattachForTask(taskId: number): Promise<void> {
     const sessions = await this.sessionRepo.listForTask(taskId);
-    for (const session of sessions.filter(s => s.status === 'running')) {
+    for (const session of sessions.filter((s) => s.status === 'running')) {
       this.attachSession(session);
     }
   }
@@ -307,7 +314,10 @@ export class TerminalOrchestrator {
       const resumeArgs = session.claude_session_id
         ? ' ' + adapter.resumeFlag(session.claude_session_id).join(' ')
         : '';
-      this.psmux.sendKeys(session.psmux_name, `cd ${shellQuote(cwd)} && ${adapter.command}${resumeArgs}`);
+      this.psmux.sendKeys(
+        session.psmux_name,
+        `cd ${shellQuote(cwd)} && ${adapter.command}${resumeArgs}`,
+      );
     }
 
     await this.sessionRepo.update(sessionId, { status: 'running', ended_at: null });

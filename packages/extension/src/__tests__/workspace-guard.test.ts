@@ -18,7 +18,11 @@ vi.mock('vscode', () => ({
   },
 }));
 
-import { checkSingleRootWorkspace, ensureTackleDir, resolveWorkspaceRoot } from '../guards/workspace-guard';
+import {
+  checkSingleRootWorkspace,
+  ensureTackleDir,
+  resolveWorkspaceRoot,
+} from '../guards/workspace-guard';
 
 describe('checkSingleRootWorkspace', () => {
   beforeEach(() => {

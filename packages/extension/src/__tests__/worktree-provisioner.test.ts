@@ -84,7 +84,11 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  try { rmSync(rootDir, { recursive: true, force: true }); } catch { /* windows */ }
+  try {
+    rmSync(rootDir, { recursive: true, force: true });
+  } catch {
+    /* windows */
+  }
 });
 
 describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
@@ -92,7 +96,11 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
     state.tasks.set(1, task);
 
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     const result = await provisioner.ensureWorktreeForTask(task);
 
     expect(result.branch).toBe('42-fix-the-auth-bug');
@@ -113,7 +121,11 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
     state.tasks.set(1, task);
 
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     const first = await provisioner.ensureWorktreeForTask(task);
     const refreshed = (await repo.get(1))!;
     const second = await provisioner.ensureWorktreeForTask(refreshed);
@@ -132,7 +144,11 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
     state.tasks.set(1, task);
 
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     const result = await provisioner.ensureWorktreeForTask(task);
 
     expect(result.branch).toBe('feature/42-prework');
@@ -151,12 +167,19 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
     state.tasks.set(1, task);
 
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     const result = await provisioner.ensureWorktreeForTask(task);
 
     expect(result.branch).toBe('tackle/42');
     expect(existsSync(result.path)).toBe(true);
-    const branches = git(repoDir, 'branch --list').split(/\r?\n/).map((s) => s.replace(/^[\* +]+/, '').trim()).filter(Boolean);
+    const branches = git(repoDir, 'branch --list')
+      .split(/\r?\n/)
+      .map((s) => s.replace(/^[\* +]+/, '').trim())
+      .filter(Boolean);
     expect(branches).toContain('tackle/42');
   });
 
@@ -172,15 +195,23 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
 
     const messages: string[] = [];
     const originalInfo = console.info;
-    console.info = (msg: string) => { messages.push(msg); };
+    console.info = (msg: string) => {
+      messages.push(msg);
+    };
     try {
-      const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+      const provisioner = new WorktreeProvisioner({
+        workspaceRoot: repoDir,
+        taskRepo: repo,
+        rootPath: wtRoot,
+      });
       await provisioner.ensureWorktreeForTask(task);
     } finally {
       console.info = originalInfo;
     }
     expect(messages.some((m) => /match.*external id "42"/i.test(m))).toBe(true);
-    expect(messages.some((m) => m.includes('feature/42-one') && m.includes('feature/42-two'))).toBe(true);
+    expect(messages.some((m) => m.includes('feature/42-one') && m.includes('feature/42-two'))).toBe(
+      true,
+    );
   });
 
   it('hard-fails with a clear error when workspaceRoot is not a git repo', async () => {
@@ -189,13 +220,23 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     try {
       const task = makeTask({ id: 1, external_id: '42', title: 'whatever' });
       state.tasks.set(1, task);
-      const provisioner = new WorktreeProvisioner({ workspaceRoot: nonGit, taskRepo: repo, rootPath: wtRoot });
-      await expect(provisioner.ensureWorktreeForTask(task)).rejects.toThrow(/git repo|git repository|not a git/i);
+      const provisioner = new WorktreeProvisioner({
+        workspaceRoot: nonGit,
+        taskRepo: repo,
+        rootPath: wtRoot,
+      });
+      await expect(provisioner.ensureWorktreeForTask(task)).rejects.toThrow(
+        /git repo|git repository|not a git/i,
+      );
       // No partial state: Task row was not updated.
       const updated = await repo.get(1);
       expect(updated!.worktree_path).toBeNull();
     } finally {
-      try { rmSync(nonGit, { recursive: true, force: true }); } catch { /* windows */ }
+      try {
+        rmSync(nonGit, { recursive: true, force: true });
+      } catch {
+        /* windows */
+      }
     }
   });
 
@@ -203,7 +244,11 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
     state.tasks.set(1, task);
 
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     const first = await provisioner.ensureWorktreeForTask(task);
     expect(existsSync(first.path)).toBe(true);
 
@@ -226,7 +271,11 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
     state.tasks.set(1, task);
 
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     const first = await provisioner.ensureWorktreeForTask(task);
 
     // Dirty up the worktree (uncommitted file) and checkout a different branch.
@@ -262,7 +311,11 @@ describe('WorktreeProvisioner.ensureWorktreeForTask', () => {
     const task = makeTask({ id: 1, external_id: '99', title: 'noop' });
     state.tasks.set(1, task);
 
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: sibling, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: sibling,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     const result = await provisioner.ensureWorktreeForTask(task);
 
     expect(result.path).toBe(sibling);
@@ -377,8 +430,16 @@ describe('WorktreeProvisioner config plumbing', () => {
       expect(result.path.startsWith(defaultRoot)).toBe(true);
     } finally {
       // Clean up the worktree dir that escaped our tmpdir sandbox.
-      try { execSync(`git worktree remove --force "${result.path}"`, { cwd: repoDir }); } catch { /* ignore */ }
-      try { rmSync(result.path, { recursive: true, force: true }); } catch { /* ignore */ }
+      try {
+        execSync(`git worktree remove --force "${result.path}"`, { cwd: repoDir });
+      } catch {
+        /* ignore */
+      }
+      try {
+        rmSync(result.path, { recursive: true, force: true });
+      } catch {
+        /* ignore */
+      }
     }
   });
 });
@@ -418,7 +479,11 @@ describe('WorktreeProvisioner.createIsolatedWorktree (α-isolation)', () => {
     const task = makeTask({ id: 1, external_id: '42', title: 'Fix the auth bug' });
     state.tasks.set(1, task);
 
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     const taskWt = await provisioner.ensureWorktreeForTask(task);
 
     // Now create an α-isolated sub-worktree for sessionId=7
@@ -441,7 +506,11 @@ describe('WorktreeProvisioner.createIsolatedWorktree (α-isolation)', () => {
     const task = makeTask({ id: 1, external_id: '42', title: 'Multi' });
     state.tasks.set(1, task);
 
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     await provisioner.ensureWorktreeForTask(task);
     const refreshed = (await repo.get(1))!;
 
@@ -461,7 +530,11 @@ describe('WorktreeProvisioner.createIsolatedWorktree (α-isolation)', () => {
   it('throws when the Task does not yet have a worktree', async () => {
     const task = makeTask({ id: 1, external_id: '42', title: 'No wt yet' });
     state.tasks.set(1, task);
-    const provisioner = new WorktreeProvisioner({ workspaceRoot: repoDir, taskRepo: repo, rootPath: wtRoot });
+    const provisioner = new WorktreeProvisioner({
+      workspaceRoot: repoDir,
+      taskRepo: repo,
+      rootPath: wtRoot,
+    });
     await expect(provisioner.createIsolatedWorktree(task, 1)).rejects.toThrow();
   });
 });
@@ -487,7 +560,9 @@ describe('Integration: TerminalOrchestrator + WorktreeProvisioner', () => {
       killSession: () => undefined,
       hasSession: () => true,
       listSessions: () => [],
-      sendKeys: (name: string, keys: string) => { sentKeys.push([name, keys]); },
+      sendKeys: (name: string, keys: string) => {
+        sentKeys.push([name, keys]);
+      },
     } as any;
 
     // Minimal in-memory SessionRepository
@@ -507,7 +582,12 @@ describe('Integration: TerminalOrchestrator + WorktreeProvisioner', () => {
     };
 
     const agentRegistry = {
-      resolve: () => ({ name: 'agency-cc', command: 'agency-cc', resumeFlag: (id: string) => ['-r', id], detector: 'ClaudeJsonlDetector' }),
+      resolve: () => ({
+        name: 'agency-cc',
+        command: 'agency-cc',
+        resumeFlag: (id: string) => ['-r', id],
+        detector: 'ClaudeJsonlDetector',
+      }),
       shouldLaunch: (kind: string) => kind !== 'shell',
       getDetector: () => null,
       disposeDetectors: () => {},

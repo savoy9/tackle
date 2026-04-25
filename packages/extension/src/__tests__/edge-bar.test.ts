@@ -17,6 +17,9 @@ const task = (id: number, over: Partial<Task> = {}): Task => ({
   status: 'open',
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '',
   created_at: '',
   ...over,
@@ -49,10 +52,7 @@ describe('deriveEdgeBarState (#46)', () => {
   });
 
   it('returns "off" when all sessions are completed/stopped', () => {
-    const ss = [
-      sess(10, 1, { status: 'completed' }),
-      sess(11, 1, { status: 'stopped' }),
-    ];
+    const ss = [sess(10, 1, { status: 'completed' }), sess(11, 1, { status: 'stopped' })];
     expect(deriveEdgeBarState(task(1), ss, false)).toBe('off');
     expect(deriveEdgeBarState(task(1), ss, true)).toBe('off');
   });

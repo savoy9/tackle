@@ -9,8 +9,16 @@
  */
 
 export const TestOverride = {
-  get workspace(): string | undefined { return process.env.TACKLE_TEST_WORKSPACE; },
-  get db(): string | undefined { return process.env.TACKLE_TEST_DB; },
-  get psmuxPrefix(): string | undefined { return process.env.TACKLE_TEST_PSMUX_PREFIX; },
-  get jsonlDir(): string | undefined { return process.env.TACKLE_TEST_JSONL_DIR; },
+  get workspace(): string | undefined {
+    return process.env.TACKLE_TEST_WORKSPACE;
+  },
+  get db(): string | undefined {
+    return process.env.TACKLE_TEST_DB;
+  },
+  get psmuxPrefix(): string | undefined {
+    return process.env.TACKLE_TEST_PSMUX_PREFIX;
+  },
+  get jsonlDir(): string | undefined {
+    return process.env.TACKLE_TEST_JSONL_DIR;
+  },
 } as const;

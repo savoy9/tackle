@@ -14,13 +14,20 @@ function createFakeDetector() {
   const stopped: number[] = [];
   let disposed = false;
   const detector: AgentStateDetector = {
-    start: vi.fn((s) => { started.push(s.id); }),
-    stop: vi.fn((s) => { stopped.push(s.id); }),
+    start: vi.fn((s) => {
+      started.push(s.id);
+    }),
+    stop: vi.fn((s) => {
+      stopped.push(s.id);
+    }),
     onChange(listener) {
       listeners.add(listener);
       return { dispose: () => listeners.delete(listener) };
     },
-    dispose: vi.fn(() => { disposed = true; listeners.clear(); }),
+    dispose: vi.fn(() => {
+      disposed = true;
+      listeners.clear();
+    }),
   };
   return {
     detector,
@@ -33,7 +40,10 @@ function createFakeDetector() {
   };
 }
 
-function createAgentRegistry(overrides: Partial<AgentRegistry> = {}, detector?: AgentStateDetector): AgentRegistry {
+function createAgentRegistry(
+  overrides: Partial<AgentRegistry> = {},
+  detector?: AgentStateDetector,
+): AgentRegistry {
   return {
     resolve: vi.fn((name?: string | null) => ({
       name: name ?? 'agency-cc',
@@ -64,8 +74,8 @@ function createMocks() {
 
   const mockSessionRepo: SessionRepository = {
     list: vi.fn(async () => sessions),
-    get: vi.fn(async (id: number) => sessions.find(s => s.id === id)),
-    listForTask: vi.fn(async (taskId: number) => sessions.filter(s => s.task_id === taskId)),
+    get: vi.fn(async (id: number) => sessions.find((s) => s.id === id)),
+    listForTask: vi.fn(async (taskId: number) => sessions.filter((s) => s.task_id === taskId)),
     create: vi.fn(async (input: any) => {
       const s = {
         id: sessions.length + 1,
@@ -201,16 +211,13 @@ describe('TerminalOrchestrator', () => {
     it('sends cd + agent command to psmux for non-shell kind', async () => {
       await orchestrator.createTerminal({ ...baseOpts, worktreePath: '/wt/foo' });
       const psmuxName = PsmuxBridge.generateSessionName('gh', '42', 'implement', 1);
-      expect(mockPsmux.sendKeys).toHaveBeenCalledWith(
-        psmuxName,
-        "cd '/wt/foo' && agency-cc",
-      );
+      expect(mockPsmux.sendKeys).toHaveBeenCalledWith(psmuxName, "cd '/wt/foo' && agency-cc");
     });
 
     it('shell-quotes cwd so paths with spaces and metachars stay intact', async () => {
       await orchestrator.createTerminal({
         ...baseOpts,
-        worktreePath: "/wt/my repo; rm -rf /",
+        worktreePath: '/wt/my repo; rm -rf /',
       });
       const sent = (mockPsmux.sendKeys as any).mock.calls[0][1] as string;
       // Single-quoted → shell treats the whole path as one literal arg.
@@ -243,7 +250,11 @@ describe('TerminalOrchestrator', () => {
         ensureForTask: ensure,
       });
 
-      const session = await orchestrator.createTerminal({ taskId: 99, taskSlug: 's', kind: 'implement' });
+      const session = await orchestrator.createTerminal({
+        taskId: 99,
+        taskSlug: 's',
+        kind: 'implement',
+      });
 
       expect(ensure).toHaveBeenCalledWith(99);
       expect(session.worktree_path).toBe('/wt/task-99');
@@ -258,7 +269,12 @@ describe('TerminalOrchestrator', () => {
       orchestrator = new TerminalOrchestrator(mockSessionRepo, mockPsmux, mockAgentRegistry, {
         ensureForTask: ensure,
       });
-      await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'implement', worktreePath: '/wt/explicit' });
+      await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 's',
+        kind: 'implement',
+        worktreePath: '/wt/explicit',
+      });
       expect(ensure).not.toHaveBeenCalled();
     });
 
@@ -274,7 +290,11 @@ describe('TerminalOrchestrator', () => {
 
   describe('disposeAll', () => {
     it('disposes all terminals and clears map', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 1, taskSlug: 'a', kind: 'shell' });
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 'a',
+        kind: 'shell',
+      });
       const terminal = orchestrator.getTerminalForSession(session.id)!;
 
       orchestrator.disposeAll();
@@ -288,8 +308,42 @@ describe('TerminalOrchestrator', () => {
     it('creates terminals for all running sessions', async () => {
       // Pre-populate sessions
       sessions.push(
-        { id: 10, task_id: 5, phase_id: null, name: 'a', kind: 'shell', status: 'running', psmux_name: 'psmux-a', tab_label: 'tab-a', agent: null, worktree_path: null, sort_order: 1, claude_session_id: null, started_at: '', ended_at: null },
-        { id: 11, task_id: 5, phase_id: null, name: 'b', kind: 'shell', status: 'stopped', psmux_name: 'psmux-b', tab_label: 'tab-b', agent: null, worktree_path: null, sort_order: 2, claude_session_id: null, started_at: '', ended_at: null },
+        {
+          id: 10,
+          task_id: 5,
+          phase_id: null,
+          name: 'a',
+          kind: 'shell',
+          status: 'running',
+          psmux_name: 'psmux-a',
+          tab_label: 'tab-a',
+          agent: null,
+          worktree_path: null,
+          sort_order: 1,
+          claude_session_id: null,
+          agent_state: 'idle',
+          prior_claude_session_ids: null,
+          started_at: '',
+          ended_at: null,
+        },
+        {
+          id: 11,
+          task_id: 5,
+          phase_id: null,
+          name: 'b',
+          kind: 'shell',
+          status: 'stopped',
+          psmux_name: 'psmux-b',
+          tab_label: 'tab-b',
+          agent: null,
+          worktree_path: null,
+          sort_order: 2,
+          claude_session_id: null,
+          agent_state: 'idle',
+          prior_claude_session_ids: null,
+          started_at: '',
+          ended_at: null,
+        },
       );
 
       await orchestrator.reattachForTask(5);
@@ -302,7 +356,11 @@ describe('TerminalOrchestrator', () => {
 
   describe('handleTerminalClose', () => {
     it('removes from map and updates session status', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 1, taskSlug: 'x', kind: 'shell' });
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 'x',
+        kind: 'shell',
+      });
       const terminal = orchestrator.getTerminalForSession(session.id)!;
 
       orchestrator.handleTerminalClose(terminal);
@@ -314,7 +372,11 @@ describe('TerminalOrchestrator', () => {
 
   describe('stopSession', () => {
     it('kills psmux session and marks status stopped', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 1, taskSlug: 'x', kind: 'shell' });
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 'x',
+        kind: 'shell',
+      });
       await orchestrator.stopSession(session.id);
       expect(mockPsmux.killSession).toHaveBeenCalledWith(session.psmux_name);
       expect(mockSessionRepo.update).toHaveBeenCalledWith(
@@ -326,7 +388,12 @@ describe('TerminalOrchestrator', () => {
 
   describe('restartSession', () => {
     it('kills old psmux, respawns, and preserves DB id with status running', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 7, taskSlug: 's', kind: 'implement', worktreePath: '/wt/s' });
+      const session = await orchestrator.createTerminal({
+        taskId: 7,
+        taskSlug: 's',
+        kind: 'implement',
+        worktreePath: '/wt/s',
+      });
       const originalId = session.id;
       (mockPsmux.sendKeys as any).mockClear();
 
@@ -341,7 +408,12 @@ describe('TerminalOrchestrator', () => {
     });
 
     it('forwards --resume flag when claude_session_id is set', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 7, taskSlug: 's', kind: 'implement', worktreePath: '/wt/s' });
+      const session = await orchestrator.createTerminal({
+        taskId: 7,
+        taskSlug: 's',
+        kind: 'implement',
+        worktreePath: '/wt/s',
+      });
       // Simulate claude_session_id being set externally
       sessions[0].claude_session_id = 'claude-xyz';
       (mockPsmux.sendKeys as any).mockClear();
@@ -354,7 +426,11 @@ describe('TerminalOrchestrator', () => {
     });
 
     it('does not launch agent on restart for shell kind', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 7, taskSlug: 's', kind: 'shell' });
+      const session = await orchestrator.createTerminal({
+        taskId: 7,
+        taskSlug: 's',
+        kind: 'shell',
+      });
       (mockPsmux.sendKeys as any).mockClear();
 
       await orchestrator.restartSession(session.id);
@@ -373,7 +449,12 @@ describe('TerminalOrchestrator', () => {
     });
 
     it('starts the detector when an agent-kind session is spawned', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'implement', worktreePath: '/wt/x' });
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 's',
+        kind: 'implement',
+        worktreePath: '/wt/x',
+      });
       expect(fake.detector.start).toHaveBeenCalledWith(expect.objectContaining({ id: session.id }));
     });
 
@@ -384,7 +465,12 @@ describe('TerminalOrchestrator', () => {
     });
 
     it('detector onChange events persist via SessionRepository.setAgentState', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'implement', worktreePath: '/wt/x' });
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 's',
+        kind: 'implement',
+        worktreePath: '/wt/x',
+      });
       fake.emit(session.id, 'working');
       // Allow the fire-and-forget setAgentState promise to flush.
       await Promise.resolve();
@@ -392,7 +478,12 @@ describe('TerminalOrchestrator', () => {
     });
 
     it('stopSession stops the detector and freezes agent_state (no further writes)', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'implement', worktreePath: '/wt/x' });
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 's',
+        kind: 'implement',
+        worktreePath: '/wt/x',
+      });
       await orchestrator.stopSession(session.id);
       expect(fake.detector.stop).toHaveBeenCalledWith(expect.objectContaining({ id: session.id }));
 
@@ -409,7 +500,12 @@ describe('TerminalOrchestrator', () => {
     });
 
     it('restartSession stops then re-starts the detector for the refreshed session', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'implement', worktreePath: '/wt/x' });
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 's',
+        kind: 'implement',
+        worktreePath: '/wt/x',
+      });
       (fake.detector.start as any).mockClear();
 
       await orchestrator.restartSession(session.id);
@@ -419,14 +515,24 @@ describe('TerminalOrchestrator', () => {
     });
 
     it('handleTerminalClose stops the detector when an agent-kind session terminal is closed', async () => {
-      const session = await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'implement', worktreePath: '/wt/x' });
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 's',
+        kind: 'implement',
+        worktreePath: '/wt/x',
+      });
       const terminal = orchestrator.getTerminalForSession(session.id)!;
       await orchestrator.handleTerminalClose(terminal);
       expect(fake.detector.stop).toHaveBeenCalledWith(expect.objectContaining({ id: session.id }));
     });
 
     it('disposeAll releases every detector via the registry (clean VS Code shutdown)', async () => {
-      await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'implement', worktreePath: '/wt/x' });
+      await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 's',
+        kind: 'implement',
+        worktreePath: '/wt/x',
+      });
       orchestrator.disposeAll();
       expect(mockAgentRegistry.disposeDetectors).toHaveBeenCalled();
       expect(fake.isDisposed()).toBe(true);
@@ -444,9 +550,60 @@ describe('TerminalOrchestrator', () => {
 
     it('re-starts detectors for every running agent-kind Session in the DB', async () => {
       sessions.push(
-        { id: 1, task_id: 1, phase_id: null, name: 'a', kind: 'implement', status: 'running', psmux_name: 'p1', tab_label: 'a', agent: 'agency-cc', worktree_path: '/wt/a', sort_order: 0, claude_session_id: 'c1', agent_state: 'idle', prior_claude_session_ids: null, started_at: '', ended_at: null },
-        { id: 2, task_id: 1, phase_id: null, name: 'b', kind: 'implement', status: 'stopped', psmux_name: 'p2', tab_label: 'b', agent: 'agency-cc', worktree_path: '/wt/b', sort_order: 0, claude_session_id: null, agent_state: 'idle', prior_claude_session_ids: null, started_at: '', ended_at: null },
-        { id: 3, task_id: 1, phase_id: null, name: 'c', kind: 'shell', status: 'running', psmux_name: 'p3', tab_label: 'c', agent: null, worktree_path: null, sort_order: 0, claude_session_id: null, agent_state: 'idle', prior_claude_session_ids: null, started_at: '', ended_at: null },
+        {
+          id: 1,
+          task_id: 1,
+          phase_id: null,
+          name: 'a',
+          kind: 'implement',
+          status: 'running',
+          psmux_name: 'p1',
+          tab_label: 'a',
+          agent: 'agency-cc',
+          worktree_path: '/wt/a',
+          sort_order: 0,
+          claude_session_id: 'c1',
+          agent_state: 'idle',
+          prior_claude_session_ids: null,
+          started_at: '',
+          ended_at: null,
+        },
+        {
+          id: 2,
+          task_id: 1,
+          phase_id: null,
+          name: 'b',
+          kind: 'implement',
+          status: 'stopped',
+          psmux_name: 'p2',
+          tab_label: 'b',
+          agent: 'agency-cc',
+          worktree_path: '/wt/b',
+          sort_order: 0,
+          claude_session_id: null,
+          agent_state: 'idle',
+          prior_claude_session_ids: null,
+          started_at: '',
+          ended_at: null,
+        },
+        {
+          id: 3,
+          task_id: 1,
+          phase_id: null,
+          name: 'c',
+          kind: 'shell',
+          status: 'running',
+          psmux_name: 'p3',
+          tab_label: 'c',
+          agent: null,
+          worktree_path: null,
+          sort_order: 0,
+          claude_session_id: null,
+          agent_state: 'idle',
+          prior_claude_session_ids: null,
+          started_at: '',
+          ended_at: null,
+        },
       );
 
       await orchestrator.resumeRunningDetectors();

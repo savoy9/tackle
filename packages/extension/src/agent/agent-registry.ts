@@ -107,10 +107,17 @@ const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
   stub: {
     name: 'stub',
     command: 'node',
-    args: [path.resolve(
-      path.dirname(fileURLToPath(import.meta.url)),
-      '..', '..', 'test', 'fixtures', 'bin', 'claude-stub.mjs',
-    )],
+    args: [
+      path.resolve(
+        path.dirname(fileURLToPath(import.meta.url)),
+        '..',
+        '..',
+        'test',
+        'fixtures',
+        'bin',
+        'claude-stub.mjs',
+      ),
+    ],
     resumeFlag: () => [],
     detector: 'ClaudeJsonlDetector',
   },

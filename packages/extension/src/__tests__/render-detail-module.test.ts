@@ -85,9 +85,7 @@ describe('renderDetail — description area (#47)', () => {
   });
 
   it('renders precomputed HTML inside the description container', () => {
-    const html = renderDetail(
-      detailState({ descriptionsByTaskId: { 1: '<p>hi</p>' } }),
-    );
+    const html = renderDetail(detailState({ descriptionsByTaskId: { 1: '<p>hi</p>' } }));
     expect(html).toContain('<p>hi</p>');
   });
 });
@@ -100,7 +98,9 @@ describe('renderDetail — Task Footer mini-cards (#47)', () => {
     const html = renderDetail(state);
     expect(html).toContain('class="detail-footer"');
     // Each footer row should be a card with the mini modifier.
-    expect(html).toMatch(/class="card card--mini"[^>]*data-action="switchDetailTo"[^>]*data-task-id="2"/);
+    expect(html).toMatch(
+      /class="card card--mini"[^>]*data-action="switchDetailTo"[^>]*data-task-id="2"/,
+    );
     expect(html).toMatch(/data-task-id="3"/);
   });
 

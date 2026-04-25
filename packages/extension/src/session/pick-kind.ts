@@ -4,8 +4,12 @@ import { KIND_ORDER, formatKindLabel } from './kind-icon';
 export interface KindQuickPickItem {
   /** Iconified label shown in the QuickPick (e.g. `📓 plan`). */
   label: string;
-  /** The underlying SessionKind, preserved for selection mapping. */
-  kind: SessionKind;
+  /**
+   * The underlying SessionKind, preserved for selection mapping. Named
+   * `sessionKind` rather than `kind` to avoid colliding with VS Code's
+   * `QuickPickItem.kind: QuickPickItemKind` field.
+   */
+  sessionKind: SessionKind;
 }
 
 /**
@@ -16,7 +20,7 @@ export interface KindQuickPickItem {
 export function buildKindQuickPickItems(): KindQuickPickItem[] {
   return KIND_ORDER.map((kind) => ({
     label: formatKindLabel(kind),
-    kind,
+    sessionKind: kind,
   }));
 }
 
@@ -24,9 +28,7 @@ export function buildKindQuickPickItems(): KindQuickPickItem[] {
  * Kinds for which α-isolation (per-Session sub-worktree) makes sense.
  * Plan / review / shell don't trigger code edits worth isolating.
  */
-export const IMPL_LIKE_KINDS: readonly SessionKind[] = [
-  'implement', 'debug', 'test', 'pilot',
-];
+export const IMPL_LIKE_KINDS: readonly SessionKind[] = ['implement', 'debug', 'test', 'pilot'];
 
 /**
  * Whether the New Session QuickPick should offer the "isolate in new worktree"
@@ -41,4 +43,3 @@ export function shouldOfferIsolation(
   if (!ctx.taskWorktreeExists) return false;
   return IMPL_LIKE_KINDS.includes(kind);
 }
-

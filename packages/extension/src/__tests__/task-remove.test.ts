@@ -8,11 +8,7 @@ import { mkdtempSync, rmSync, existsSync, mkdirSync, writeFileSync, readdirSync 
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import type { Task, TaskRepository, TaskWorktreeFields } from '@tackle/shared';
-import {
-  TaskRemover,
-  assessWorktreeCleanliness,
-  type RemovePromptFn,
-} from '../task/task-remover';
+import { TaskRemover, assessWorktreeCleanliness, type RemovePromptFn } from '../task/task-remover';
 import { SessionActions } from '../session/session-actions';
 import type { TerminalOrchestrator } from '../terminal/terminal-orchestrator';
 
@@ -100,7 +96,11 @@ beforeEach(() => {
 });
 
 afterEach(() => {
-  try { rmSync(fixture.rootDir, { recursive: true, force: true }); } catch { /* windows */ }
+  try {
+    rmSync(fixture.rootDir, { recursive: true, force: true });
+  } catch {
+    /* windows */
+  }
 });
 
 describe('assessWorktreeCleanliness', () => {
@@ -151,12 +151,15 @@ describe('TaskRemover.removeTask', () => {
   });
 
   it('clean worktree + user accepts → runs `git worktree remove` and clears Task fields', async () => {
-    state.tasks.set(1, makeTask({
-      id: 1,
-      worktree_path: fixture.worktreeDir,
-      worktree_branch: fixture.branch,
-      worktree_base_branch: 'main',
-    }));
+    state.tasks.set(
+      1,
+      makeTask({
+        id: 1,
+        worktree_path: fixture.worktreeDir,
+        worktree_branch: fixture.branch,
+        worktree_base_branch: 'main',
+      }),
+    );
     const prompt = vi.fn<RemovePromptFn>(async (_t, c) => {
       // Default for clean = remove
       expect(c.clean).toBe(true);
@@ -179,12 +182,15 @@ describe('TaskRemover.removeTask', () => {
 
   it('dirty worktree + user keeps (default) → leaves worktree, clears nothing', async () => {
     writeFileSync(join(fixture.worktreeDir, 'wip.txt'), 'wip\n');
-    state.tasks.set(1, makeTask({
-      id: 1,
-      worktree_path: fixture.worktreeDir,
-      worktree_branch: fixture.branch,
-      worktree_base_branch: 'main',
-    }));
+    state.tasks.set(
+      1,
+      makeTask({
+        id: 1,
+        worktree_path: fixture.worktreeDir,
+        worktree_branch: fixture.branch,
+        worktree_base_branch: 'main',
+      }),
+    );
     const prompt = vi.fn<RemovePromptFn>(async (_t, c) => {
       expect(c.clean).toBe(false);
       // Default for dirty = keep
@@ -203,12 +209,15 @@ describe('TaskRemover.removeTask', () => {
 
   it('dirty worktree + user overrides to remove → invokes git worktree remove --force', async () => {
     writeFileSync(join(fixture.worktreeDir, 'wip.txt'), 'wip\n');
-    state.tasks.set(1, makeTask({
-      id: 1,
-      worktree_path: fixture.worktreeDir,
-      worktree_branch: fixture.branch,
-      worktree_base_branch: 'main',
-    }));
+    state.tasks.set(
+      1,
+      makeTask({
+        id: 1,
+        worktree_path: fixture.worktreeDir,
+        worktree_branch: fixture.branch,
+        worktree_base_branch: 'main',
+      }),
+    );
     const prompt = vi.fn<RemovePromptFn>(async () => ({ remove: true, force: true }));
 
     const remover = new TaskRemover({ taskRepo: repo, prompt, workspaceRoot: fixture.repoDir });
@@ -276,12 +285,15 @@ describe('Worktree no-op lifecycle (Stop / MarkDone / external close)', () => {
   }
 
   it('Session.stop does NOT call setWorktree, git worktree remove, or rm the directory', async () => {
-    state.tasks.set(1, makeTask({
-      id: 1,
-      worktree_path: fixture.worktreeDir,
-      worktree_branch: fixture.branch,
-      worktree_base_branch: 'main',
-    }));
+    state.tasks.set(
+      1,
+      makeTask({
+        id: 1,
+        worktree_path: fixture.worktreeDir,
+        worktree_branch: fixture.branch,
+        worktree_base_branch: 'main',
+      }),
+    );
     const setWorktreeSpy = vi.spyOn(repo, 'setWorktree');
 
     const { actions } = buildSessionActions();
@@ -294,12 +306,15 @@ describe('Worktree no-op lifecycle (Stop / MarkDone / external close)', () => {
   });
 
   it('Session.markDone does NOT touch the Task worktree', async () => {
-    state.tasks.set(1, makeTask({
-      id: 1,
-      worktree_path: fixture.worktreeDir,
-      worktree_branch: fixture.branch,
-      worktree_base_branch: 'main',
-    }));
+    state.tasks.set(
+      1,
+      makeTask({
+        id: 1,
+        worktree_path: fixture.worktreeDir,
+        worktree_branch: fixture.branch,
+        worktree_base_branch: 'main',
+      }),
+    );
     const setWorktreeSpy = vi.spyOn(repo, 'setWorktree');
 
     const { actions } = buildSessionActions();

@@ -9,7 +9,5 @@ export type {
   WorktreeProvisionResult,
   WorktreeConfigReader,
 } from './worktree-provisioner';
-export {
-  createVscodeWorktreeConfigReader,
-} from './worktree-config';
+export { createVscodeWorktreeConfigReader } from './worktree-config';
 export type { GetConfigurationFn } from './worktree-config';

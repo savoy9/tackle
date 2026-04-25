@@ -2,7 +2,7 @@ import * as cp from 'node:child_process';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { launchVsCodeSuite } from './launch';
+import { launchVsCodeSuite, resolveOutTestRoot } from './launch';
 
 /**
  * Integration test entry point — peer of `run-bench.ts` (#62).
@@ -19,12 +19,9 @@ import { launchVsCodeSuite } from './launch';
  * logs without blocking merge.
  */
 async function main(): Promise<void> {
-  const runtimeDir = path.dirname(process.argv[1]);
-  // runtimeDir = out-test/test/runner (or out-test/runner — depends on bun's
-  // common-prefix stripping for the entry-point set). Walk up to the
-  // out-test root and re-derive the suite path so the same script works
-  // regardless of nesting.
-  const outTestRoot = runtimeDir.replace(/[\\/](?:test[\\/])?runner$/, '');
+  // bun's common-prefix stripping can place the compiled integration suite
+  // at either `out-test/suite/` or `out-test/test/suite/` — probe both.
+  const outTestRoot = resolveOutTestRoot(path.dirname(process.argv[1]));
   const suiteSubdir = fs.existsSync(path.join(outTestRoot, 'test', 'suite', 'integration-index.js'))
     ? path.join('test', 'suite')
     : 'suite';
@@ -36,6 +33,16 @@ async function main(): Promise<void> {
   const psmuxPrefix = `tackleit-${process.pid}-`;
   const jsonlDir = path.join(scratchRoot, 'jsonl');
   fs.mkdirSync(jsonlDir, { recursive: true });
+
+  // OS tmp lifecycles don't reliably wipe scratchRoot on Windows. Best-effort
+  // cleanup on process exit so re-running the suite locally doesn't pile up.
+  process.on('exit', () => {
+    try {
+      fs.rmSync(scratchRoot, { recursive: true, force: true });
+    } catch {
+      /* ignore — cleanup is best-effort */
+    }
+  });
 
   // Single shared workspace for the whole suite. VS Code can't transition
   // from no-folder to a folder mid-process without a restart, so the
@@ -55,10 +62,11 @@ async function main(): Promise<void> {
   // `add` / `prune` succeed without network or remote setup. If git
   // setup fails the integration suite cannot meaningfully run, so let
   // the error propagate rather than leaving the harness in a half-state.
+  // Use execFileSync (not execSync with a built command string) so args
+  // are passed straight to git without going through a shell — no
+  // quoting bugs on paths with spaces, no injection surface.
   const git = (...args: string[]): void => {
-    cp.execSync(`git ${args.map((a) => (a.includes(' ') ? `"${a}"` : a)).join(' ')}`, {
-      cwd: workspaceDir, stdio: 'ignore',
-    });
+    cp.execFileSync('git', args, { cwd: workspaceDir, stdio: 'pipe' });
   };
   git('init', '-b', 'main');
   git('config', 'user.email', 'tackle-it@example.com');
@@ -70,7 +78,6 @@ async function main(): Promise<void> {
 
   const exitCode = await launchVsCodeSuite({
     suiteRelativeToOutTest,
-    outTestRootOverride: outTestRoot,
     extraLaunchArgs: [workspaceDir],
     env: {
       TACKLE_SUITE_DIR: path.resolve(outTestRoot, suiteSubdir),

@@ -53,8 +53,17 @@ export class SqliteTaskRepository implements TaskRepository {
   }
 
   upsert(task: UpsertTask): Promise<void> {
-    this.db.prepare(UPSERT_TASK_SQL)
-      .run(task.external_id, task.external_system, task.title, task.description, task.status, task.assignee, task.parent_external_id ?? null);
+    this.db
+      .prepare(UPSERT_TASK_SQL)
+      .run(
+        task.external_id,
+        task.external_system,
+        task.title,
+        task.description,
+        task.status,
+        task.assignee,
+        task.parent_external_id ?? null,
+      );
     return Promise.resolve();
   }
 
@@ -63,7 +72,15 @@ export class SqliteTaskRepository implements TaskRepository {
     try {
       const stmt = this.db.prepare(UPSERT_TASK_SQL);
       for (const task of tasks) {
-        stmt.run(task.external_id, task.external_system, task.title, task.description, task.status, task.assignee, task.parent_external_id ?? null);
+        stmt.run(
+          task.external_id,
+          task.external_system,
+          task.title,
+          task.description,
+          task.status,
+          task.assignee,
+          task.parent_external_id ?? null,
+        );
       }
       this.db.exec('COMMIT');
     } catch (err) {
@@ -89,7 +106,9 @@ export class SqliteSessionRepository implements SessionRepository {
   private mapSession(row: any): Session {
     return {
       ...row,
-      prior_claude_session_ids: row.prior_claude_session_ids ? JSON.parse(row.prior_claude_session_ids) : null,
+      prior_claude_session_ids: row.prior_claude_session_ids
+        ? JSON.parse(row.prior_claude_session_ids)
+        : null,
     };
   }
 
@@ -104,7 +123,9 @@ export class SqliteSessionRepository implements SessionRepository {
   }
 
   listForTask(taskId: number): Promise<Session[]> {
-    const rows = this.db.prepare<any>('SELECT * FROM sessions WHERE task_id = ? ORDER BY sort_order, id').all(taskId);
+    const rows = this.db
+      .prepare<any>('SELECT * FROM sessions WHERE task_id = ? ORDER BY sort_order, id')
+      .all(taskId);
     return Promise.resolve(rows.map((r) => this.mapSession(r)));
   }
 
@@ -145,7 +166,9 @@ export class SqliteSessionRepository implements SessionRepository {
   }
 
   complete(id: number): Promise<void> {
-    this.db.prepare(`UPDATE sessions SET status = 'completed', ended_at = datetime('now') WHERE id = ?`).run(id);
+    this.db
+      .prepare(`UPDATE sessions SET status = 'completed', ended_at = datetime('now') WHERE id = ?`)
+      .run(id);
     return Promise.resolve();
   }
 
@@ -173,7 +196,9 @@ export class SqliteLayoutStateRepository implements LayoutStateRepository {
   constructor(private db: Database) {}
 
   get(taskId: string): Promise<LayoutState | undefined> {
-    const row = this.db.prepare<LayoutStateRow>('SELECT * FROM layout_states WHERE task_id = ?').get(taskId);
+    const row = this.db
+      .prepare<LayoutStateRow>('SELECT * FROM layout_states WHERE task_id = ?')
+      .get(taskId);
     if (!row) return Promise.resolve(undefined);
     return Promise.resolve({
       task_id: row.task_id,
@@ -213,7 +238,9 @@ export class SqlitePlanRepository implements PlanRepository {
   constructor(private db: Database) {}
 
   get(taskId: number): Promise<Plan | undefined> {
-    return Promise.resolve(this.db.prepare<Plan>('SELECT * FROM plans WHERE task_id = ?').get(taskId));
+    return Promise.resolve(
+      this.db.prepare<Plan>('SELECT * FROM plans WHERE task_id = ?').get(taskId),
+    );
   }
 
   save(plan: Omit<Plan, 'id' | 'created_at'>): Promise<Plan> {
@@ -236,7 +263,9 @@ export class SqlitePhaseRepository implements PhaseRepository {
 
   listForPlan(planId: number): Promise<Phase[]> {
     return Promise.resolve(
-      this.db.prepare<Phase>('SELECT * FROM phases WHERE plan_id = ? ORDER BY sort_order, id').all(planId),
+      this.db
+        .prepare<Phase>('SELECT * FROM phases WHERE plan_id = ? ORDER BY sort_order, id')
+        .all(planId),
     );
   }
 

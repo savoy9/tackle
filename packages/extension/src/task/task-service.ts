@@ -15,9 +15,7 @@ export class TaskService {
 
     const { remote, diagnostics } = await this.getRemote();
     if (!remote) {
-      throw new Error(
-        `Could not determine GitHub repository from workspace. ${diagnostics}`,
-      );
+      throw new Error(`Could not determine GitHub repository from workspace. ${diagnostics}`);
     }
 
     const response = await fetch(
@@ -105,15 +103,18 @@ export class TaskService {
       if (gitExtension) {
         if (!gitExtension.isActive) await gitExtension.activate();
         const git = gitExtension.exports.getAPI(1);
-        const repos: Array<{ state: { remotes: Array<{ name?: string; fetchUrl?: string; pushUrl?: string }> } }>
-          = git.repositories ?? [];
+        const repos: Array<{
+          state: { remotes: Array<{ name?: string; fetchUrl?: string; pushUrl?: string }> };
+        }> = git.repositories ?? [];
         for (const repo of repos) {
           for (const r of repo.state.remotes ?? []) {
             const url = r.fetchUrl ?? r.pushUrl;
             if (!url) continue;
             const parsed = TaskService.parseGitRemote(url);
             if (parsed) return { remote: parsed, diagnostics: '' };
-            notes.push(`git-ext remote ${r.name ?? '?'}=${TaskService.redactRemoteUrl(url)} did not match a GitHub URL`);
+            notes.push(
+              `git-ext remote ${r.name ?? '?'}=${TaskService.redactRemoteUrl(url)} did not match a GitHub URL`,
+            );
           }
         }
         if (repos.length === 0) {
@@ -142,16 +143,25 @@ export class TaskService {
         : remoteList;
       for (const name of ordered) {
         try {
-          const url = execFileSync('git', ['remote', 'get-url', name], { cwd, encoding: 'utf-8' }).trim();
+          const url = execFileSync('git', ['remote', 'get-url', name], {
+            cwd,
+            encoding: 'utf-8',
+          }).trim();
           const parsed = TaskService.parseGitRemote(url);
           if (parsed) return { remote: parsed, diagnostics: '' };
-          notes.push(`git CLI remote ${name}=${TaskService.redactRemoteUrl(url)} did not match a GitHub URL`);
+          notes.push(
+            `git CLI remote ${name}=${TaskService.redactRemoteUrl(url)} did not match a GitHub URL`,
+          );
         } catch (err) {
-          notes.push(`git CLI: \`git remote get-url ${name}\` failed: ${err instanceof Error ? err.message : String(err)}`);
+          notes.push(
+            `git CLI: \`git remote get-url ${name}\` failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
         }
       }
     } catch (err) {
-      notes.push(`git CLI: \`git remote\` at ${cwd} failed: ${err instanceof Error ? err.message : String(err)}`);
+      notes.push(
+        `git CLI: \`git remote\` at ${cwd} failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     const suffix =
@@ -186,7 +196,9 @@ export class TaskService {
     }
 
     // git:// and ssh:// schemes.
-    const altMatch = clean.match(/^(?:git|ssh):\/\/(?:[^@]+@)?github\.com\/([^/]+)\/(.+?)(?:\.git)?\/?$/);
+    const altMatch = clean.match(
+      /^(?:git|ssh):\/\/(?:[^@]+@)?github\.com\/([^/]+)\/(.+?)(?:\.git)?\/?$/,
+    );
     if (altMatch) {
       return { owner: altMatch[1], repo: altMatch[2] };
     }

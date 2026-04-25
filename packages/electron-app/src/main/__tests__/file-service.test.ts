@@ -14,7 +14,10 @@ describe('FileService', () => {
 
     // Create some test files
     fs.mkdirSync(path.join(tmpDir, 'plans'));
-    fs.writeFileSync(path.join(tmpDir, 'plans', 'auth.md'), '# Auth Plan\n\n### Phase 1: Build\n\nDetails.');
+    fs.writeFileSync(
+      path.join(tmpDir, 'plans', 'auth.md'),
+      '# Auth Plan\n\n### Phase 1: Build\n\nDetails.',
+    );
     fs.writeFileSync(path.join(tmpDir, 'README.md'), '# Project');
     fs.mkdirSync(path.join(tmpDir, 'src'));
     fs.writeFileSync(path.join(tmpDir, 'src', 'index.ts'), 'console.log("hello");');

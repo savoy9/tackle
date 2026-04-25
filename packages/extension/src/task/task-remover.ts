@@ -85,7 +85,9 @@ export function assessWorktreeCleanliness(
   // count. The failure mode is explicit in `reason`.
   if (!ahead.ok) {
     const base = unstagedFiles > 0 ? [`${unstagedFiles} uncommitted file(s)`] : [];
-    base.push(`could not compare to ${baseBranch}: ${ahead.stderr.trim() || 'git rev-list failed'}`);
+    base.push(
+      `could not compare to ${baseBranch}: ${ahead.stderr.trim() || 'git rev-list failed'}`,
+    );
     return {
       clean: false,
       reason: base.join(', '),

@@ -25,7 +25,11 @@ describe('WorkspaceManager', () => {
   afterEach(() => {
     db?.close();
     for (const name of createdSessions) {
-      try { psmux.killSession(name); } catch { /* ignore */ }
+      try {
+        psmux.killSession(name);
+      } catch {
+        /* ignore */
+      }
     }
     createdSessions.length = 0;
   });
@@ -107,7 +111,12 @@ describe('WorkspaceManager', () => {
 
     // Seed plan and phase
     db.prepare('INSERT INTO plans (task_id, source_path) VALUES (?, ?)').run(1, './p.md');
-    db.prepare('INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)').run(1, 1, 'Auth Middleware', 0);
+    db.prepare('INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)').run(
+      1,
+      1,
+      'Auth Middleware',
+      0,
+    );
 
     ws.ensurePhaseWindow(1);
 
@@ -120,8 +129,18 @@ describe('WorkspaceManager', () => {
     ws.switchTask(1);
 
     db.prepare('INSERT INTO plans (task_id, source_path) VALUES (?, ?)').run(1, './p.md');
-    db.prepare('INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)').run(1, 1, 'Phase A', 0);
-    db.prepare('INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)').run(1, 1, 'Phase B', 1);
+    db.prepare('INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)').run(
+      1,
+      1,
+      'Phase A',
+      0,
+    );
+    db.prepare('INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)').run(
+      1,
+      1,
+      'Phase B',
+      1,
+    );
 
     ws.ensurePhaseWindow(1);
     ws.ensurePhaseWindow(2);
@@ -138,7 +157,12 @@ describe('WorkspaceManager', () => {
     ws.switchTask(1);
 
     db.prepare('INSERT INTO plans (task_id, source_path) VALUES (?, ?)').run(1, './p.md');
-    db.prepare('INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)').run(1, 1, 'Phase A', 0);
+    db.prepare('INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)').run(
+      1,
+      1,
+      'Phase A',
+      0,
+    );
 
     ws.ensurePhaseWindow(1);
     ws.selectPhase(1);

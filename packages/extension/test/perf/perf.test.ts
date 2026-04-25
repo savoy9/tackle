@@ -80,8 +80,31 @@ suite('perf', () => {
   test('measures three scenarios and writes perf-results.json', async function () {
     this.timeout(20 * 60_000);
 
+    // KNOWN-BROKEN follow-up: scenarios depend on `tackle._perfSeedTask`
+    // and `tackle._perfSpawnSession` shims that aren't yet registered
+    // (tracked as a follow-up to #68). Probe the command list and bail
+    // with a sentinel results file if they're missing — distinguishes
+    // "perf regressed" from "perf never ran" in the artifact + PR comment.
+    const cmds = new Set(await vscode.commands.getCommands(true));
+    const missing = ['tackle._perfSeedTask', 'tackle._perfSpawnSession'].filter(
+      (c) => !cmds.has(c),
+    );
+
     const results: ScenarioResult[] = [];
-    for (const s of ALL_SCENARIOS) {
+    if (missing.length > 0) {
+      // eslint-disable-next-line no-console
+      console.warn(`[perf] skipping all scenarios: missing commands: ${missing.join(', ')}`);
+      for (const s of ALL_SCENARIOS) {
+        results.push({
+          scenario: s.name,
+          runs: 0,
+          t_responsive: { count: 0, min: 0, max: 0, mean: 0 },
+          t_visible: { count: 0, min: 0, max: 0, mean: 0 },
+          raw: [],
+        });
+      }
+    } else {
+      for (const s of ALL_SCENARIOS) {
       try {
         const r = await runScenario(s, RUNS_PER_SCENARIO);
         for (const summary of [r.t_responsive, r.t_visible]) {
@@ -108,6 +131,7 @@ suite('perf', () => {
           t_visible: { count: 0, min: 0, max: 0, mean: 0 },
           raw: [],
         });
+      }
       }
     }
 

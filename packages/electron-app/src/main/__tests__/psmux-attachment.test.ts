@@ -11,7 +11,11 @@ describe('PsmuxAttachment', () => {
   });
 
   afterEach(() => {
-    try { psmux.killSession(sessionName); } catch { /* ignore */ }
+    try {
+      psmux.killSession(sessionName);
+    } catch {
+      /* ignore */
+    }
   });
 
   it('attaches to a session and receives data', async () => {
@@ -74,7 +78,11 @@ describe('PsmuxAttachment', () => {
     const allOutput = received.join('');
     expect(allOutput).toContain('session-two');
 
-    try { psmux.killSession(session2); } catch { /* ignore */ }
+    try {
+      psmux.killSession(session2);
+    } catch {
+      /* ignore */
+    }
   });
 
   it('handles resize', () => {

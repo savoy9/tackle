@@ -28,10 +28,17 @@ export function registerSyncHandlers(syncService: GitHubSyncService | null): voi
 }
 
 export function registerSessionHandlers(workspace: WorkspaceManager): void {
-  ipcMain.handle('sessions:create', (_event, options?: { name?: string; taskId?: number; kind?: 'agent' | 'terminal' }) => {
-    const name = options?.name || `Session ${Date.now()}`;
-    return workspace.sessionManager.create({ name, taskId: options?.taskId, kind: options?.kind });
-  });
+  ipcMain.handle(
+    'sessions:create',
+    (_event, options?: { name?: string; taskId?: number; kind?: 'agent' | 'terminal' }) => {
+      const name = options?.name || `Session ${Date.now()}`;
+      return workspace.sessionManager.create({
+        name,
+        taskId: options?.taskId,
+        kind: options?.kind,
+      });
+    },
+  );
 
   ipcMain.handle('sessions:list', () => {
     return workspace.sessionManager.list();
@@ -116,13 +123,13 @@ export function registerWorkspaceHandlers(
   });
 }
 
-export function registerPlanHandlers(
-  planService: PlanService,
-  phaseRepo: PhaseRepository,
-): void {
-  ipcMain.handle('plan:link', async (_event, taskId: number, sourcePath: string, content: string) => {
-    return planService.linkPlan(taskId, sourcePath, content);
-  });
+export function registerPlanHandlers(planService: PlanService, phaseRepo: PhaseRepository): void {
+  ipcMain.handle(
+    'plan:link',
+    async (_event, taskId: number, sourcePath: string, content: string) => {
+      return planService.linkPlan(taskId, sourcePath, content);
+    },
+  );
 
   ipcMain.handle('plan:getForTask', (_event, taskId: number) => {
     return planService.getPlanForTask(taskId);
@@ -132,9 +139,12 @@ export function registerPlanHandlers(
     return planService.getPhasesForTask(taskId);
   });
 
-  ipcMain.handle('phases:updateStatus', (_event, phaseId: number, status: 'pending' | 'in_progress' | 'done' | 'failed') => {
-    phaseRepo.updateStatus(phaseId, status);
-  });
+  ipcMain.handle(
+    'phases:updateStatus',
+    (_event, phaseId: number, status: 'pending' | 'in_progress' | 'done' | 'failed') => {
+      phaseRepo.updateStatus(phaseId, status);
+    },
+  );
 }
 
 export function registerFileHandlers(fileService: FileService): void {

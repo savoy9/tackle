@@ -3,6 +3,7 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 import * as vscode from 'vscode';
 import { PsmuxBridge } from '@tackle/shared';
+import { TestOverride } from '../../src/test-overrides';
 
 /**
  * Per-suite test fixture for integration tests (#66).
@@ -86,10 +87,13 @@ function rmrf(p: string): void {
  * pick up the fixture paths on each `tackle.activate`.
  */
 export function setupIntegrationSuite(): void {
+  // The runner (run-integration.ts) is responsible for setting all four
+  // TACKLE_TEST_* env vars before launching VS Code; an unset one is a
+  // configuration bug we want to fail loud on, not paper over.
   const scratchRoot = process.env.TACKLE_TEST_SCRATCH_ROOT
     ?? fs.mkdtempSync(path.join(os.tmpdir(), 'tackle-it-fallback-'));
-  const psmuxPrefix = process.env.TACKLE_TEST_PSMUX_PREFIX ?? `tackleit-${process.pid}-`;
-  const jsonlDir = process.env.TACKLE_TEST_JSONL_DIR ?? path.join(scratchRoot, 'jsonl');
+  const psmuxPrefix = TestOverride.psmuxPrefix ?? `tackleit-${process.pid}-`;
+  const jsonlDir = TestOverride.jsonlDir ?? path.join(scratchRoot, 'jsonl');
 
   suiteSetup(async function () {
     this.timeout(30_000);
@@ -97,10 +101,12 @@ export function setupIntegrationSuite(): void {
     // Mid-process transitions from no-folder to folder require a VS Code
     // restart, which would tear down the test host. Falling back to
     // mkdtemp would leave VS Code with no folders open.
-    const workspaceDir = process.env.TACKLE_TEST_WORKSPACE
-      ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+    const workspaceDir =
+      TestOverride.workspace ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspaceDir) {
-      throw new Error('integration suite expects TACKLE_TEST_WORKSPACE to be set by run-integration.ts');
+      throw new Error(
+        'integration suite expects TACKLE_TEST_WORKSPACE to be set by run-integration.ts',
+      );
     }
     const tackleDir = path.join(workspaceDir, '.tackle');
     fs.mkdirSync(tackleDir, { recursive: true });

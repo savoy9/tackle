@@ -27,8 +27,8 @@ function makeSession(overrides: Partial<Session> = {}): Session {
 function mockSessions(sessions: Session[]): SessionRepository {
   return {
     list: vi.fn(async () => sessions),
-    get: vi.fn(async (id: number) => sessions.find(s => s.id === id)),
-    listForTask: vi.fn(async (taskId: number) => sessions.filter(s => s.task_id === taskId)),
+    get: vi.fn(async (id: number) => sessions.find((s) => s.id === id)),
+    listForTask: vi.fn(async (taskId: number) => sessions.filter((s) => s.task_id === taskId)),
     create: vi.fn(),
     update: vi.fn(async () => {}),
     complete: vi.fn(async () => {}),
@@ -61,19 +61,23 @@ describe('computeAutoLabel', () => {
 describe('NewSessionFlow.start', () => {
   function makeOrchestrator() {
     return {
-      createTerminal: vi.fn(async (opts: any) => makeSession({
-        id: 99,
-        task_id: opts.taskId,
-        kind: opts.kind,
-        tab_label: opts.tab_label ?? opts.kind,
-      })),
+      createTerminal: vi.fn(async (opts: any) =>
+        makeSession({
+          id: 99,
+          task_id: opts.taskId,
+          kind: opts.kind,
+          tab_label: opts.tab_label ?? opts.kind,
+        }),
+      ),
     };
   }
   function makeScope(activeTaskId: number | undefined) {
     return {
       activeTaskId,
       getActiveTaskId: () => activeTaskId,
-      switchTask: vi.fn(async (id: number) => { /* noop */ }),
+      switchTask: vi.fn(async (id: number) => {
+        /* noop */
+      }),
     };
   }
 

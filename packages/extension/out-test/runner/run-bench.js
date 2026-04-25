@@ -61,22 +61,43 @@ var __export = (target, all) => {
 };
 
 // test/runner/run-bench.ts
+var path2 = __toESM(require("node:path"));
+
+// test/runner/launch.ts
 var path = __toESM(require("node:path"));
 var import_test_electron = require("@vscode/test-electron");
-async function main() {
+var BASE_LAUNCH_ARGS = [
+  "--disable-extensions",
+  "--disable-workspace-trust",
+  "--enable-proposed-api=tackle.tackle"
+];
+function resolveOutTestRoot(runtimeDir) {
+  return runtimeDir.replace(/[\\/](?:test[\\/])?runner$/, "");
+}
+async function launchVsCodeSuite(opts) {
   const runtimeDir = path.dirname(process.argv[1]);
-  const extensionDevelopmentPath = path.resolve(runtimeDir, "..", "..");
-  const extensionTestsPath = path.resolve(runtimeDir, "..", "suite", "index.js");
-  const exitCode = await import_test_electron.runTests({
+  const outTestRoot = resolveOutTestRoot(runtimeDir);
+  const extensionDevelopmentPath = path.resolve(outTestRoot, "..");
+  const extensionTestsPath = path.resolve(outTestRoot, opts.suiteRelativeToOutTest);
+  const cleanEnv = {};
+  for (const [k, v] of Object.entries(opts.env ?? {})) {
+    if (v !== undefined)
+      cleanEnv[k] = v;
+  }
+  return import_test_electron.runTests({
     extensionDevelopmentPath,
     extensionTestsPath,
-    launchArgs: [
-      "--disable-extensions",
-      "--disable-workspace-trust",
-      "--enable-proposed-api=tackle.tackle"
-    ],
-    extensionTestsEnv: {
-      TACKLE_SUITE_DIR: path.dirname(extensionTestsPath)
+    launchArgs: [...opts.extraLaunchArgs ?? [], ...BASE_LAUNCH_ARGS],
+    extensionTestsEnv: cleanEnv
+  });
+}
+
+// test/runner/run-bench.ts
+async function main() {
+  const exitCode = await launchVsCodeSuite({
+    suiteRelativeToOutTest: path2.join("suite", "index.js"),
+    env: {
+      TACKLE_SUITE_DIR: path2.resolve(path2.dirname(process.argv[1]), "..", "suite")
     }
   });
   process.exit(exitCode);

@@ -41,7 +41,11 @@ export function TerminalPanel({
     term.open(termContainerRef.current);
 
     // Fit to container
-    try { fitAddon.fit(); } catch { /* ignore if container not ready */ }
+    try {
+      fitAddon.fit();
+    } catch {
+      /* ignore if container not ready */
+    }
 
     // Forward keyboard input to psmux
     term.onData((data) => {
@@ -67,7 +71,9 @@ export function TerminalPanel({
         fitAddon.fit();
         const { cols: c, rows: r } = term;
         window.chartroom?.terminal?.resize(c, r);
-      } catch { /* ignore */ }
+      } catch {
+        /* ignore */
+      }
     });
     observer.observe(termContainerRef.current);
 

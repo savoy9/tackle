@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import type { SessionKind } from '@tackle/shared';
 import { KIND_ICON, formatKindLabel } from '../session/kind-icon';
-import { buildKindQuickPickItems, IMPL_LIKE_KINDS, shouldOfferIsolation } from '../session/pick-kind';
+import {
+  buildKindQuickPickItems,
+  IMPL_LIKE_KINDS,
+  shouldOfferIsolation,
+} from '../session/pick-kind';
 
 describe('KIND_ICON', () => {
   it('has a glyph for every SessionKind', () => {
@@ -31,21 +35,27 @@ describe('formatKindLabel', () => {
 describe('buildKindQuickPickItems', () => {
   it('returns one item per SessionKind in canonical order', () => {
     const items = buildKindQuickPickItems();
-    expect(items.map(i => i.kind)).toEqual([
-      'plan', 'implement', 'review', 'debug', 'test', 'pilot', 'shell',
+    expect(items.map((i) => i.sessionKind)).toEqual([
+      'plan',
+      'implement',
+      'review',
+      'debug',
+      'test',
+      'pilot',
+      'shell',
     ]);
   });
 
   it('every item label is iconified via KIND_ICON', () => {
     const items = buildKindQuickPickItems();
     for (const item of items) {
-      expect(item.label).toBe(`${KIND_ICON[item.kind]} ${item.kind}`);
+      expect(item.label).toBe(`${KIND_ICON[item.sessionKind]} ${item.sessionKind}`);
     }
   });
 
   it('emits the documented glyphs for each kind', () => {
     const items = buildKindQuickPickItems();
-    const byKind = Object.fromEntries(items.map(i => [i.kind, i.label]));
+    const byKind = Object.fromEntries(items.map((i) => [i.sessionKind, i.label]));
     expect(byKind.plan).toBe('📓 plan');
     expect(byKind.implement).toBe('⌨️ implement');
     expect(byKind.review).toBe('👁 review');

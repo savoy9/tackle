@@ -39,12 +39,14 @@ export function PlanTimeline({
 
   return (
     <div style={{ marginTop: 12, borderTop: '1px solid #2a2a2e', paddingTop: 8 }}>
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 6,
-      }}>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 6,
+        }}
+      >
         <span style={{ color: '#999', fontSize: 12, textTransform: 'uppercase' }}>
           Plan ({phases.filter((p) => p.status === 'done').length}/{phases.length})
         </span>
@@ -97,9 +99,7 @@ export function PlanTimeline({
           >
             {STATUS_ICONS[phase.status]}
           </span>
-          <span style={{ color: phase.status === 'done' ? '#666' : '#ccc' }}>
-            {phase.name}
-          </span>
+          <span style={{ color: phase.status === 'done' ? '#666' : '#ccc' }}>{phase.name}</span>
         </div>
       ))}
     </div>

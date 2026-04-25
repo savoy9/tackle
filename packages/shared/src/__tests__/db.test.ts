@@ -24,10 +24,20 @@ afterEach(() => {
 describe('Database schema', () => {
   it('creates all tables', () => {
     const tables = db
-      .prepare<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name")
+      .prepare<{ name: string }>(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
+      )
       .all()
       .map((r) => r.name);
-    expect(tables).toEqual(['events', 'layout_states', 'phases', 'plans', 'sessions', 'summaries', 'tasks']);
+    expect(tables).toEqual([
+      'events',
+      'layout_states',
+      'phases',
+      'plans',
+      'sessions',
+      'summaries',
+      'tasks',
+    ]);
   });
 
   it('tasks table has worktree columns', () => {
@@ -60,8 +70,12 @@ describe('Database schema', () => {
       .map((r) => r.name);
     expect(cols).toContain('agent_state');
 
-    db.prepare("INSERT INTO tasks (external_id, external_system, title) VALUES ('1', 'github', 'test')").run();
-    db.prepare("INSERT INTO sessions (task_id, name, kind, psmux_name) VALUES (1, 's', 'implement', 'p')").run();
+    db.prepare(
+      "INSERT INTO tasks (external_id, external_system, title) VALUES ('1', 'github', 'test')",
+    ).run();
+    db.prepare(
+      "INSERT INTO sessions (task_id, name, kind, psmux_name) VALUES (1, 's', 'implement', 'p')",
+    ).run();
     const row = db
       .prepare<{ agent_state: string }>("SELECT agent_state FROM sessions WHERE name = 's'")
       .get();
@@ -77,9 +91,7 @@ describe('Database schema', () => {
     for (const kind of kinds) {
       expect(() =>
         db
-          .prepare(
-            "INSERT INTO sessions (task_id, name, kind, psmux_name) VALUES (1, ?, ?, ?)",
-          )
+          .prepare('INSERT INTO sessions (task_id, name, kind, psmux_name) VALUES (1, ?, ?, ?)')
           .run(`${kind}-s`, kind, `psmux-${kind}`),
       ).not.toThrow();
     }
@@ -128,8 +140,22 @@ describe('TaskRepository', () => {
   it('upsertBatch inserts multiple', async () => {
     const repo = new SqliteTaskRepository(db);
     await repo.upsertBatch([
-      { external_id: '1', external_system: 'github', title: 'A', description: '', status: 'open', assignee: null },
-      { external_id: '2', external_system: 'github', title: 'B', description: '', status: 'open', assignee: null },
+      {
+        external_id: '1',
+        external_system: 'github',
+        title: 'A',
+        description: '',
+        status: 'open',
+        assignee: null,
+      },
+      {
+        external_id: '2',
+        external_system: 'github',
+        title: 'B',
+        description: '',
+        status: 'open',
+        assignee: null,
+      },
     ]);
     const tasks = await repo.list();
     expect(tasks).toHaveLength(2);
@@ -197,7 +223,10 @@ describe('LayoutStateRepository', () => {
     const state: LayoutState = {
       task_id: '42',
       editor_layout: { orientation: 0, groups: [{ size: 0.65 }, { size: 0.35 }] },
-      terminal_placements: [{ session_id: 1, group_index: 0 }, { session_id: 2, group_index: 1 }],
+      terminal_placements: [
+        { session_id: 1, group_index: 0 },
+        { session_id: 2, group_index: 1 },
+      ],
       review_files: ['file:///readme.md', 'file:///src/index.ts'],
       focused_session_id: '1',
       focused_group_index: 0,
@@ -324,16 +353,30 @@ describe('Migration of pre-existing DB', () => {
           ended_at TEXT
         );
       `);
-      legacy.prepare("INSERT INTO tasks (external_id, external_system, title) VALUES ('1', 'github', 't')").run();
-      legacy.prepare("INSERT INTO sessions (task_id, name, kind, psmux_name) VALUES (1, 'old', 'implement', 'p')").run();
+      legacy
+        .prepare(
+          "INSERT INTO tasks (external_id, external_system, title) VALUES ('1', 'github', 't')",
+        )
+        .run();
+      legacy
+        .prepare(
+          "INSERT INTO sessions (task_id, name, kind, psmux_name) VALUES (1, 'old', 'implement', 'p')",
+        )
+        .run();
       legacy.close();
 
       // Reopen via createDatabase - migration runs; must not throw
       const upgraded = createDatabase(file);
-      const sessCols = upgraded.prepare<{ name: string }>("PRAGMA table_info('sessions')").all().map((c) => c.name);
+      const sessCols = upgraded
+        .prepare<{ name: string }>("PRAGMA table_info('sessions')")
+        .all()
+        .map((c) => c.name);
       expect(sessCols).toContain('agent_state');
       expect(sessCols).toContain('prior_claude_session_ids');
-      const taskCols = upgraded.prepare<{ name: string }>("PRAGMA table_info('tasks')").all().map((c) => c.name);
+      const taskCols = upgraded
+        .prepare<{ name: string }>("PRAGMA table_info('tasks')")
+        .all()
+        .map((c) => c.name);
       expect(taskCols).toContain('parent_external_id');
 
       // Existing legacy session's agent_state should default to 'idle'
@@ -343,7 +386,11 @@ describe('Migration of pre-existing DB', () => {
       expect(row?.agent_state).toBe('idle');
       upgraded.close();
     } finally {
-      try { rmSync(dir, { recursive: true, force: true }); } catch { /* windows file lock tolerance */ }
+      try {
+        rmSync(dir, { recursive: true, force: true });
+      } catch {
+        /* windows file lock tolerance */
+      }
     }
   });
 });

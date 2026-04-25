@@ -50,9 +50,8 @@ describe('ModeManager', () => {
       await manager.activate();
 
       // Verify settings were saved
-      const saved = mockExtensionContext.globalState.get<Record<string, unknown>>(
-        'tackle.savedSettings',
-      );
+      const saved =
+        mockExtensionContext.globalState.get<Record<string, unknown>>('tackle.savedSettings');
       expect(saved).toBeDefined();
 
       // Verify tackle settings were applied
@@ -65,9 +64,7 @@ describe('ModeManager', () => {
       await manager.deactivate();
 
       // Verify context cleared
-      const clearCall = executeCommandCalls.find(
-        (c) => c[0] === 'setContext' && c[2] === false,
-      );
+      const clearCall = executeCommandCalls.find((c) => c[0] === 'setContext' && c[2] === false);
       expect(clearCall).toEqual(['setContext', 'tackle.active', false]);
     });
   });

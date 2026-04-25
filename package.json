@@ -7,8 +7,10 @@
     "packages/*"
   ],
   "scripts": {
-    "typecheck": "bun --filter '*' typecheck",
-    "test": "bun --filter '*' test",
+    "typecheck": "bun --filter '@tackle/shared' --filter '@tackle/cli' --filter 'tackle' typecheck",
+    "typecheck:all": "bun --filter '*' typecheck",
+    "test": "bun --filter '@tackle/shared' --filter '@tackle/cli' --filter 'tackle' test",
+    "test:all": "bun --filter '*' test",
     "lint": "eslint 'packages/*/src/**/*.{ts,tsx}'",
     "lint:fix": "eslint --fix 'packages/*/src/**/*.{ts,tsx}'",
     "format": "prettier --write 'packages/*/src/**/*.{ts,tsx}' '*.{json,js}'",
@@ -23,6 +25,8 @@
     "@typescript-eslint/parser": "^8.58.2",
     "eslint": "^9",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
     "globals": "^17.5.0",
     "prettier": "^3.8.3"
   }
