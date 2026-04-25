@@ -31,12 +31,12 @@ function buildDynamicUpdate(
   db.prepare(`UPDATE ${table} SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
 }
 
-const UPSERT_TASK_SQL = `INSERT INTO tasks (external_id, external_system, title, description, status, assignee, parent_external_id, synced_at)
+const UPSERT_TASK_SQL = `INSERT INTO tasks (external_id, external_system, title, description, external_status, assignee, parent_external_id, synced_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(external_system, external_id) DO UPDATE SET
        title = excluded.title,
        description = excluded.description,
-       status = excluded.status,
+       external_status = excluded.external_status,
        assignee = excluded.assignee,
        parent_external_id = excluded.parent_external_id,
        synced_at = datetime('now')`;
@@ -60,7 +60,7 @@ export class SqliteTaskRepository implements TaskRepository {
         task.external_system,
         task.title,
         task.description,
-        task.status,
+        task.external_status,
         task.assignee,
         task.parent_external_id ?? null,
       );
@@ -77,7 +77,7 @@ export class SqliteTaskRepository implements TaskRepository {
           task.external_system,
           task.title,
           task.description,
-          task.status,
+          task.external_status,
           task.assignee,
           task.parent_external_id ?? null,
         );

@@ -2,8 +2,58 @@ import vscodeModule from './vscode-mock';
 
 vi.mock('vscode', () => vscodeModule);
 
-import { describe, it, expect } from 'vitest';
-import { TaskService } from '../task/task-service';
+import { describe, it, expect, vi } from 'vitest';
+import { TaskService, computeExternalStatusEvents } from '../task/task-service';
+import type { Task } from '@tackle/shared';
+
+const baseTask = (id: number, ext: string, external_status: string): Task => ({
+  id,
+  external_id: ext,
+  external_system: 'github',
+  title: `T${id}`,
+  description: '',
+  external_status,
+  assignee: null,
+  parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
+  tackle_status: 'not_started',
+  synced_at: '',
+  created_at: '',
+});
+
+describe('computeExternalStatusEvents (Sync diff)', () => {
+  it('emits one event per task whose external state differs from local', () => {
+    const existing = [baseTask(1, '101', 'open'), baseTask(2, '102', 'open')];
+    const incoming = [
+      { external_id: '101', state: 'closed' },
+      { external_id: '102', state: 'open' },
+    ];
+    const events = computeExternalStatusEvents(existing, incoming);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      type: 'external.status_changed',
+      task_id: 1,
+      to: 'closed',
+      source: 'sync',
+    });
+  });
+
+  it('emits no events when all states match (idempotent sync)', () => {
+    const existing = [baseTask(1, '101', 'open')];
+    const incoming = [{ external_id: '101', state: 'open' }];
+    const events = computeExternalStatusEvents(existing, incoming);
+    expect(events).toHaveLength(0);
+  });
+
+  it('emits no event for incoming issues with no local mirror yet', () => {
+    const existing: Task[] = [];
+    const incoming = [{ external_id: '999', state: 'open' }];
+    const events = computeExternalStatusEvents(existing, incoming);
+    expect(events).toHaveLength(0);
+  });
+});
 
 describe('TaskService.parseGitRemote', () => {
   it('extracts owner/repo from HTTPS URL', () => {

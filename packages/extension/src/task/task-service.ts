@@ -1,9 +1,52 @@
 import * as vscode from 'vscode';
 import { execFileSync } from 'node:child_process';
-import type { TaskRepository, UpsertTask } from '@tackle/shared';
+import type {
+  EventBus,
+  ExternalStatusChangedEvent,
+  Task,
+  TaskRepository,
+  UpsertTask,
+} from '@tackle/shared';
+
+interface IncomingIssue {
+  external_id: string;
+  state: string;
+}
+
+/**
+ * Pure diff: given the current local Task rows and the incoming external
+ * issues from Sync, return the `external.status_changed` events that need
+ * to be dispatched. First-time-seen issues are NOT eventized (they're
+ * created by upsertBatch instead).
+ */
+export function computeExternalStatusEvents(
+  existing: Pick<Task, 'id' | 'external_id' | 'external_status'>[],
+  incoming: IncomingIssue[],
+): ExternalStatusChangedEvent[] {
+  const byExtId = new Map<string, { id: number; external_status: string }>();
+  for (const t of existing) {
+    byExtId.set(t.external_id, { id: t.id, external_status: t.external_status });
+  }
+  const events: ExternalStatusChangedEvent[] = [];
+  for (const issue of incoming) {
+    const local = byExtId.get(issue.external_id);
+    if (!local) continue; // newly created — handled by upsertBatch
+    if (local.external_status === issue.state) continue;
+    events.push({
+      type: 'external.status_changed',
+      task_id: local.id,
+      to: issue.state,
+      source: 'sync',
+    });
+  }
+  return events;
+}
 
 export class TaskService {
-  constructor(private taskRepo: TaskRepository) {}
+  constructor(
+    private taskRepo: TaskRepository,
+    private eventBus?: EventBus,
+  ) {}
 
   async syncFromGitHub(): Promise<number> {
     const session = await vscode.authentication.getSession('github', ['repo'], {
@@ -45,11 +88,32 @@ export class TaskService {
       external_system: 'github' as const,
       title: issue.title,
       description: issue.body ?? '',
-      status: issue.state,
+      external_status: issue.state,
       assignee: issue.assignee?.login ?? null,
     }));
 
+    // Diff BEFORE upsertBatch overwrites local state, so we know which Tasks
+    // changed and can dispatch events afterward. The bus is the canonical
+    // writer for `external_status`; upsertBatch's write of the same column
+    // is acceptable for first-time-seen issues only.
+    const existing = await this.taskRepo.list();
+    const events = computeExternalStatusEvents(
+      existing,
+      issues.map((i) => ({ external_id: String(i.number), state: i.state })),
+    );
+
     await this.taskRepo.upsertBatch(tasks);
+
+    if (this.eventBus) {
+      for (const ev of events) {
+        try {
+          this.eventBus.dispatch(ev);
+        } catch {
+          // Audit/refresh failure must not break Sync.
+        }
+      }
+    }
+
     return tasks.length;
   }
 

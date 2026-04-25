@@ -17,10 +17,22 @@ export interface TaskPlanStartedEvent {
   source: EventSource;
 }
 
-/** Discriminated union; expand as new events come online. */
-export type TackleEvent = TaskPlanStartedEvent;
+export interface ExternalStatusChangedEvent {
+  type: 'external.status_changed';
+  task_id: number;
+  to: string;
+  source: EventSource;
+}
 
-export type Handler<E extends TackleEvent = TackleEvent> = (event: E) => void;
+/** Discriminated union; expand as new events come online. */
+export type TackleEvent = TaskPlanStartedEvent | ExternalStatusChangedEvent;
+
+/**
+ * Handlers may return `false` to signal "no-op, don't fire refresh listeners"
+ * (used by idempotent handlers like external.status_changed). Returning
+ * `true` or `undefined` triggers refresh as normal.
+ */
+export type Handler<E extends TackleEvent = TackleEvent> = (event: E) => boolean | void;
 
 export interface EventBus {
   register<T extends TackleEvent['type']>(
@@ -44,8 +56,10 @@ export function createEventBus(): EventBus {
       if (!handler) {
         throw new Error(`EventBus: no handler registered for event type "${event.type}"`);
       }
-      handler(event);
-      for (const l of refreshListeners) l();
+      const mutated = handler(event);
+      if (mutated !== false) {
+        for (const l of refreshListeners) l();
+      }
     },
     onRefresh(listener) {
       refreshListeners.push(listener);

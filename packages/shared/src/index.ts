@@ -20,7 +20,7 @@ export interface Task {
   external_system: 'github' | 'ado';
   title: string;
   description: string;
-  status: string;
+  external_status: string;
   assignee: string | null;
   parent_external_id: string | null;
   worktree_path: string | null;
@@ -99,11 +99,13 @@ export {
   type EventBus,
   type TackleEvent,
   type TaskPlanStartedEvent,
+  type ExternalStatusChangedEvent,
   type EventSource,
   type Handler,
 } from './events/event-bus';
 export { isLegalTackleTransition, isAtOrAfter } from './events/status-transition';
 export { registerTaskPlanStartedHandler } from './events/handlers/task-plan-started';
+export { registerExternalStatusChangedHandler } from './events/handlers/external-status-changed';
 
 // ── Psmux ──
 export { PsmuxBridge } from './psmux/index';

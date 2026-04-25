@@ -82,6 +82,23 @@ describe('Database schema', () => {
     expect(row?.agent_state).toBe('idle');
   });
 
+  it('tasks.external_status is the canonical column (renamed from status)', () => {
+    const cols = db
+      .prepare<{ name: string }>("PRAGMA table_info('tasks')")
+      .all()
+      .map((r) => r.name);
+    expect(cols).toContain('external_status');
+    expect(cols).not.toContain('status');
+
+    db.prepare(
+      "INSERT INTO tasks (external_id, external_system, title, external_status) VALUES ('1', 'github', 't', 'closed')",
+    ).run();
+    const row = db
+      .prepare<{ external_status: string }>('SELECT external_status FROM tasks WHERE id = 1')
+      .get();
+    expect(row?.external_status).toBe('closed');
+  });
+
   it('tasks.tackle_status defaults to not_started and rejects invalid values', () => {
     const cols = db
       .prepare<{ name: string }>("PRAGMA table_info('tasks')")
@@ -142,6 +159,56 @@ describe('Database schema', () => {
     const sessions = db.prepare<{ kind: string }>('SELECT kind FROM sessions').all();
     expect(sessions.map((s) => s.kind).sort()).toEqual([...kinds].sort());
   });
+
+  it('migration: legacy `status` column is renamed to `external_status`, values preserved', () => {
+    // Build a legacy DB by hand (the schema as it was BEFORE the rename) and
+    // then run the migration via createDatabase() over the same file.
+    const tmp = mkdtempSync(join(tmpdir(), 'tackle-migrate-'));
+    const file = join(tmp, 'legacy.db');
+    try {
+      const legacy = openDatabase(file);
+      legacy.exec(`CREATE TABLE tasks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        external_id TEXT NOT NULL,
+        external_system TEXT NOT NULL CHECK(external_system IN ('github','ado')),
+        title TEXT NOT NULL,
+        description TEXT NOT NULL DEFAULT '',
+        status TEXT NOT NULL DEFAULT 'open',
+        synced_at TEXT NOT NULL DEFAULT (datetime('now')),
+        created_at TEXT NOT NULL DEFAULT (datetime('now'))
+      )`);
+      legacy
+        .prepare(
+          "INSERT INTO tasks (external_id, external_system, title, status) VALUES ('99', 'github', 'legacy', 'closed')",
+        )
+        .run();
+      legacy.close();
+
+      const migrated = createDatabase(file);
+      const cols = migrated
+        .prepare<{ name: string }>("PRAGMA table_info('tasks')")
+        .all()
+        .map((r) => r.name);
+      expect(cols).toContain('external_status');
+      expect(cols).not.toContain('status');
+
+      const row = migrated
+        .prepare<{ external_status: string; title: string }>(
+          "SELECT external_status, title FROM tasks WHERE external_id = '99'",
+        )
+        .get();
+      expect(row?.external_status).toBe('closed');
+      expect(row?.title).toBe('legacy');
+      migrated.close();
+    } finally {
+      try {
+        rmSync(tmp, { recursive: true, force: true });
+      } catch {
+        // Windows occasionally holds the SQLite WAL/SHM files briefly after
+        // close; the OS will reap the temp dir later.
+      }
+    }
+  });
 });
 
 describe('TaskRepository', () => {
@@ -153,7 +220,7 @@ describe('TaskRepository', () => {
       external_system: 'github',
       title: 'First task',
       description: 'desc',
-      status: 'open',
+      external_status: 'open',
       assignee: null,
     });
 
@@ -167,14 +234,14 @@ describe('TaskRepository', () => {
       external_system: 'github',
       title: 'Updated task',
       description: 'desc2',
-      status: 'closed',
+      external_status: 'closed',
       assignee: 'bob',
     });
 
     tasks = await repo.list();
     expect(tasks).toHaveLength(1);
     expect(tasks[0].title).toBe('Updated task');
-    expect(tasks[0].status).toBe('closed');
+    expect(tasks[0].external_status).toBe('closed');
 
     const task = await repo.get(tasks[0].id);
     expect(task).toBeDefined();
@@ -189,7 +256,7 @@ describe('TaskRepository', () => {
         external_system: 'github',
         title: 'A',
         description: '',
-        status: 'open',
+        external_status: 'open',
         assignee: null,
       },
       {
@@ -197,7 +264,7 @@ describe('TaskRepository', () => {
         external_system: 'github',
         title: 'B',
         description: '',
-        status: 'open',
+        external_status: 'open',
         assignee: null,
       },
     ]);
@@ -214,7 +281,7 @@ describe('SessionRepository', () => {
       external_system: 'github',
       title: 'Task',
       description: '',
-      status: 'open',
+      external_status: 'open',
       assignee: null,
     });
     const tasks = await taskRepo.list();
@@ -295,7 +362,7 @@ describe('Session migrations fields', () => {
       external_system: 'github',
       title: 'Task',
       description: '',
-      status: 'open',
+      external_status: 'open',
       assignee: null,
     });
     const tasks = await taskRepo.list();
@@ -324,7 +391,7 @@ describe('Session migrations fields', () => {
       external_system: 'github',
       title: 'Child task',
       description: '',
-      status: 'open',
+      external_status: 'open',
       assignee: null,
       parent_external_id: 'ADO-100',
     });
@@ -341,7 +408,7 @@ describe('Session migrations fields', () => {
       external_system: 'github',
       title: 'Worktree task',
       description: '',
-      status: 'open',
+      external_status: 'open',
       assignee: null,
     });
     const tasks = await repo.list();

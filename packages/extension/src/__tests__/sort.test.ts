@@ -8,7 +8,7 @@ const task = (id: number, updated_at: string, title = `T${id}`): Task => ({
   external_system: 'github',
   title,
   description: '',
-  status: 'open',
+  external_status: 'open',
   assignee: null,
   parent_external_id: null,
   worktree_path: null,

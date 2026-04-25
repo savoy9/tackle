@@ -90,7 +90,7 @@ const SCHEMA = `
     external_system TEXT NOT NULL CHECK(external_system IN ('github', 'ado')),
     title TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
-    status TEXT NOT NULL DEFAULT 'open',
+    external_status TEXT NOT NULL DEFAULT 'open',
     assignee TEXT,
     parent_external_id TEXT,
     worktree_path TEXT,
@@ -198,6 +198,13 @@ function migrate(db: Database): void {
     }
   }
   if (tableExists('tasks')) {
+    // Slice 2 (#75): rename legacy `status` to `external_status`. Done first
+    // so subsequent additive migrations see the canonical column name.
+    if (columnExists('tasks', 'status') && !columnExists('tasks', 'external_status')) {
+      // SQLite ≥ 3.25 supports `ALTER TABLE ... RENAME COLUMN`. The runtimes
+      // we target (bun:sqlite, node:sqlite, better-sqlite3) all ship newer.
+      db.exec('ALTER TABLE tasks RENAME COLUMN status TO external_status');
+    }
     if (!columnExists('tasks', 'parent_external_id')) {
       db.exec('ALTER TABLE tasks ADD COLUMN parent_external_id TEXT');
     }

@@ -41,7 +41,7 @@ function makeTask(over: Partial<Task> = {}): Task {
     external_system: 'github',
     title: 'Fix the auth bug',
     description: '',
-    status: 'open',
+    external_status: 'open',
     assignee: null,
     parent_external_id: null,
     worktree_path: null,

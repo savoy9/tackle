@@ -9,7 +9,7 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   external_system: 'github',
   title,
   description: '',
-  status: 'open',
+  external_status: 'open',
   assignee: null,
   parent_external_id: null,
   worktree_path: null,
@@ -89,7 +89,7 @@ describe('render — Detail Header', () => {
 describe('render — Detail Subhead: breadcrumb + identity', () => {
   it('renders identity line: external icon + #id + status', () => {
     const state = detailState({
-      tasks: [task(1, 'X', { external_id: '42', external_system: 'github', status: 'open' })],
+      tasks: [task(1, 'X', { external_id: '42', external_system: 'github', external_status: 'open' })],
     });
     const html = render(state);
     expect(html).toContain('class="detail-identity"');
@@ -169,7 +169,7 @@ describe('render — Detail Subhead: branch line (#40)', () => {
 describe('render — Detail: externally-closed indicator', () => {
   it('renders indicator when task is closed AND has ≥1 running session', () => {
     const state = detailState({
-      tasks: [task(1, 'X', { status: 'closed' })],
+      tasks: [task(1, 'X', { external_status: 'closed' })],
       sessions: [sess(10, 1, { status: 'running' })],
     });
     const html = render(state);
@@ -188,7 +188,7 @@ describe('render — Detail: externally-closed indicator', () => {
 
   it('omits indicator when closed but no running sessions', () => {
     const state = detailState({
-      tasks: [task(1, 'X', { status: 'closed' })],
+      tasks: [task(1, 'X', { external_status: 'closed' })],
       sessions: [sess(10, 1, { status: 'stopped' })],
     });
     const html = render(state);

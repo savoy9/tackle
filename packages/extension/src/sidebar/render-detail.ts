@@ -73,7 +73,7 @@ export function renderDetail(state: SidebarState): string {
   const title = escapeHtml(task.title);
   const extIcon = EXT_ICON[task.external_system];
   const extId = escapeHtml(task.external_id);
-  const status = escapeHtml(task.status);
+  const status = escapeHtml(task.external_status);
   const assignee = task.assignee ? escapeHtml(task.assignee) : '';
 
   const header = `<div class="detail-header">
@@ -101,7 +101,7 @@ export function renderDetail(state: SidebarState): string {
 
   const runningCount = taskSessions.filter((s) => s.status === 'running').length;
   const closedIndicator =
-    isClosedStatus(task.status) && runningCount >= 1
+    isClosedStatus(task.external_status) && runningCount >= 1
       ? `<div class="detail-closed-indicator">Externally closed — ${runningCount} session${runningCount === 1 ? '' : 's'} still running</div>`
       : '';
 

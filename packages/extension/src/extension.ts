@@ -7,6 +7,7 @@ import {
   PsmuxBridge,
   createEventBus,
   registerTaskPlanStartedHandler,
+  registerExternalStatusChangedHandler,
   type EventBus,
 } from '@tackle/shared';
 import { TaskService, TaskRemover, type RemovePromptFn } from './task';
@@ -108,9 +109,10 @@ export function activate(context: vscode.ExtensionContext): void {
       // Event Bus — sole writer of Tackle Status / Phase Status.
       const eventBus = createEventBus();
       registerTaskPlanStartedHandler(eventBus, db);
+      registerExternalStatusChangedHandler(eventBus, db);
       eventBusRef = eventBus;
 
-      taskService = new TaskService(taskRepo);
+      taskService = new TaskService(taskRepo, eventBus);
       const worktreeProvisioner = new WorktreeProvisioner({
         workspaceRoot,
         taskRepo,

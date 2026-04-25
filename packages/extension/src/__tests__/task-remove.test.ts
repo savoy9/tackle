@@ -43,7 +43,7 @@ function makeTask(over: Partial<Task> = {}): Task {
     external_system: 'github',
     title: 'Fix the auth bug',
     description: '',
-    status: 'open',
+    external_status: 'open',
     assignee: null,
     parent_external_id: null,
     worktree_path: null,
@@ -343,15 +343,15 @@ describe('Worktree no-op lifecycle (Stop / MarkDone / external close)', () => {
       worktree_branch: fixture.branch,
       worktree_base_branch: 'main',
       tackle_status: "not_started",
-      status: 'open',
+      external_status: 'open',
     });
     state.tasks.set(1, task);
 
     // Simulate "external close": only mutate status, never worktree_*.
-    state.tasks.set(1, { ...task, status: 'closed' });
+    state.tasks.set(1, { ...task, external_status: 'closed' });
 
     const after = await repo.get(1);
-    expect(after!.status).toBe('closed');
+    expect(after!.external_status).toBe('closed');
     expect(after!.worktree_path).toBe(fixture.worktreeDir);
     expect(existsSync(fixture.worktreeDir)).toBe(true);
   });

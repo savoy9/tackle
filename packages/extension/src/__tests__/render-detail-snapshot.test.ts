@@ -12,7 +12,7 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   external_system: 'github',
   title,
   description: '',
-  status: 'open',
+  external_status: 'open',
   assignee: null,
   parent_external_id: null,
   worktree_path: null,
@@ -93,7 +93,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
       mode: { kind: 'detail', taskId: 1 },
       tasks: [
         task(1, 'Closed task', {
-          status: 'closed',
+          external_status: 'closed',
           worktree_branch: 'feat-zz',
           synced_at: '2026-04-10',
         }),
