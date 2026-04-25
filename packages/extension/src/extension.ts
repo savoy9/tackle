@@ -556,7 +556,11 @@ export function activate(context: vscode.ExtensionContext): void {
         const kind = arg.kind === 'shell' ? 'shell' : 'implement';
         // Slug is a label component (psmux tab label only); derive a
         // safe-ish one from the task title.
-        const slug = task.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'task';
+        const slug =
+          task.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'task';
         await terminalOrchestrator.createTerminal({
           taskId: task.id,
           taskSlug: slug,
