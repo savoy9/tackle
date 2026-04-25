@@ -90,7 +90,7 @@ jobs:
           retry_wait_seconds: 120
           shell: pwsh
           command: |
-            winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+            winget install --id marlocarlo.psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
       - name: Cache @vscode/test-electron VS Code download
         uses: actions/cache@v4
         with:
@@ -148,7 +148,7 @@ jobs:
           retry_wait_seconds: 120
           shell: pwsh
           command: |
-            winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+            winget install --id marlocarlo.psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
       - name: Cache @vscode/test-electron VS Code download
         uses: actions/cache@v4
         with:
@@ -231,7 +231,7 @@ jobs:
           retry_wait_seconds: 120
           shell: pwsh
           command: |
-            winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+            winget install --id marlocarlo.psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
       - name: Verify psmux is on PATH
         shell: pwsh
         run: |
