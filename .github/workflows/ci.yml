@@ -93,9 +93,6 @@ jobs:
             winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
       - name: Verify psmux is on PATH
         shell: pwsh
-        # `winget install` updates the user/machine PATH in the registry, but the
-        # running shell session's PATH is fixed at job start. Re-resolve from the
-        # registry so `psmux` is callable here.
         run: |
           $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
           if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) {
@@ -118,8 +115,7 @@ jobs:
     if: needs.changes.outputs.extension == 'true'
     # Per ADR-0012 the integration suite is advisory: real VS Code +
     # real psmux is inherently flaky in CI, so a failure here surfaces
-    # in logs but does NOT block merge. Required-for-merge gates are
-    # quality + unit + visual only.
+    # in logs but does NOT block merge.
     continue-on-error: true
     steps:
       - uses: actions/checkout@v4
@@ -159,9 +155,6 @@ jobs:
         working-directory: packages/extension
       - name: Run integration suite
         shell: pwsh
-        # Re-resolve PATH so the freshly-installed psmux is callable, then
-        # invoke the runner directly (bypass package.json's `compile` step
-        # which we already ran above).
         run: |
           $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
           node out-test/runner/run-integration.js 2>&1 | Tee-Object -FilePath integration.log
@@ -241,7 +234,6 @@ jobs:
         uses: peter-evans/create-or-update-comment@v4
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          # The marker keys idempotent updates: each new run replaces the prior comment.
           body: |
             <!-- visual-diff-comment -->
             **Visual snapshot mismatch.**
@@ -253,3 +245,93 @@ jobs:
             If the change is intentional, regenerate snapshots locally with
             `UPDATE_SNAPSHOTS=1 bun --filter tackle test:visual` and commit.
           edit-mode: replace
+
+  # Perf — windows-only, advisory (never gates merge per ADR-0012).
+  # Posts a single PR comment keyed by `<!-- perf-comment -->` (updated
+  # in place across re-runs).
+  perf:
+    name: perf (advisory)
+    runs-on: windows-latest
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: oven-sh/setup-bun@v2
+      - name: Install psmux via winget (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          retry_wait_seconds: 120
+          shell: pwsh
+          command: |
+            winget install --id psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+      - name: Verify psmux is on PATH
+        shell: pwsh
+        run: |
+          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) {
+            Write-Error "psmux not found on PATH after winget install"
+            exit 1
+          }
+          psmux -V
+      - name: Cache @vscode/test-electron VS Code download
+        uses: actions/cache@v4
+        with:
+          path: ~/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Run perf suite (advisory — does not gate merge)
+        shell: pwsh
+        run: |
+          $env:Path = [System.Environment]::GetEnvironmentVariable('Path','Machine') + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          bun run test:perf
+        working-directory: packages/extension
+        continue-on-error: true
+      - name: Upload perf-results.json artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results
+          path: packages/extension/perf-results.json
+          if-no-files-found: warn
+      - name: Format PR comment body
+        if: github.event_name == 'pull_request' && always()
+        shell: bash
+        run: |
+          if [ -f packages/extension/perf-results.json ]; then
+            node scripts/format-perf-comment.js packages/extension/perf-results.json > perf-comment.md
+          else
+            {
+              echo '<!-- perf-comment -->'
+              echo '## Tackle perf measurement'
+              echo ''
+              echo '_Perf suite did not produce results — see job logs._'
+              echo ''
+              echo '> Perf is **advisory** (ADR-0012). This does not gate merge.'
+            } > perf-comment.md
+          fi
+      - name: Post / update perf PR comment
+        if: github.event_name == 'pull_request' && always()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: perf-comment.md
+          edit-mode: replace
+          body-includes: '<!-- perf-comment -->'
