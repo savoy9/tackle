@@ -73,11 +73,7 @@ describe('filterIssuesByLabels', () => {
   });
 
   it('keeps only issues having at least one allowed label', () => {
-    const issues = [
-      labeled(1, ['bug', 'tackle']),
-      labeled(2, ['bug']),
-      labeled(3, ['tackle']),
-    ];
+    const issues = [labeled(1, ['bug', 'tackle']), labeled(2, ['bug']), labeled(3, ['tackle'])];
     expect(filterIssuesByLabels(issues, ['tackle']).map((i) => i.number)).toEqual([1, 3]);
   });
 
@@ -181,11 +177,31 @@ describe('computeSyncDiscovery (Plan Discovery + Plan Source per task)', () => {
 });
 
 describe('TaskService.applyPlanDiscovery (IO orchestration)', () => {
-  type FakePlan = { id: number; task_id: number; source_kind: string | null; source_ref: string | null };
-  type FakePhase = { id: number; plan_id: number; task_id: number; external_id: string | null; name: string; sort_order: number };
+  type FakePlan = {
+    id: number;
+    task_id: number;
+    source_kind: string | null;
+    source_ref: string | null;
+  };
+  type FakePhase = {
+    id: number;
+    plan_id: number;
+    task_id: number;
+    external_id: string | null;
+    name: string;
+    sort_order: number;
+  };
 
-  function makeFakeRepos(opts: { tasks: Array<Pick<Task, 'id' | 'external_id' | 'description'>>; plans: FakePlan[]; phases: FakePhase[] }) {
-    const planUpserts: Array<{ task_id: number; source_kind: string | null; source_ref: string | null }> = [];
+  function makeFakeRepos(opts: {
+    tasks: Array<Pick<Task, 'id' | 'external_id' | 'description'>>;
+    plans: FakePlan[];
+    phases: FakePhase[];
+  }) {
+    const planUpserts: Array<{
+      task_id: number;
+      source_kind: string | null;
+      source_ref: string | null;
+    }> = [];
     const phaseUpdates: Array<{ id: number; fields: { name?: string; sort_order?: number } }> = [];
     const taskRepo = {
       list: async () => opts.tasks as Task[],
@@ -193,21 +209,37 @@ describe('TaskService.applyPlanDiscovery (IO orchestration)', () => {
     };
     const plansRepo = {
       get: async (taskId: number) => opts.plans.find((p) => p.task_id === taskId),
-      save: async (plan: { task_id: number; source_path: string; source_kind: string | null; source_ref: string | null; extracted_at: string | null }) => {
-        planUpserts.push({ task_id: plan.task_id, source_kind: plan.source_kind, source_ref: plan.source_ref });
+      save: async (plan: {
+        task_id: number;
+        source_path: string;
+        source_kind: string | null;
+        source_ref: string | null;
+        extracted_at: string | null;
+      }) => {
+        planUpserts.push({
+          task_id: plan.task_id,
+          source_kind: plan.source_kind,
+          source_ref: plan.source_ref,
+        });
         const existing = opts.plans.find((p) => p.task_id === plan.task_id);
         if (existing) {
           existing.source_kind = plan.source_kind;
           existing.source_ref = plan.source_ref;
           return existing as never;
         }
-        const created: FakePlan = { id: opts.plans.length + 1, task_id: plan.task_id, source_kind: plan.source_kind, source_ref: plan.source_ref };
+        const created: FakePlan = {
+          id: opts.plans.length + 1,
+          task_id: plan.task_id,
+          source_kind: plan.source_kind,
+          source_ref: plan.source_ref,
+        };
         opts.plans.push(created);
         return created as never;
       },
     };
     const phasesRepo = {
-      listForPlan: async (planId: number) => opts.phases.filter((p) => p.plan_id === planId) as never,
+      listForPlan: async (planId: number) =>
+        opts.phases.filter((p) => p.plan_id === planId) as never,
       update: async (id: number, fields: { name?: string; sort_order?: number }) => {
         phaseUpdates.push({ id, fields });
       },

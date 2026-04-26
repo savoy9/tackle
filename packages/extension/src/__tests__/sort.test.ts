@@ -14,7 +14,7 @@ const task = (id: number, updated_at: string, title = `T${id}`): Task => ({
   worktree_path: null,
   worktree_branch: null,
   worktree_base_branch: null,
-  tackle_status: "not_started",
+  tackle_status: 'not_started',
   synced_at: updated_at,
   created_at: updated_at,
 });

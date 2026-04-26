@@ -89,7 +89,9 @@ describe('render — Detail Header', () => {
 describe('render — Detail Subhead: breadcrumb + identity', () => {
   it('renders identity line: external icon + #id + status', () => {
     const state = detailState({
-      tasks: [task(1, 'X', { external_id: '42', external_system: 'github', external_status: 'open' })],
+      tasks: [
+        task(1, 'X', { external_id: '42', external_system: 'github', external_status: 'open' }),
+      ],
     });
     const html = render(state);
     expect(html).toContain('class="detail-identity"');

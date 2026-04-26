@@ -26,7 +26,7 @@ suite('Integration: new session', () => {
     // Seed one task and activate.
     const db = createDatabase(c.dbPath);
     const taskRepo = new SqliteTaskRepository(db);
-    await taskRepo.upsert({ external_id: '66-c', external_system: 'github', title: 'Task C', description: '', status: 'open', assignee: null });
+    await taskRepo.upsert({ external_id: '66-c', external_system: 'github', title: 'Task C', description: '', external_status: 'open', assignee: null });
     const tasks = await taskRepo.list();
     db.close();
     const task = tasks[0]!;

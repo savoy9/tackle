@@ -25,14 +25,15 @@ export function registerTaskPlanStartedHandler(bus: EventBus, db: Database): voi
       );
     }
     db.prepare('UPDATE tasks SET tackle_status = ? WHERE id = ?').run(to, event.task_id);
-    db.prepare(
-      'INSERT INTO events (session_id, event_type, payload) VALUES (NULL, ?, ?)',
-    ).run('task.plan_started', JSON.stringify({
-      task_id: event.task_id,
-      source: event.source,
-      from,
-      to,
-    }));
+    db.prepare('INSERT INTO events (session_id, event_type, payload) VALUES (NULL, ?, ?)').run(
+      'task.plan_started',
+      JSON.stringify({
+        task_id: event.task_id,
+        source: event.source,
+        from,
+        to,
+      }),
+    );
 
     // Create an empty plans row for the task if one doesn't exist yet. The
     // plans row is the anchor for Plan Source detection (#77) and Plan

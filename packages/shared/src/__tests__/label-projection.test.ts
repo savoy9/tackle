@@ -33,9 +33,7 @@ describe('computeLabelProjection', () => {
       target: 'plan_approved',
     });
     expect(result.add).toEqual(['tackle:plan-approved']);
-    expect(new Set(result.remove)).toEqual(
-      new Set(['tackle:not-started', 'tackle:plan-started']),
-    );
+    expect(new Set(result.remove)).toEqual(new Set(['tackle:not-started', 'tackle:plan-started']));
   });
 
   it('does not touch non-tackle labels', () => {

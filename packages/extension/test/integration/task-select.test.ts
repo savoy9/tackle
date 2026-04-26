@@ -29,8 +29,8 @@ suite('Integration: task select', () => {
     // Seed two tasks ahead of activate.
     const db = createDatabase(c.dbPath);
     const taskRepo = new SqliteTaskRepository(db);
-    await taskRepo.upsert({ external_id: '66-a', external_system: 'github', title: 'Task A', description: '', status: 'open', assignee: null });
-    await taskRepo.upsert({ external_id: '66-b', external_system: 'github', title: 'Task B', description: '', status: 'open', assignee: null });
+    await taskRepo.upsert({ external_id: '66-a', external_system: 'github', title: 'Task A', description: '', external_status: 'open', assignee: null });
+    await taskRepo.upsert({ external_id: '66-b', external_system: 'github', title: 'Task B', description: '', external_status: 'open', assignee: null });
     const all = await taskRepo.list();
     db.close();
     const taskA = all.find((t) => t.external_id === '66-a')!;

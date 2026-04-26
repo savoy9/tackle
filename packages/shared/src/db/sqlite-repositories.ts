@@ -259,13 +259,7 @@ export class SqlitePlanRepository implements PlanRepository {
            source_ref = excluded.source_ref,
            extracted_at = excluded.extracted_at`,
       )
-      .run(
-        plan.task_id,
-        plan.source_path,
-        plan.source_kind,
-        plan.source_ref,
-        plan.extracted_at,
-      );
+      .run(plan.task_id, plan.source_path, plan.source_kind, plan.source_ref, plan.extracted_at);
     // Re-read by task_id rather than lastInsertRowid: on the ON CONFLICT
     // update path SQLite doesn't guarantee the rowid points at the
     // updated row.

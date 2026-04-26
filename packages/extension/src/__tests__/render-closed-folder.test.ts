@@ -15,7 +15,7 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   worktree_path: null,
   worktree_branch: null,
   worktree_base_branch: null,
-  tackle_status: "not_started",
+  tackle_status: 'not_started',
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,
@@ -81,7 +81,11 @@ describe('render — Closed Issues Folder (#30)', () => {
   it('renders collapsed folder row with ▸ and (N) count, clickable to toggle', () => {
     const state: SidebarState = {
       ...initialState,
-      tasks: [task(1, 'A'), task(2, 'C1', { external_status: 'closed' }), task(3, 'C2', { external_status: 'done' })],
+      tasks: [
+        task(1, 'A'),
+        task(2, 'C1', { external_status: 'closed' }),
+        task(3, 'C2', { external_status: 'done' }),
+      ],
       closedFolderOpen: false,
     };
     const html = render(state);
@@ -154,7 +158,10 @@ describe('render — Closed Issues Folder (#30)', () => {
   it('expanded closed rows carry the card--closed modifier (#46)', () => {
     const state: SidebarState = {
       ...initialState,
-      tasks: [task(1, 'A'), task(2, 'ClosedOne', { external_status: 'closed', synced_at: '2026-03-15' })],
+      tasks: [
+        task(1, 'A'),
+        task(2, 'ClosedOne', { external_status: 'closed', synced_at: '2026-03-15' }),
+      ],
       closedFolderOpen: true,
     };
     const html = render(state);

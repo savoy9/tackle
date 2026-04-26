@@ -30,7 +30,7 @@ function createTaskRepo(state: InMemoryTaskRepoState): TaskRepository {
         worktree_path: fields.worktree_path,
         worktree_branch: fields.worktree_branch,
         worktree_base_branch: fields.worktree_base_branch,
-      tackle_status: "not_started",
+        tackle_status: 'not_started',
       });
     },
   };
@@ -49,7 +49,7 @@ function makeTask(over: Partial<Task> = {}): Task {
     worktree_path: null,
     worktree_branch: null,
     worktree_base_branch: null,
-    tackle_status: "not_started",
+    tackle_status: 'not_started',
     synced_at: '',
     created_at: '',
     ...over,
@@ -160,7 +160,7 @@ describe('TaskRemover.removeTask', () => {
         worktree_path: fixture.worktreeDir,
         worktree_branch: fixture.branch,
         worktree_base_branch: 'main',
-      tackle_status: "not_started",
+        tackle_status: 'not_started',
       }),
     );
     const prompt = vi.fn<RemovePromptFn>(async (_t, c) => {
@@ -192,7 +192,7 @@ describe('TaskRemover.removeTask', () => {
         worktree_path: fixture.worktreeDir,
         worktree_branch: fixture.branch,
         worktree_base_branch: 'main',
-      tackle_status: "not_started",
+        tackle_status: 'not_started',
       }),
     );
     const prompt = vi.fn<RemovePromptFn>(async (_t, c) => {
@@ -220,7 +220,7 @@ describe('TaskRemover.removeTask', () => {
         worktree_path: fixture.worktreeDir,
         worktree_branch: fixture.branch,
         worktree_base_branch: 'main',
-      tackle_status: "not_started",
+        tackle_status: 'not_started',
       }),
     );
     const prompt = vi.fn<RemovePromptFn>(async () => ({ remove: true, force: true }));
@@ -297,7 +297,7 @@ describe('Worktree no-op lifecycle (Stop / MarkDone / external close)', () => {
         worktree_path: fixture.worktreeDir,
         worktree_branch: fixture.branch,
         worktree_base_branch: 'main',
-      tackle_status: "not_started",
+        tackle_status: 'not_started',
       }),
     );
     const setWorktreeSpy = vi.spyOn(repo, 'setWorktree');
@@ -319,7 +319,7 @@ describe('Worktree no-op lifecycle (Stop / MarkDone / external close)', () => {
         worktree_path: fixture.worktreeDir,
         worktree_branch: fixture.branch,
         worktree_base_branch: 'main',
-      tackle_status: "not_started",
+        tackle_status: 'not_started',
       }),
     );
     const setWorktreeSpy = vi.spyOn(repo, 'setWorktree');
@@ -342,7 +342,7 @@ describe('Worktree no-op lifecycle (Stop / MarkDone / external close)', () => {
       worktree_path: fixture.worktreeDir,
       worktree_branch: fixture.branch,
       worktree_base_branch: 'main',
-      tackle_status: "not_started",
+      tackle_status: 'not_started',
       external_status: 'open',
     });
     state.tasks.set(1, task);

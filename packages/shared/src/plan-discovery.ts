@@ -1,8 +1,4 @@
-import type {
-  EventSource,
-  PhaseCreatedEvent,
-  PhaseRemovedEvent,
-} from './events/event-bus';
+import type { EventSource, PhaseCreatedEvent, PhaseRemovedEvent } from './events/event-bus';
 
 /**
  * The shape of an external child item observed by Sync (a GitHub sub-issue

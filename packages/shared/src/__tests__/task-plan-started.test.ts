@@ -30,9 +30,10 @@ describe('task.plan_started handler', () => {
     registerTaskPlanStartedHandler(bus, db);
     bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' });
     const events = db
-      .prepare<{ event_type: string; payload: string }>(
-        'SELECT event_type, payload FROM events ORDER BY id',
-      )
+      .prepare<{
+        event_type: string;
+        payload: string;
+      }>('SELECT event_type, payload FROM events ORDER BY id')
       .all();
     expect(events).toHaveLength(1);
     expect(events[0].event_type).toBe('task.plan_started');
@@ -50,9 +51,7 @@ describe('task.plan_started handler', () => {
     registerTaskPlanStartedHandler(bus, db);
     // Move task already past not_started.
     db.prepare("UPDATE tasks SET tackle_status = 'plan_approved' WHERE id = 1").run();
-    expect(() =>
-      bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' }),
-    ).toThrow();
+    expect(() => bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' })).toThrow();
     const row = db
       .prepare<{ tackle_status: string }>('SELECT tackle_status FROM tasks WHERE id = 1')
       .get();
@@ -75,9 +74,12 @@ describe('task.plan_started handler', () => {
     registerTaskPlanStartedHandler(bus, db);
     bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' });
     const row = db
-      .prepare<{ id: number; task_id: number; source_kind: string | null; source_ref: string | null }>(
-        'SELECT id, task_id, source_kind, source_ref FROM plans WHERE task_id = 1',
-      )
+      .prepare<{
+        id: number;
+        task_id: number;
+        source_kind: string | null;
+        source_ref: string | null;
+      }>('SELECT id, task_id, source_kind, source_ref FROM plans WHERE task_id = 1')
       .get();
     expect(row).toBeDefined();
     expect(row?.task_id).toBe(1);
@@ -88,9 +90,7 @@ describe('task.plan_started handler', () => {
   it('does not duplicate the plans row if one already exists', () => {
     const bus = createEventBus();
     registerTaskPlanStartedHandler(bus, db);
-    db.prepare(
-      "INSERT INTO plans (task_id, source_path) VALUES (1, '')",
-    ).run();
+    db.prepare("INSERT INTO plans (task_id, source_path) VALUES (1, '')").run();
     bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' });
     const count = db
       .prepare<{ c: number }>('SELECT COUNT(*) AS c FROM plans WHERE task_id = 1')

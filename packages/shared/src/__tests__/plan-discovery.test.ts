@@ -71,10 +71,7 @@ describe('computePhaseDiscoveryEvents', () => {
     const result = computePhaseDiscoveryEvents({
       task_id: 1,
       plan_id: 1,
-      local: [
-        localPhase({ id: 1, external_id: '101' }),
-        localPhase({ id: 2, external_id: '102' }),
-      ],
+      local: [localPhase({ id: 1, external_id: '101' }), localPhase({ id: 2, external_id: '102' })],
       incoming: [child({ external_id: '102' })],
       source: 'sync',
     });
@@ -103,9 +100,7 @@ describe('computePhaseDiscoveryEvents', () => {
       source: 'sync',
     });
     expect(result.events).toEqual([]);
-    expect(result.upserts).toEqual([
-      { phase_id: 7, name: 'new', sort_order: 2 },
-    ]);
+    expect(result.upserts).toEqual([{ phase_id: 7, name: 'new', sort_order: 2 }]);
   });
 
   it('does not emit upserts when title and sort_order are unchanged', () => {

@@ -19,9 +19,9 @@ describe('EventBus', () => {
 
   it('throws when no handler is registered for an event type', () => {
     const bus = createEventBus();
-    expect(() =>
-      bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' }),
-    ).toThrow(/no handler/i);
+    expect(() => bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' })).toThrow(
+      /no handler/i,
+    );
   });
 
   it('only the registered handler runs (event types are routed)', () => {

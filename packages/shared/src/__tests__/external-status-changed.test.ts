@@ -39,9 +39,10 @@ describe('external.status_changed handler', () => {
       source: 'sync',
     });
     const events = db
-      .prepare<{ event_type: string; payload: string }>(
-        'SELECT event_type, payload FROM events ORDER BY id',
-      )
+      .prepare<{
+        event_type: string;
+        payload: string;
+      }>('SELECT event_type, payload FROM events ORDER BY id')
       .all();
     expect(events).toHaveLength(1);
     expect(events[0].event_type).toBe('external.status_changed');

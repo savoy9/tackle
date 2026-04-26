@@ -135,9 +135,10 @@ describe('Database schema', () => {
       "INSERT INTO plans (task_id, source_path, source_kind, source_ref) VALUES (1, '', 'markdown', 'plans/42-foo.md')",
     ).run();
     const row = db
-      .prepare<{ source_kind: string; source_ref: string }>(
-        'SELECT source_kind, source_ref FROM plans WHERE id = 1',
-      )
+      .prepare<{
+        source_kind: string;
+        source_ref: string;
+      }>('SELECT source_kind, source_ref FROM plans WHERE id = 1')
       .get();
     expect(row?.source_kind).toBe('markdown');
     expect(row?.source_ref).toBe('plans/42-foo.md');
@@ -149,9 +150,7 @@ describe('Database schema', () => {
     ).run();
     expect(() =>
       db
-        .prepare(
-          "INSERT INTO plans (task_id, source_path, source_kind) VALUES (1, '', 'bogus')",
-        )
+        .prepare("INSERT INTO plans (task_id, source_path, source_kind) VALUES (1, '', 'bogus')")
         .run(),
     ).toThrow();
   });
@@ -250,9 +249,10 @@ describe('Database schema', () => {
       expect(cols).not.toContain('status');
 
       const row = migrated
-        .prepare<{ external_status: string; title: string }>(
-          "SELECT external_status, title FROM tasks WHERE external_id = '99'",
-        )
+        .prepare<{
+          external_status: string;
+          title: string;
+        }>("SELECT external_status, title FROM tasks WHERE external_id = '99'")
         .get();
       expect(row?.external_status).toBe('closed');
       expect(row?.title).toBe('legacy');

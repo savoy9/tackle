@@ -60,8 +60,7 @@ describe('registerImplementSpawner', () => {
       listForPlan: async () => phases as never,
     };
     const plansRepo = {
-      get: async (_taskId: number) =>
-        ({ id: 1, task_id: 1 }) as never,
+      get: async (_taskId: number) => ({ id: 1, task_id: 1 }) as never,
     };
     registerImplementSpawner(bus, {
       plansRepo: plansRepo as never,

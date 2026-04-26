@@ -36,11 +36,7 @@ function activityForPhase(phaseId: number, sessions: Session[]): PhaseActivity {
     if (s.phase_id !== phaseId) continue;
     if (s.status !== 'running') continue;
     const candidate: PhaseActivity =
-      s.agent_state === 'working'
-        ? 'working'
-        : s.agent_state === 'waiting'
-          ? 'waiting'
-          : 'idle';
+      s.agent_state === 'working' ? 'working' : s.agent_state === 'waiting' ? 'waiting' : 'idle';
     if (ACTIVITY_RANK[candidate] > ACTIVITY_RANK[best]) best = candidate;
   }
   return best;

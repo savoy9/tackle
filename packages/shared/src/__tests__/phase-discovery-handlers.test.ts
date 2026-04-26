@@ -34,9 +34,12 @@ describe('phase.created handler', () => {
       source: 'sync',
     });
     const row = db
-      .prepare<{ name: string; external_id: string; sort_order: number; status: string }>(
-        'SELECT name, external_id, sort_order, status FROM phases WHERE plan_id = 1',
-      )
+      .prepare<{
+        name: string;
+        external_id: string;
+        sort_order: number;
+        status: string;
+      }>('SELECT name, external_id, sort_order, status FROM phases WHERE plan_id = 1')
       .get();
     expect(row).toMatchObject({
       name: 'Phase A',
@@ -121,9 +124,7 @@ describe('phase.removed handler', () => {
       source: 'sync',
     });
     expect(refresh).toHaveBeenCalledTimes(1);
-    const ev = db
-      .prepare<{ event_type: string }>('SELECT event_type FROM events')
-      .get();
+    const ev = db.prepare<{ event_type: string }>('SELECT event_type FROM events').get();
     expect(ev?.event_type).toBe('phase.removed');
   });
 

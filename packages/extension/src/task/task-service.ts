@@ -68,9 +68,7 @@ export function filterIssuesByLabels<T extends { labels: Array<{ name: string }>
   if (allowedLabels.length === 0) return issues;
   const allow = new Set(allowedLabels.map((s) => s.trim().toLowerCase()).filter(Boolean));
   if (allow.size === 0) return issues;
-  return issues.filter((issue) =>
-    issue.labels.some((l) => allow.has(l.name.trim().toLowerCase())),
-  );
+  return issues.filter((issue) => issue.labels.some((l) => allow.has(l.name.trim().toLowerCase())));
 }
 
 /**

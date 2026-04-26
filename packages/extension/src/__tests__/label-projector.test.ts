@@ -47,10 +47,7 @@ describe('registerLabelProjector', () => {
   }
 
   it('PATCHes labels with the canonical tackle:plan-approved when plan.approved fires', async () => {
-    const { bus, setLabels } = setup(
-      [baseTask(1, '42', ['bug'])],
-      { '42': ['bug'] },
-    );
+    const { bus, setLabels } = setup([baseTask(1, '42', ['bug'])], { '42': ['bug'] });
     bus.dispatch({ type: 'plan.approved', task_id: 1, source: 'ui' });
     // The projector is async; flush microtasks.
     await new Promise((r) => setImmediate(r));
@@ -62,10 +59,9 @@ describe('registerLabelProjector', () => {
   });
 
   it('removes a stale tackle:* label when transitioning', async () => {
-    const { bus, setLabels } = setup(
-      [baseTask(1, '42', [])],
-      { '42': ['bug', 'tackle:plan-started'] },
-    );
+    const { bus, setLabels } = setup([baseTask(1, '42', [])], {
+      '42': ['bug', 'tackle:plan-started'],
+    });
     bus.dispatch({ type: 'plan.approved', task_id: 1, source: 'ui' });
     await new Promise((r) => setImmediate(r));
     expect(setLabels).toHaveBeenCalledTimes(1);
@@ -76,20 +72,14 @@ describe('registerLabelProjector', () => {
   });
 
   it('does NOT PATCH when projection is a no-op (target label already present)', async () => {
-    const { bus, setLabels } = setup(
-      [baseTask(1, '42', [])],
-      { '42': ['tackle:plan-approved'] },
-    );
+    const { bus, setLabels } = setup([baseTask(1, '42', [])], { '42': ['tackle:plan-approved'] });
     bus.dispatch({ type: 'plan.approved', task_id: 1, source: 'ui' });
     await new Promise((r) => setImmediate(r));
     expect(setLabels).not.toHaveBeenCalled();
   });
 
   it('ignores events that do not mutate tackle_status (e.g., phase.created)', async () => {
-    const { bus, setLabels } = setup(
-      [baseTask(1, '42', [])],
-      { '42': [] },
-    );
+    const { bus, setLabels } = setup([baseTask(1, '42', [])], { '42': [] });
     bus.dispatch({
       type: 'phase.created',
       task_id: 1,

@@ -160,7 +160,7 @@ describe('NewSessionFlow.start', () => {
           worktree_path: taskWorktreePath,
           worktree_branch: '42-foo',
           worktree_base_branch: 'main',
-        tackle_status: "not_started",
+          tackle_status: 'not_started',
         })),
       };
     }

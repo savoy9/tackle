@@ -85,9 +85,7 @@ describe('renderPhaseTracker', () => {
       ],
       plans: [plan()],
     });
-    expect(html).toMatch(
-      /class="phase-tracker-progress"[^>]*data-complete="1"[^>]*data-total="3"/,
-    );
+    expect(html).toMatch(/class="phase-tracker-progress"[^>]*data-complete="1"[^>]*data-total="3"/);
   });
 
   it('header includes a Plan Source link when plans[].source_ref is set', () => {

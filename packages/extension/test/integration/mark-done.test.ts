@@ -22,7 +22,7 @@ suite('Integration: mark done', () => {
 
     const db = createDatabase(c.dbPath);
     const taskRepo = new SqliteTaskRepository(db);
-    await taskRepo.upsert({ external_id: '66-d', external_system: 'github', title: 'Task D', description: '', status: 'open', assignee: null });
+    await taskRepo.upsert({ external_id: '66-d', external_system: 'github', title: 'Task D', description: '', external_status: 'open', assignee: null });
     const tasks = await taskRepo.list();
     db.close();
     const task = tasks[0]!;
