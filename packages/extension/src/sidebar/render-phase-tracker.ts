@@ -42,11 +42,16 @@ export function renderPhaseTracker(input: RenderPhaseTrackerInput): string {
 
   const progress = `<div class="phase-tracker-progress" data-complete="${complete}" data-total="${total}" role="progressbar" aria-valuenow="${complete}" aria-valuemin="0" aria-valuemax="${total}"></div>`;
 
-  const header = `<div class="phase-tracker-header">${sourceLink}${progress}<span class="phase-tracker-actions" data-task-id="${task.id}"></span></div>`;
+  const status = task.tackle_status ?? 'not_started';
+  const approveBtn =
+    status === 'plan_awaiting_approval'
+      ? `<button class="phase-tracker-approve" data-action="approvePlan" data-task-id="${task.id}">Approve Plan</button>`
+      : '';
+
+  const header = `<div class="phase-tracker-header">${sourceLink}${progress}<span class="phase-tracker-actions" data-task-id="${task.id}">${approveBtn}</span></div>`;
 
   let body = '';
   if (phasesForTask.length === 0) {
-    const status = task.tackle_status ?? 'not_started';
     let buttons = '';
     if (status === 'not_started') {
       buttons =

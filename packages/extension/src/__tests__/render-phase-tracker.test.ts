@@ -216,4 +216,27 @@ describe('renderPhaseTracker', () => {
       expect(html).toContain('&lt;script&gt;');
     });
   });
+
+  describe('Approve Plan button', () => {
+    it('renders Approve Plan button when tackle_status is plan_awaiting_approval', () => {
+      const html = renderPhaseTracker({
+        task: task({ tackle_status: 'plan_awaiting_approval' }),
+        phases: [phase()],
+        plans: [plan()],
+      });
+      expect(html).toMatch(/data-action="approvePlan"[^>]*data-task-id="1"/);
+      expect(html).toContain('Approve Plan');
+    });
+
+    it('does NOT render Approve Plan button at other statuses', () => {
+      for (const status of ['not_started', 'plan_started', 'plan_approved', 'merged'] as const) {
+        const html = renderPhaseTracker({
+          task: task({ tackle_status: status }),
+          phases: [phase()],
+          plans: [plan()],
+        });
+        expect(html, `status=${status}`).not.toContain('data-action="approvePlan"');
+      }
+    });
+  });
 });

@@ -8,6 +8,7 @@ import {
   createEventBus,
   registerTaskPlanStartedHandler,
   registerExternalStatusChangedHandler,
+  registerPlanApprovedHandler,
   type EventBus,
 } from '@tackle/shared';
 import { TaskService, TaskRemover, type RemovePromptFn } from './task';
@@ -110,6 +111,7 @@ export function activate(context: vscode.ExtensionContext): void {
       const eventBus = createEventBus();
       registerTaskPlanStartedHandler(eventBus, db);
       registerExternalStatusChangedHandler(eventBus, db);
+      registerPlanApprovedHandler(eventBus, db);
       eventBusRef = eventBus;
 
       taskService = new TaskService(taskRepo, eventBus);

@@ -1,0 +1,17 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>visual diff — session-kind-quickpick</title>
+<style>
+  body { margin: 0; font-family: system-ui, sans-serif; background: #1a1f26; color: #eee; }
+  header { padding: 8px 12px; background: #2c3540; }
+  .pair { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; height: calc(100vh - 38px); }
+  .pane { display: flex; flex-direction: column; min-width: 0; }
+  .pane h2 { margin: 0; padding: 4px 8px; font-size: 12px; background: #232a33; }
+  iframe { flex: 1; border: 0; background: #fff; }
+</style></head><body>
+<header>visual snapshot diff — <code>session-kind-quickpick</code></header>
+<div class="pair">
+  <div class="pane"><h2>before (committed snapshot)</h2>
+    <iframe srcdoc="<div class=&quot;quickpick session-kind-quickpick&quot;><ul><li data-kind=&quot;plan&quot;>📓 plan</li><li data-kind=&quot;implement&quot;>⌨️ implement</li><li data-kind=&quot;review&quot;>👁 review</li><li data-kind=&quot;debug&quot;>🐞 debug</li><li data-kind=&quot;test&quot;>🧪 test</li><li data-kind=&quot;pilot&quot;>🚀 pilot</li><li data-kind=&quot;shell&quot;>💻 shell</li></ul></div>"></iframe></div>
+  <div class="pane"><h2>after (current run)</h2>
+    <iframe srcdoc="<div class=&quot;quickpick session-kind-quickpick&quot;><ul><li data-kind=&quot;undefined&quot;>📓 plan</li><li data-kind=&quot;undefined&quot;>⌨️ implement</li><li data-kind=&quot;undefined&quot;>👁 review</li><li data-kind=&quot;undefined&quot;>🐞 debug</li><li data-kind=&quot;undefined&quot;>🧪 test</li><li data-kind=&quot;undefined&quot;>🚀 pilot</li><li data-kind=&quot;undefined&quot;>💻 shell</li></ul></div>"></iframe></div>
+</div></body></html>
