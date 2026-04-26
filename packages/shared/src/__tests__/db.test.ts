@@ -298,7 +298,10 @@ describe('TaskRepository', () => {
     tasks = await repo.list();
     expect(tasks).toHaveLength(1);
     expect(tasks[0].title).toBe('Updated task');
-    expect(tasks[0].external_status).toBe('closed');
+    // upsert intentionally does NOT overwrite external_status on conflict;
+    // the Event Bus is the sole writer of that column. The initial 'open'
+    // is preserved here even though we passed 'closed'.
+    expect(tasks[0].external_status).toBe('open');
 
     const task = await repo.get(tasks[0].id);
     expect(task).toBeDefined();

@@ -6,7 +6,6 @@ describe('detectPlanSource', () => {
     const result = detectPlanSource({
       external_id: '42',
       planFiles: ['42-foo.md', '99-bar.md'],
-      description: 'whatever',
     });
     expect(result).toEqual({ source_kind: 'markdown', source_ref: 'plans/42-foo.md' });
   });
@@ -15,7 +14,6 @@ describe('detectPlanSource', () => {
     const result = detectPlanSource({
       external_id: '42',
       planFiles: ['99-bar.md'],
-      description: '## Plan\n- step 1',
     });
     expect(result).toEqual({ source_kind: 'issue_body', source_ref: null });
   });
@@ -24,7 +22,6 @@ describe('detectPlanSource', () => {
     const result = detectPlanSource({
       external_id: '42',
       planFiles: ['421-other.md'],
-      description: '',
     });
     expect(result).toEqual({ source_kind: 'issue_body', source_ref: null });
   });
@@ -33,7 +30,6 @@ describe('detectPlanSource', () => {
     const result = detectPlanSource({
       external_id: '42',
       planFiles: ['42-foo.txt', '42-bar.json'],
-      description: '',
     });
     expect(result).toEqual({ source_kind: 'issue_body', source_ref: null });
   });
@@ -42,7 +38,6 @@ describe('detectPlanSource', () => {
     const result = detectPlanSource({
       external_id: '42',
       planFiles: ['42.md'],
-      description: '',
     });
     expect(result).toEqual({ source_kind: 'markdown', source_ref: 'plans/42.md' });
   });

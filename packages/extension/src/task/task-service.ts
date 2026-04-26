@@ -106,7 +106,6 @@ export function computeSyncDiscovery(input: SyncDiscoveryInput): SyncDiscoveryOu
   const planSource = detectPlanSource({
     external_id: input.task.external_id,
     planFiles: input.planFiles,
-    description: input.description,
   });
 
   if (input.planId === null) {
@@ -267,10 +266,11 @@ export class TaskService {
       assignee: issue.assignee?.login ?? null,
     }));
 
-    // Diff BEFORE upsertBatch overwrites local state, so we know which Tasks
-    // changed and can dispatch events afterward. The bus is the canonical
-    // writer for `external_status`; upsertBatch's write of the same column
-    // is acceptable for first-time-seen issues only.
+    // Diff BEFORE upsertBatch so we know which Tasks transitioned. The
+    // upsert deliberately does not overwrite `external_status` on conflict
+    // (see UPSERT_TASK_SQL) — the Event Bus is the canonical writer for
+    // that column, so the dispatch loop below is what actually applies the
+    // status change (plus audit row + refresh).
     const existing = await this.taskRepo.list();
     const events = computeExternalStatusEvents(
       existing,

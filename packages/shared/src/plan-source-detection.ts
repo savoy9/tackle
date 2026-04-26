@@ -1,7 +1,7 @@
 // Plan Source detection (#77).
 //
-// Given a Task's external_id, the listing of `plans/` directory entries, and
-// the Task description, decide which Plan Source to record:
+// Given a Task's external_id and the listing of `plans/` directory entries,
+// decide which Plan Source to record:
 //
 //   - If a file `plans/{external_id}-*.md` exists, it wins.
 //     `source_kind = 'markdown'`, `source_ref = 'plans/<file>'`.
@@ -20,8 +20,6 @@ export interface DetectPlanSourceInput {
    * `plans/42-foo.md`). Order does not matter; the first match wins.
    */
   planFiles: string[];
-  /** Task.description (the GitHub issue body). */
-  description: string;
 }
 
 export interface DetectPlanSourceOutput {

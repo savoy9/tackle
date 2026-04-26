@@ -4,7 +4,8 @@
 // Event Bus's onMutation hook for any successful (non-no-op) status
 // dispatch, looks up the task's external id, fetches the issue's current
 // labels, computes the projection (canonical tackle:* label added, stale
-// tackle:* labels removed), and PATCHes the issue if anything changed.
+// tackle:* labels removed), and PUTs the full label set on the issue if
+// anything changed (idempotent full replacement via the GH labels API).
 //
 // `phase.*` events do not mutate the parent task's tackle_status, so they
 // are filtered out — only events whose handler updates `tasks.tackle_status`

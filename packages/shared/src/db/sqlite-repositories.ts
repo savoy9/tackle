@@ -31,12 +31,17 @@ function buildDynamicUpdate(
   db.prepare(`UPDATE ${table} SET ${setClauses.join(', ')} WHERE id = ?`).run(...values);
 }
 
+// On conflict we deliberately do NOT overwrite `external_status`. The Event
+// Bus is the sole writer of that column — Sync diffs current vs incoming
+// state, dispatches `external.status_changed` events, and the handler does
+// the write (and the audit log + refresh that go with it). If we updated
+// the column here, the handler would observe `from === to` and treat every
+// transition as an idempotent no-op.
 const UPSERT_TASK_SQL = `INSERT INTO tasks (external_id, external_system, title, description, external_status, assignee, parent_external_id, synced_at)
      VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
      ON CONFLICT(external_system, external_id) DO UPDATE SET
        title = excluded.title,
        description = excluded.description,
-       external_status = excluded.external_status,
        assignee = excluded.assignee,
        parent_external_id = excluded.parent_external_id,
        synced_at = datetime('now')`;
@@ -244,7 +249,7 @@ export class SqlitePlanRepository implements PlanRepository {
   }
 
   save(plan: Omit<Plan, 'id' | 'created_at'>): Promise<Plan> {
-    const result = this.db
+    this.db
       .prepare(
         `INSERT INTO plans (task_id, source_path, source_kind, source_ref, extracted_at)
          VALUES (?, ?, ?, ?, ?)
@@ -261,8 +266,12 @@ export class SqlitePlanRepository implements PlanRepository {
         plan.source_ref,
         plan.extracted_at,
       );
-    const id = Number(result.lastInsertRowid);
-    return Promise.resolve(this.db.prepare<Plan>('SELECT * FROM plans WHERE id = ?').get(id)!);
+    // Re-read by task_id rather than lastInsertRowid: on the ON CONFLICT
+    // update path SQLite doesn't guarantee the rowid points at the
+    // updated row.
+    return Promise.resolve(
+      this.db.prepare<Plan>('SELECT * FROM plans WHERE task_id = ?').get(plan.task_id)!,
+    );
   }
 }
 
