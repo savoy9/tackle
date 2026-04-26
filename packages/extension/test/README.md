@@ -153,10 +153,16 @@ bun run test:visual
 - Advisory CI check (`perf` job, Windows, `continue-on-error: true`).
   On every PR the workflow posts a sticky comment summarizing per-
   scenario min/max/mean for `t_responsive` and `t_visible`.
-- Currently a known-broken follow-up to #68: scenarios depend on
-  `tackle._perfSeedTask` / `_perfSpawnSession` shims that aren't yet
-  registered. The suite probes for them and writes sentinel results
-  when missing — distinguishes "perf regressed" from "perf never ran".
+- The runner builds a fresh git workspace (mirror of `run-integration.ts`)
+  and the perf scenarios drive `tackle._perfSeedTask` /
+  `tackle._perfSpawnSession` shims registered in `extension.ts` only
+  when `TACKLE_TEST_STUB_PATH` is set — so production builds never see
+  these commands.
+- Some scenarios still flake on Windows (notably "Terminal has already
+  been disposed" in baseline) due to VS Code teardown races during
+  scope-switch. The harness records sentinel results for failed
+  scenarios so the PR comment distinguishes "scenario crashed" from
+  "scenario never ran".
 
 ```
 cd packages/extension

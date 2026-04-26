@@ -290,7 +290,7 @@ jobs:
         shell: bash
         run: |
           if [ -f packages/extension/perf-results.json ]; then
-            node scripts/format-perf-comment.js packages/extension/perf-results.json > perf-comment.md
+            node scripts/format-perf-comment.cjs packages/extension/perf-results.json > perf-comment.md
           else
             {
               echo '<!-- perf-comment -->'

@@ -109,8 +109,16 @@ export async function measureScenario(
   // Subscribe to onDidWriteData on the focused terminal as soon as one
   // is available. Some scenarios (cold-start) don't have a focused
   // terminal until setup progresses, so we may need to wait.
+  //
+  // Activation paths that involve a scope switch (e.g. baseline:
+  // activate Task B after both A and B were spawned) call disposeAll
+  // → reattachForTask asynchronously. There's a short window where
+  // `vscode.window.activeTerminal` still points at a being-disposed
+  // terminal that's no longer in `vscode.window.terminals`. We
+  // therefore wait for a focused terminal that is *also* present in
+  // the current snapshot before subscribing.
   let focused = provider.getFocusedTerminal();
-  while (!focused) {
+  while (!focused || !provider.listTerminals().includes(focused)) {
     await sleep(5);
     if (provider.now() - startedAt > timeoutMs) {
       throw new Error('measureScenario: timed out waiting for a focused terminal');
@@ -126,7 +134,7 @@ export async function measureScenario(
   let armedForEcho = false;
   let keystrokeSentAt = 0;
 
-  const sub = focused.onDidWriteData((data: string) => {
+  let sub = focused.onDidWriteData((data: string) => {
     const t = provider.now();
     lastDataAt = t;
     if (armedForEcho && data.includes(KEYSTROKE_CHAR) && echoSeenAt === null) {
@@ -148,6 +156,39 @@ export async function measureScenario(
         throw new Error('measureScenario: timed out waiting for terminal to become visible');
       }
       await sleep(5);
+    }
+
+    // Synchronize with setup BEFORE sending the keystroke. Setup runs
+    // `tackle.activateTask`, which fires `disposeAll → reattachForTask`
+    // — disposing the very terminal we acquired. If we send the
+    // keystroke before this completes we hit `Terminal has already been
+    // disposed`. Awaiting setup here lets the dispose+reattach race
+    // resolve; we then re-acquire focused if the original went stale.
+    await setupPromise;
+
+    if (!provider.listTerminals().includes(focused)) {
+      // Original terminal was disposed by reattach. Drop the stale
+      // subscription, wait for a fresh focused terminal, re-subscribe.
+      sub.dispose();
+      let next = provider.getFocusedTerminal();
+      while (!next || !provider.listTerminals().includes(next)) {
+        if (provider.now() - startedAt > timeoutMs) {
+          throw new Error(
+            'measureScenario: timed out re-acquiring focused terminal after setup',
+          );
+        }
+        await sleep(5);
+        next = provider.getFocusedTerminal();
+      }
+      focused = next;
+      lastDataAt = provider.now();
+      sub = focused.onDidWriteData((data: string) => {
+        const t = provider.now();
+        lastDataAt = t;
+        if (armedForEcho && data.includes(KEYSTROKE_CHAR) && echoSeenAt === null) {
+          echoSeenAt = t;
+        }
+      });
     }
 
     // Wait for the attached output to quiesce: no new bytes for `quiesceMs`.
@@ -178,10 +219,6 @@ export async function measureScenario(
     }
 
     const t_responsive = echoSeenAt - keystrokeSentAt;
-    // Surface setup errors only after we've measured (or failed); a
-    // setup that crashes after the activate-task command should not
-    // be silently dropped.
-    await setupPromise;
     return { t_responsive, t_visible };
   } finally {
     sub.dispose();

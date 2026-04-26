@@ -39,8 +39,25 @@ class VSCodeTimingTerminal implements TimingTerminal {
 }
 
 export function createVSCodeProvider(): TimingTerminalProvider {
-  // Cache wrappers so identity-equality survives across `listTerminals()` calls.
-  const cache = new WeakMap<vscode.Terminal, VSCodeTimingTerminal>();
+  // Cache wrappers so identity-equality survives across `listTerminals()`
+  // calls. Use a strong Map (not WeakMap) so we can deterministically
+  // invalidate on close — `WeakMap` would let the wrapper outlive the
+  // disposal until GC, which is exactly the race the harness was hitting
+  // ("Terminal has already been disposed" on `sendText` in baseline).
+  const cache = new Map<vscode.Terminal, VSCodeTimingTerminal>();
+  vscode.window.onDidCloseTerminal((t) => {
+    cache.delete(t);
+  });
+
+  const isLive = (t: vscode.Terminal): boolean => {
+    if (t.exitStatus !== undefined) return false;
+    // Membership-in-live-list is the strongest signal: VS Code can
+    // briefly hold a disposed terminal as `activeTerminal` whose
+    // `exitStatus` hasn't yet been set, but it's removed from the
+    // global list immediately when disposeAll fires.
+    return vscode.window.terminals.includes(t);
+  };
+
   const wrap = (t: vscode.Terminal): VSCodeTimingTerminal => {
     let w = cache.get(t);
     if (!w) {
@@ -52,10 +69,11 @@ export function createVSCodeProvider(): TimingTerminalProvider {
   return {
     getFocusedTerminal(): TimingTerminal | null {
       const t = vscode.window.activeTerminal;
-      return t ? wrap(t) : null;
+      if (!t || !isLive(t)) return null;
+      return wrap(t);
     },
     listTerminals(): readonly TimingTerminal[] {
-      return vscode.window.terminals.map(wrap);
+      return vscode.window.terminals.filter(isLive).map(wrap);
     },
     now(): number {
       return performance.now();
