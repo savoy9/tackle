@@ -45,6 +45,8 @@ describe('sidebar reducer', () => {
       mode: 'list',
       tasks: [],
       sessions: [],
+      phases: [],
+      plans: [],
       activeTaskId: undefined,
       expandedCardIds: new Set<number>(),
       closedFolderOpen: false,

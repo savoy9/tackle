@@ -325,7 +325,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with d
   </div>
   <div class="detail-branch detail-branch-empty">🌿 no worktree yet</div>
   
-  <div class="detail-description"><p>A short description.</p></div>
+  <div class="phase-tracker" data-task-id="1"><div class="phase-tracker-header"><div class="phase-tracker-progress" data-complete="0" data-total="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0"></div><span class="phase-tracker-actions" data-task-id="1"></span></div><div class="phase-tracker-empty" data-task-id="1" data-tackle-status="not_started"><button class="phase-tracker-empty-btn" data-action="createPlan" data-task-id="1">+ Create Plan</button><button class="phase-tracker-empty-btn" data-action="linkExistingPlan" data-task-id="1">Link existing plan…</button></div></div><div class="detail-description"><p>A short description.</p></div>
   <div class="detail-sessions">
     <div class="detail-sessions-header">
       <span class="detail-sessions-label section-micro-label">Sessions</span>
@@ -661,7 +661,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with e
   </div>
   <div class="detail-branch">🌿 feat-zz</div>
   <div class="detail-closed-indicator">Externally closed — 2 sessions still running</div>
-  <div class="detail-description"></div>
+  <div class="phase-tracker" data-task-id="1"><div class="phase-tracker-header"><div class="phase-tracker-progress" data-complete="0" data-total="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0"></div><span class="phase-tracker-actions" data-task-id="1"></span></div><div class="phase-tracker-empty" data-task-id="1" data-tackle-status="not_started"><button class="phase-tracker-empty-btn" data-action="createPlan" data-task-id="1">+ Create Plan</button><button class="phase-tracker-empty-btn" data-action="linkExistingPlan" data-task-id="1">Link existing plan…</button></div></div><div class="detail-description"></div>
   <div class="detail-sessions">
     <div class="detail-sessions-header">
       <span class="detail-sessions-label section-micro-label">Sessions</span>
@@ -1011,7 +1011,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with f
   </div>
   <div class="detail-branch detail-branch-empty">🌿 no worktree yet</div>
   
-  <div class="detail-description"></div>
+  <div class="phase-tracker" data-task-id="1"><div class="phase-tracker-header"><div class="phase-tracker-progress" data-complete="0" data-total="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0"></div><span class="phase-tracker-actions" data-task-id="1"></span></div><div class="phase-tracker-empty" data-task-id="1" data-tackle-status="not_started"><button class="phase-tracker-empty-btn" data-action="createPlan" data-task-id="1">+ Create Plan</button><button class="phase-tracker-empty-btn" data-action="linkExistingPlan" data-task-id="1">Link existing plan…</button></div></div><div class="detail-description"></div>
   <div class="detail-sessions">
     <div class="detail-sessions-header">
       <span class="detail-sessions-label section-micro-label">Sessions</span>
@@ -1355,7 +1355,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with n
   </div>
   <div class="detail-branch detail-branch-empty">🌿 no worktree yet</div>
   
-  <div class="detail-description"></div>
+  <div class="phase-tracker" data-task-id="1"><div class="phase-tracker-header"><div class="phase-tracker-progress" data-complete="0" data-total="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0"></div><span class="phase-tracker-actions" data-task-id="1"></span></div><div class="phase-tracker-empty" data-task-id="1" data-tackle-status="not_started"><button class="phase-tracker-empty-btn" data-action="createPlan" data-task-id="1">+ Create Plan</button><button class="phase-tracker-empty-btn" data-action="linkExistingPlan" data-task-id="1">Link existing plan…</button></div></div><div class="detail-description"></div>
   <div class="detail-sessions">
     <div class="detail-sessions-header">
       <span class="detail-sessions-label section-micro-label">Sessions</span>
@@ -1691,7 +1691,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail with p
   </div>
   <div class="detail-branch">🌿 feature-main</div>
   
-  <div class="detail-description"><p>Hello <strong>world</strong></p></div>
+  <div class="phase-tracker" data-task-id="1"><div class="phase-tracker-header"><div class="phase-tracker-progress" data-complete="0" data-total="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0"></div><span class="phase-tracker-actions" data-task-id="1"></span></div><div class="phase-tracker-empty" data-task-id="1" data-tackle-status="not_started"><button class="phase-tracker-empty-btn" data-action="createPlan" data-task-id="1">+ Create Plan</button><button class="phase-tracker-empty-btn" data-action="linkExistingPlan" data-task-id="1">Link existing plan…</button></div></div><div class="detail-description"><p>Hello <strong>world</strong></p></div>
   <div class="detail-sessions">
     <div class="detail-sessions-header">
       <span class="detail-sessions-label section-micro-label">Sessions</span>
@@ -2049,7 +2049,7 @@ exports[`render snapshots — canonical Detail Mode states (#31) > Detail withou
   </div>
   <div class="detail-branch detail-branch-empty">🌿 no worktree yet</div>
   
-  <div class="detail-description"></div>
+  <div class="phase-tracker" data-task-id="1"><div class="phase-tracker-header"><div class="phase-tracker-progress" data-complete="0" data-total="0" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="0"></div><span class="phase-tracker-actions" data-task-id="1"></span></div><div class="phase-tracker-empty" data-task-id="1" data-tackle-status="not_started"><button class="phase-tracker-empty-btn" data-action="createPlan" data-task-id="1">+ Create Plan</button><button class="phase-tracker-empty-btn" data-action="linkExistingPlan" data-task-id="1">Link existing plan…</button></div></div><div class="detail-description"></div>
   <div class="detail-sessions">
     <div class="detail-sessions-header">
       <span class="detail-sessions-label section-micro-label">Sessions</span>

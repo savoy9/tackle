@@ -51,10 +51,14 @@ export interface Session {
   deleted_at?: string | null;
 }
 
+export type PlanSourceKind = 'markdown' | 'issue_body';
+
 export interface Plan {
   id: number;
   task_id: number;
   source_path: string;
+  source_kind: PlanSourceKind | null;
+  source_ref: string | null;
   extracted_at: string | null;
   created_at: string;
 }
@@ -63,6 +67,7 @@ export interface Phase {
   id: number;
   plan_id: number;
   task_id: number;
+  external_id: string | null;
   name: string;
   description: string;
   status: 'pending' | 'in_progress' | 'done' | 'failed';
@@ -100,12 +105,26 @@ export {
   type TackleEvent,
   type TaskPlanStartedEvent,
   type ExternalStatusChangedEvent,
+  type PhaseCreatedEvent,
+  type PhaseRemovedEvent,
   type EventSource,
   type Handler,
 } from './events/event-bus';
 export { isLegalTackleTransition, isAtOrAfter } from './events/status-transition';
 export { registerTaskPlanStartedHandler } from './events/handlers/task-plan-started';
 export { registerExternalStatusChangedHandler } from './events/handlers/external-status-changed';
+export {
+  registerPhaseCreatedHandler,
+  registerPhaseRemovedHandler,
+} from './events/handlers/phase-discovery';
+export {
+  computePhaseDiscoveryEvents,
+  type ExternalChildItem,
+  type LocalPhaseSnapshot,
+  type DiscoverInput,
+  type DiscoverOutput,
+  type PhaseUpsert,
+} from './plan-discovery';
 
 // ── Psmux ──
 export { PsmuxBridge } from './psmux/index';

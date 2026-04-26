@@ -212,10 +212,15 @@ describe('render — Detail: description area', () => {
     expect(html).toContain('class="detail-description"');
   });
 
-  it('reserves has_plan branch (MVP always false)', () => {
-    // The description branch should not include any plan-tracker markers for MVP.
+  it('renders the Phase Tracker slot at the top of the Description region', () => {
     const html = render(detailState());
-    expect(html).not.toContain('plan-tracker');
+    expect(html).toContain('class="phase-tracker"');
+    // Tracker should appear before the description content container.
+    const trackerIdx = html.indexOf('class="phase-tracker"');
+    const descIdx = html.indexOf('class="detail-description"');
+    expect(trackerIdx).toBeGreaterThan(-1);
+    expect(descIdx).toBeGreaterThan(-1);
+    expect(trackerIdx).toBeLessThan(descIdx);
   });
 });
 

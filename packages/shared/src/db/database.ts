@@ -131,6 +131,8 @@ const SCHEMA = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL REFERENCES tasks(id),
     source_path TEXT NOT NULL,
+    source_kind TEXT CHECK(source_kind IN ('markdown','issue_body')),
+    source_ref TEXT,
     extracted_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -142,6 +144,7 @@ const SCHEMA = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     plan_id INTEGER NOT NULL REFERENCES plans(id),
     task_id INTEGER NOT NULL REFERENCES tasks(id),
+    external_id TEXT,
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'in_progress', 'done', 'failed')),
@@ -224,6 +227,21 @@ function migrate(db: Database): void {
           'implementation_started','in_review','pr_created','merged'
         ))`,
       );
+    }
+  }
+  if (tableExists('plans')) {
+    if (!columnExists('plans', 'source_kind')) {
+      db.exec(
+        "ALTER TABLE plans ADD COLUMN source_kind TEXT CHECK(source_kind IN ('markdown','issue_body'))",
+      );
+    }
+    if (!columnExists('plans', 'source_ref')) {
+      db.exec('ALTER TABLE plans ADD COLUMN source_ref TEXT');
+    }
+  }
+  if (tableExists('phases')) {
+    if (!columnExists('phases', 'external_id')) {
+      db.exec('ALTER TABLE phases ADD COLUMN external_id TEXT');
     }
   }
 }

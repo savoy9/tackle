@@ -99,6 +99,63 @@ describe('Database schema', () => {
     expect(row?.external_status).toBe('closed');
   });
 
+  it('phases table has external_id column for sub-issue identity', () => {
+    const cols = db
+      .prepare<{ name: string }>("PRAGMA table_info('phases')")
+      .all()
+      .map((r) => r.name);
+    expect(cols).toContain('external_id');
+
+    db.prepare(
+      "INSERT INTO tasks (external_id, external_system, title) VALUES ('1', 'github', 't')",
+    ).run();
+    db.prepare("INSERT INTO plans (task_id, source_path) VALUES (1, '')").run();
+    db.prepare(
+      "INSERT INTO phases (plan_id, task_id, external_id, name) VALUES (1, 1, '101', 'P1')",
+    ).run();
+    const row = db
+      .prepare<{ external_id: string }>('SELECT external_id FROM phases WHERE id = 1')
+      .get();
+    expect(row?.external_id).toBe('101');
+  });
+
+  it('plans table has source_kind and source_ref columns', () => {
+    const cols = db
+      .prepare<{ name: string }>("PRAGMA table_info('plans')")
+      .all()
+      .map((r) => r.name);
+    expect(cols).toContain('source_kind');
+    expect(cols).toContain('source_ref');
+
+    // Insert a task and a plan; round-trip the source columns.
+    db.prepare(
+      "INSERT INTO tasks (external_id, external_system, title) VALUES ('42', 'github', 't')",
+    ).run();
+    db.prepare(
+      "INSERT INTO plans (task_id, source_path, source_kind, source_ref) VALUES (1, '', 'markdown', 'plans/42-foo.md')",
+    ).run();
+    const row = db
+      .prepare<{ source_kind: string; source_ref: string }>(
+        'SELECT source_kind, source_ref FROM plans WHERE id = 1',
+      )
+      .get();
+    expect(row?.source_kind).toBe('markdown');
+    expect(row?.source_ref).toBe('plans/42-foo.md');
+  });
+
+  it('plans.source_kind CHECK rejects invalid values', () => {
+    db.prepare(
+      "INSERT INTO tasks (external_id, external_system, title) VALUES ('1', 'github', 't')",
+    ).run();
+    expect(() =>
+      db
+        .prepare(
+          "INSERT INTO plans (task_id, source_path, source_kind) VALUES (1, '', 'bogus')",
+        )
+        .run(),
+    ).toThrow();
+  });
+
   it('tasks.tackle_status defaults to not_started and rejects invalid values', () => {
     const cols = db
       .prepare<{ name: string }>("PRAGMA table_info('tasks')")

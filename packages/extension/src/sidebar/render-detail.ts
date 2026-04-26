@@ -27,6 +27,7 @@ import { isClosedStatus } from './closed';
 import { escapeHtml, EXT_ICON } from './html';
 import { edgeBarClassFor, EDGE_BAR_CLASS } from './edge-bar';
 import { renderSessionRow, SESSION_ROW_DETAIL_CLASS } from './render-session-row';
+import { renderPhaseTracker } from './render-phase-tracker';
 
 export { SESSION_ROW_DETAIL_CLASS };
 
@@ -106,7 +107,12 @@ export function renderDetail(state: SidebarState): string {
       : '';
 
   const descHtml = state.descriptionsByTaskId?.[task.id] ?? '';
-  const description = `<div class="detail-description">${descHtml}</div>`;
+  const phaseTracker = renderPhaseTracker({
+    task,
+    phases: state.phases ?? [],
+    plans: state.plans ?? [],
+  });
+  const description = `${phaseTracker}<div class="detail-description">${descHtml}</div>`;
 
   const sessionsBody =
     taskSessions.length > 0

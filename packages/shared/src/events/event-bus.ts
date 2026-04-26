@@ -24,8 +24,29 @@ export interface ExternalStatusChangedEvent {
   source: EventSource;
 }
 
+export interface PhaseCreatedEvent {
+  type: 'phase.created';
+  task_id: number;
+  plan_id: number;
+  external_id: string;
+  name: string;
+  sort_order: number;
+  source: EventSource;
+}
+
+export interface PhaseRemovedEvent {
+  type: 'phase.removed';
+  task_id: number;
+  external_id: string;
+  source: EventSource;
+}
+
 /** Discriminated union; expand as new events come online. */
-export type TackleEvent = TaskPlanStartedEvent | ExternalStatusChangedEvent;
+export type TackleEvent =
+  | TaskPlanStartedEvent
+  | ExternalStatusChangedEvent
+  | PhaseCreatedEvent
+  | PhaseRemovedEvent;
 
 /**
  * Handlers may return `false` to signal "no-op, don't fire refresh listeners"

@@ -1,4 +1,4 @@
-import type { Task, Session } from '@tackle/shared';
+import type { Task, Session, Phase, Plan } from '@tackle/shared';
 
 export type SidebarMode = 'list' | { kind: 'detail'; taskId: number };
 
@@ -6,6 +6,10 @@ export interface SidebarState {
   mode: SidebarMode;
   tasks: Task[];
   sessions: Session[];
+  /** Phases mirrored from the external tracker, indexed by sort_order. */
+  phases: Phase[];
+  /** Plans (currently one per Task at most). */
+  plans: Plan[];
   activeTaskId: number | undefined;
   expandedCardIds: Set<number>;
   closedFolderOpen: boolean;
@@ -23,6 +27,8 @@ export interface SidebarState {
 export type SidebarAction =
   | { type: 'setTasks'; tasks: Task[] }
   | { type: 'setSessions'; sessions: Session[] }
+  | { type: 'setPhases'; phases: Phase[] }
+  | { type: 'setPlans'; plans: Plan[] }
   | { type: 'setActiveTask'; taskId: number | undefined }
   | { type: 'enterDetail'; taskId: number }
   | { type: 'exitDetail' }
@@ -35,6 +41,8 @@ export const initialState: SidebarState = {
   mode: 'list',
   tasks: [],
   sessions: [],
+  phases: [],
+  plans: [],
   activeTaskId: undefined,
   expandedCardIds: new Set<number>(),
   closedFolderOpen: false,
@@ -48,6 +56,10 @@ export function reducer(state: SidebarState, action: SidebarAction): SidebarStat
       return { ...state, tasks: action.tasks };
     case 'setSessions':
       return { ...state, sessions: action.sessions };
+    case 'setPhases':
+      return { ...state, phases: action.phases };
+    case 'setPlans':
+      return { ...state, plans: action.plans };
     case 'setActiveTask':
       return { ...state, activeTaskId: action.taskId };
     case 'enterDetail':
