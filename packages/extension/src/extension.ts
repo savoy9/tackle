@@ -20,6 +20,7 @@ import {
   type ExternalChildItem,
 } from '@tackle/shared';
 import { TaskService, TaskRemover, registerLabelProjector, type RemovePromptFn } from './task';
+import { registerImplementSpawner } from './task/implement-spawn';
 import { TerminalOrchestrator } from './terminal';
 import { WorktreeProvisioner, createVscodeWorktreeConfigReader } from './worktree';
 import { createVscodeAgentRegistry } from './agent';
@@ -250,6 +251,34 @@ export function activate(context: vscode.ExtensionContext): void {
         },
       );
       activeOrchestrator = terminalOrchestrator;
+
+      // Implement Action: spawn one `implement` Session per pending Phase
+      // when task.implementation_started fires (#81 wiring).
+      const implementSpawn = async (taskId: number, phaseId: number): Promise<void> => {
+        const task = await taskRepo.get(taskId);
+        if (!task) return;
+        const slug = task.title
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-+|-+$/g, '')
+          .slice(0, 40) || `task-${taskId}`;
+        try {
+          await terminalOrchestrator.createTerminal({
+            taskId,
+            taskSlug: slug,
+            kind: 'implement',
+            phaseId,
+            source: 'implement-action',
+          });
+        } catch {
+          // Per-phase spawn errors must not abort sibling spawns.
+        }
+      };
+      registerImplementSpawner(eventBus, {
+        plansRepo,
+        phasesRepo,
+        spawn: implementSpawn,
+      });
 
       sessionRepoRef = sessionRepo;
       sessionActions = new SessionActions({
