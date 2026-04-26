@@ -9,3 +9,4 @@ out-test/
 .env.local
 .claude/
 .vscode-test/
+packages/extension/test/visual-diffs/
