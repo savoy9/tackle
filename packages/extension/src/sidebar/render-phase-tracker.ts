@@ -47,8 +47,12 @@ export function renderPhaseTracker(input: RenderPhaseTrackerInput): string {
     status === 'plan_awaiting_approval'
       ? `<button class="phase-tracker-approve" data-action="approvePlan" data-task-id="${task.id}">Approve Plan</button>`
       : '';
+  const implementBtn =
+    status === 'plan_approved'
+      ? `<button class="phase-tracker-implement" data-action="startImplementation" data-task-id="${task.id}">Implement</button>`
+      : '';
 
-  const header = `<div class="phase-tracker-header">${sourceLink}${progress}<span class="phase-tracker-actions" data-task-id="${task.id}">${approveBtn}</span></div>`;
+  const header = `<div class="phase-tracker-header">${sourceLink}${progress}<span class="phase-tracker-actions" data-task-id="${task.id}">${approveBtn}${implementBtn}</span></div>`;
 
   let body = '';
   if (phasesForTask.length === 0) {

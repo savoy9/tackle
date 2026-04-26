@@ -47,13 +47,20 @@ export interface PlanApprovedEvent {
   source: EventSource;
 }
 
+export interface TaskImplementationStartedEvent {
+  type: 'task.implementation_started';
+  task_id: number;
+  source: EventSource;
+}
+
 /** Discriminated union; expand as new events come online. */
 export type TackleEvent =
   | TaskPlanStartedEvent
   | ExternalStatusChangedEvent
   | PhaseCreatedEvent
   | PhaseRemovedEvent
-  | PlanApprovedEvent;
+  | PlanApprovedEvent
+  | TaskImplementationStartedEvent;
 
 /**
  * Handlers may return `false` to signal "no-op, don't fire refresh listeners"

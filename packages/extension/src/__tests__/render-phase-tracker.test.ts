@@ -239,4 +239,33 @@ describe('renderPhaseTracker', () => {
       }
     });
   });
+
+  describe('Implement button', () => {
+    it('renders Implement button when tackle_status is plan_approved', () => {
+      const html = renderPhaseTracker({
+        task: task({ tackle_status: 'plan_approved' }),
+        phases: [phase()],
+        plans: [plan()],
+      });
+      expect(html).toMatch(/data-action="startImplementation"[^>]*data-task-id="1"/);
+      expect(html).toContain('Implement');
+    });
+
+    it('does NOT render Implement button at other statuses', () => {
+      for (const status of [
+        'not_started',
+        'plan_started',
+        'plan_awaiting_approval',
+        'implementation_started',
+        'merged',
+      ] as const) {
+        const html = renderPhaseTracker({
+          task: task({ tackle_status: status }),
+          phases: [phase()],
+          plans: [plan()],
+        });
+        expect(html, `status=${status}`).not.toContain('data-action="startImplementation"');
+      }
+    });
+  });
 });

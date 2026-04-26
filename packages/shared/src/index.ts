@@ -108,6 +108,7 @@ export {
   type PhaseCreatedEvent,
   type PhaseRemovedEvent,
   type PlanApprovedEvent,
+  type TaskImplementationStartedEvent,
   type EventSource,
   type Handler,
 } from './events/event-bus';
@@ -115,6 +116,7 @@ export { isLegalTackleTransition, isAtOrAfter } from './events/status-transition
 export { registerTaskPlanStartedHandler } from './events/handlers/task-plan-started';
 export { registerExternalStatusChangedHandler } from './events/handlers/external-status-changed';
 export { registerPlanApprovedHandler } from './events/handlers/plan-approved';
+export { registerTaskImplementationStartedHandler } from './events/handlers/task-implementation-started';
 export {
   registerPhaseCreatedHandler,
   registerPhaseRemovedHandler,
