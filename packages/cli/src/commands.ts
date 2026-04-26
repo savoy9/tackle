@@ -3,7 +3,7 @@ import type { TaskRepository, SessionRepository } from '@tackle/shared';
 export async function taskList(taskRepo: TaskRepository): Promise<string> {
   const tasks = await taskRepo.list();
   if (tasks.length === 0) return 'No tasks found.';
-  return tasks.map((t) => `#${t.id}  [${t.status}]  ${t.title}`).join('\n');
+  return tasks.map((t) => `#${t.id}  [${t.external_status}]  ${t.title}`).join('\n');
 }
 
 export async function taskShow(taskRepo: TaskRepository, id: number): Promise<string> {
@@ -12,7 +12,7 @@ export async function taskShow(taskRepo: TaskRepository, id: number): Promise<st
   return [
     `Task #${task.id}`,
     `Title:       ${task.title}`,
-    `Status:      ${task.status}`,
+    `Status:      ${task.external_status}`,
     `Assignee:    ${task.assignee ?? '(none)'}`,
     `Description: ${task.description}`,
     `Created:     ${task.created_at}`,
