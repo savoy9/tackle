@@ -19,7 +19,7 @@ import {
   type EventBus,
   type ExternalChildItem,
 } from '@tackle/shared';
-import { TaskService, TaskRemover, type RemovePromptFn } from './task';
+import { TaskService, TaskRemover, registerLabelProjector, type RemovePromptFn } from './task';
 import { TerminalOrchestrator } from './terminal';
 import { WorktreeProvisioner, createVscodeWorktreeConfigReader } from './worktree';
 import { createVscodeAgentRegistry } from './agent';
@@ -181,6 +181,53 @@ export function activate(context: vscode.ExtensionContext): void {
         fetchSubIssues,
         listPlanFiles,
       });
+
+      // Label Projector: mirror Tackle Status onto GitHub labels (#80
+      // wiring). Listens on bus.onMutation and PATCHes the issue's labels
+      // whenever a status-mutating event fires.
+      const ghLabelHeaders = async () => {
+        const session = await vscode.authentication.getSession('github', ['repo'], {
+          createIfNone: false,
+        });
+        if (!session) return null;
+        const remoteCfg = vscode.workspace.getConfiguration('tackle').get<string>('github.repo');
+        if (!remoteCfg) return null;
+        const parsed = TaskService.parseOwnerRepo(remoteCfg.trim());
+        if (!parsed) return null;
+        return {
+          owner: parsed.owner,
+          repo: parsed.repo,
+          headers: {
+            Authorization: `Bearer ${session.accessToken}`,
+            Accept: 'application/vnd.github+json',
+          },
+        };
+      };
+      const fetchLabels = async (extId: string): Promise<string[]> => {
+        const ctx = await ghLabelHeaders();
+        if (!ctx) return [];
+        const res = await fetch(
+          `https://api.github.com/repos/${ctx.owner}/${ctx.repo}/issues/${extId}/labels?per_page=100`,
+          { headers: ctx.headers },
+        );
+        if (!res.ok) return [];
+        const json = (await res.json()) as Array<{ name: string }>;
+        return json.map((l) => l.name);
+      };
+      const setLabels = async (extId: string, labels: string[]): Promise<void> => {
+        const ctx = await ghLabelHeaders();
+        if (!ctx) return;
+        // PUT replaces the entire label set (idempotent).
+        await fetch(
+          `https://api.github.com/repos/${ctx.owner}/${ctx.repo}/issues/${extId}/labels`,
+          {
+            method: 'PUT',
+            headers: { ...ctx.headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ labels }),
+          },
+        );
+      };
+      registerLabelProjector(eventBus, { taskRepo, fetchLabels, setLabels });
       const worktreeProvisioner = new WorktreeProvisioner({
         workspaceRoot,
         taskRepo,

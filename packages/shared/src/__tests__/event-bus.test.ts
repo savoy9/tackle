@@ -42,4 +42,25 @@ describe('EventBus', () => {
     bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' });
     expect(listener).toHaveBeenCalledTimes(1);
   });
+
+  it('onMutation listeners receive the event after the handler runs (success)', () => {
+    const bus = createEventBus();
+    bus.register('task.plan_started', () => {
+      // no-op
+    });
+    const seen: TackleEvent[] = [];
+    bus.onMutation((e) => seen.push(e));
+    bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' });
+    expect(seen).toHaveLength(1);
+    expect(seen[0]).toMatchObject({ type: 'task.plan_started', task_id: 1 });
+  });
+
+  it('onMutation listeners are NOT called when the handler signals no-op (returns false)', () => {
+    const bus = createEventBus();
+    bus.register('task.plan_started', () => false);
+    const listener = vi.fn();
+    bus.onMutation(listener);
+    bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' });
+    expect(listener).not.toHaveBeenCalled();
+  });
 });

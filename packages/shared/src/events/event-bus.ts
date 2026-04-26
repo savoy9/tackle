@@ -76,11 +76,19 @@ export interface EventBus {
   ): void;
   dispatch(event: TackleEvent): void;
   onRefresh(listener: () => void): void;
+  /**
+   * Listeners that fire AFTER a successful (non-no-op) handler dispatch,
+   * receiving the event. Useful for cross-cutting projections (e.g. label
+   * mirroring to GitHub) that want to react to every status mutation
+   * without owning the row write.
+   */
+  onMutation(listener: (event: TackleEvent) => void): void;
 }
 
 export function createEventBus(): EventBus {
   const handlers = new Map<TackleEvent['type'], Handler>();
   const refreshListeners: Array<() => void> = [];
+  const mutationListeners: Array<(event: TackleEvent) => void> = [];
 
   return {
     register(type, handler) {
@@ -94,10 +102,14 @@ export function createEventBus(): EventBus {
       const mutated = handler(event);
       if (mutated !== false) {
         for (const l of refreshListeners) l();
+        for (const l of mutationListeners) l(event);
       }
     },
     onRefresh(listener) {
       refreshListeners.push(listener);
+    },
+    onMutation(listener) {
+      mutationListeners.push(listener);
     },
   };
 }
