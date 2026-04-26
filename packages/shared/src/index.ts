@@ -132,6 +132,12 @@ export {
   type DetectPlanSourceInput,
   type DetectPlanSourceOutput,
 } from './plan-source-detection';
+export {
+  computeLabelProjection,
+  TACKLE_LABEL_BY_STATUS,
+  type LabelProjectionInput,
+  type LabelProjectionOutput,
+} from './label-projection';
 
 // ── Psmux ──
 export { PsmuxBridge } from './psmux/index';
