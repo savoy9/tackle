@@ -156,59 +156,59 @@ export class TaskService {
   async applyPlanDiscovery(): Promise<void> {
     if (!this.deps) return;
     const { plansRepo, phasesRepo, fetchSubIssues, listPlanFiles } = this.deps;
-    const tasks = await this.taskRepo.list();
-    const planFiles = await listPlanFiles();
+    const [tasks, planFiles] = await Promise.all([this.taskRepo.list(), listPlanFiles()]);
 
-    for (const task of tasks) {
-      const plan: Plan | undefined = await plansRepo.get(task.id);
-      if (!plan) continue; // No plan_started yet — skip discovery for this task.
+    await Promise.all(
+      tasks.map(async (task) => {
+        const plan: Plan | undefined = await plansRepo.get(task.id);
+        if (!plan) return; // No plan_started yet — skip discovery for this task.
 
-      const localPhases: LocalPhaseSnapshot[] = (await phasesRepo.listForPlan(plan.id)).map(
-        (p) => ({
+        const [phaseRows, subIssues] = await Promise.all([
+          phasesRepo.listForPlan(plan.id),
+          fetchSubIssues(task.external_id),
+        ]);
+        const localPhases: LocalPhaseSnapshot[] = phaseRows.map((p) => ({
           id: p.id,
           task_id: p.task_id,
           plan_id: p.plan_id,
           external_id: p.external_id,
           name: p.name,
           sort_order: p.sort_order,
-        }),
-      );
-      const subIssues = await fetchSubIssues(task.external_id);
+        }));
 
-      const result = computeSyncDiscovery({
-        task: { id: task.id, external_id: task.external_id },
-        planId: plan.id,
-        localPhases,
-        subIssues,
-        planFiles,
-        description: task.description,
-      });
+        const result = computeSyncDiscovery({
+          task: { id: task.id, external_id: task.external_id },
+          planId: plan.id,
+          localPhases,
+          subIssues,
+          planFiles,
+          description: task.description,
+        });
 
-      // Upsert plan source so the Phase Tracker can render the source link.
-      await plansRepo.save({
-        task_id: task.id,
-        source_path: plan.source_path,
-        source_kind: result.planSource.source_kind,
-        source_ref: result.planSource.source_ref,
-        extracted_at: plan.extracted_at,
-      });
+        await Promise.all([
+          plansRepo.save({
+            task_id: task.id,
+            source_path: plan.source_path,
+            source_kind: result.planSource.source_kind,
+            source_ref: result.planSource.source_ref,
+            extracted_at: plan.extracted_at,
+          }),
+          ...result.phaseUpserts.map((u) =>
+            phasesRepo.update(u.phase_id, { name: u.name, sort_order: u.sort_order }),
+          ),
+        ]);
 
-      // Apply non-eventful corrections directly (title/order changes).
-      for (const u of result.phaseUpserts) {
-        await phasesRepo.update(u.phase_id, { name: u.name, sort_order: u.sort_order });
-      }
-
-      // Dispatch phase.created / phase.removed via the bus (sole writer).
-      if (this.eventBus) {
-        for (const ev of result.events) {
-          try {
-            this.eventBus.dispatch(ev);
-          } catch {
-            // One bad phase event must not abort the whole sync pass.
+        if (this.eventBus) {
+          for (const ev of result.events) {
+            try {
+              this.eventBus.dispatch(ev);
+            } catch (err) {
+              console.warn('[tackle] phase event dispatch failed', err);
+            }
           }
         }
-      }
-    }
+      }),
+    );
   }
 
   async syncFromGitHub(): Promise<number> {
@@ -319,6 +319,17 @@ export class TaskService {
   static redactRemoteUrl(url: string): string {
     const redacted = url.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^@\s/]+@/i, '$1');
     return redacted.length > 200 ? redacted.slice(0, 197) + '...' : redacted;
+  }
+
+  /**
+   * Public wrapper around the same remote resolution Sync uses. Returns
+   * `null` when no GitHub remote can be resolved (rather than throwing) —
+   * cross-cutting features like the Label Projector and sub-issues fetch
+   * use this and silently no-op when GH isn't reachable.
+   */
+  async resolveRemote(): Promise<{ owner: string; repo: string } | null> {
+    const { remote } = await this.getRemote();
+    return remote;
   }
 
   private async getRemote(): Promise<{

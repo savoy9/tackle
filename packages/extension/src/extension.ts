@@ -21,8 +21,9 @@ import {
 } from '@tackle/shared';
 import { TaskService, TaskRemover, registerLabelProjector, type RemovePromptFn } from './task';
 import { registerImplementSpawner } from './task/implement-spawn';
+import { resolveGitHubContext } from './github/gh-context';
 import { TerminalOrchestrator } from './terminal';
-import { WorktreeProvisioner, createVscodeWorktreeConfigReader } from './worktree';
+import { WorktreeProvisioner, createVscodeWorktreeConfigReader, slugifyTitle } from './worktree';
 import { createVscodeAgentRegistry } from './agent';
 import {
   SessionActions,
@@ -131,28 +132,15 @@ export function activate(context: vscode.ExtensionContext): void {
       // Plan Discovery deps for TaskService — fetch GH sub-issues for one
       // parent issue and list workspace plans/ files. Both are no-ops when
       // the workspace is not configured for GH or has no plans/ directory.
+      // The closures use a forward reference to taskService (assigned just
+      // below) — by the time these are invoked taskService is set.
       const fetchSubIssues = async (parentExtId: string): Promise<ExternalChildItem[]> => {
         try {
-          const session = await vscode.authentication.getSession('github', ['repo'], {
-            createIfNone: false,
-          });
-          if (!session) return [];
-          // Reuse the configured/auto-detected GH remote. We accept a
-          // double-resolve here (Sync also resolves it) because applying
-          // discovery is per-task and remote resolution caches cheaply.
-          const remoteCfg = vscode.workspace.getConfiguration('tackle').get<string>('github.repo');
-          if (!remoteCfg) return [];
-          const parsed = TaskService.parseOwnerRepo(remoteCfg.trim());
-          if (!parsed) return [];
+          const ctx = await resolveGitHubContext(taskService!);
+          if (!ctx) return [];
           const res = await fetch(
-            `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/issues/${parentExtId}/sub_issues?per_page=100`,
-            {
-              headers: {
-                Authorization: `Bearer ${session.accessToken}`,
-                Accept: 'application/vnd.github+json',
-                'X-GitHub-Api-Version': '2026-03-10',
-              },
-            },
+            `https://api.github.com/repos/${ctx.owner}/${ctx.repo}/issues/${parentExtId}/sub_issues?per_page=100`,
+            { headers: ctx.headers },
           );
           if (!res.ok) return [];
           const subs = (await res.json()) as Array<{ number: number; title: string }>;
@@ -161,7 +149,8 @@ export function activate(context: vscode.ExtensionContext): void {
             title: s.title,
             sort_order: i,
           }));
-        } catch {
+        } catch (err) {
+          console.warn('[tackle] fetchSubIssues failed', err);
           return [];
         }
       };
@@ -172,6 +161,7 @@ export function activate(context: vscode.ExtensionContext): void {
           const entries = await fs.readdir(dir);
           return entries.filter((e) => e.endsWith('.md'));
         } catch {
+          // Most workspaces don't have a plans/ directory; not an error.
           return [];
         }
       };
@@ -183,29 +173,11 @@ export function activate(context: vscode.ExtensionContext): void {
         listPlanFiles,
       });
 
-      // Label Projector: mirror Tackle Status onto GitHub labels (#80
-      // wiring). Listens on bus.onMutation and PATCHes the issue's labels
-      // whenever a status-mutating event fires.
-      const ghLabelHeaders = async () => {
-        const session = await vscode.authentication.getSession('github', ['repo'], {
-          createIfNone: false,
-        });
-        if (!session) return null;
-        const remoteCfg = vscode.workspace.getConfiguration('tackle').get<string>('github.repo');
-        if (!remoteCfg) return null;
-        const parsed = TaskService.parseOwnerRepo(remoteCfg.trim());
-        if (!parsed) return null;
-        return {
-          owner: parsed.owner,
-          repo: parsed.repo,
-          headers: {
-            Authorization: `Bearer ${session.accessToken}`,
-            Accept: 'application/vnd.github+json',
-          },
-        };
-      };
+      // Label Projector: mirror local Tackle Status onto GitHub labels via
+      // the Event Bus's onMutation hook. PUT is idempotent — replaces the
+      // entire label set.
       const fetchLabels = async (extId: string): Promise<string[]> => {
-        const ctx = await ghLabelHeaders();
+        const ctx = await resolveGitHubContext(taskService!);
         if (!ctx) return [];
         const res = await fetch(
           `https://api.github.com/repos/${ctx.owner}/${ctx.repo}/issues/${extId}/labels?per_page=100`,
@@ -216,9 +188,8 @@ export function activate(context: vscode.ExtensionContext): void {
         return json.map((l) => l.name);
       };
       const setLabels = async (extId: string, labels: string[]): Promise<void> => {
-        const ctx = await ghLabelHeaders();
+        const ctx = await resolveGitHubContext(taskService!);
         if (!ctx) return;
-        // PUT replaces the entire label set (idempotent).
         await fetch(
           `https://api.github.com/repos/${ctx.owner}/${ctx.repo}/issues/${extId}/labels`,
           {
@@ -255,23 +226,19 @@ export function activate(context: vscode.ExtensionContext): void {
       // Implement Action: spawn one `implement` Session per pending Phase
       // when task.implementation_started fires (#81 wiring).
       const implementSpawn = async (taskId: number, phaseId: number): Promise<void> => {
+        if (!terminalOrchestrator) return;
         const task = await taskRepo.get(taskId);
         if (!task) return;
-        const slug = task.title
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/^-+|-+$/g, '')
-          .slice(0, 40) || `task-${taskId}`;
         try {
           await terminalOrchestrator.createTerminal({
             taskId,
-            taskSlug: slug,
+            taskSlug: slugifyTitle(task.title),
             kind: 'implement',
             phaseId,
             source: 'implement-action',
           });
-        } catch {
-          // Per-phase spawn errors must not abort sibling spawns.
+        } catch (err) {
+          console.warn('[tackle] implement-action: spawn failed for phase', phaseId, err);
         }
       };
       registerImplementSpawner(eventBus, {

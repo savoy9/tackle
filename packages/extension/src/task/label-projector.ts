@@ -47,7 +47,8 @@ async function project(taskId: number, deps: LabelProjectorDeps): Promise<void> 
   let task: Task | undefined;
   try {
     task = await deps.taskRepo.get(taskId);
-  } catch {
+  } catch (err) {
+    console.warn('[label-projector] taskRepo.get failed', err);
     return;
   }
   if (!task) return;
@@ -55,7 +56,8 @@ async function project(taskId: number, deps: LabelProjectorDeps): Promise<void> 
   let currentLabels: string[];
   try {
     currentLabels = await deps.fetchLabels(task.external_id);
-  } catch {
+  } catch (err) {
+    console.warn('[label-projector] fetchLabels failed', err);
     return;
   }
 
@@ -71,8 +73,9 @@ async function project(taskId: number, deps: LabelProjectorDeps): Promise<void> 
 
   try {
     await deps.setLabels(task.external_id, next);
-  } catch {
+  } catch (err) {
     // Network failure must not break the local mutation — next mutation
     // (or a manual sync) will retry.
+    console.warn('[label-projector] setLabels failed', err);
   }
 }

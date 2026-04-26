@@ -45,7 +45,8 @@ async function run(taskId: number, deps: ImplementSpawnerDeps): Promise<void> {
   let plan;
   try {
     plan = await deps.plansRepo.get(taskId);
-  } catch {
+  } catch (err) {
+    console.warn('[implement-spawner] plansRepo.get failed', err);
     return;
   }
   if (!plan) return;
@@ -53,16 +54,19 @@ async function run(taskId: number, deps: ImplementSpawnerDeps): Promise<void> {
   let phases: Phase[];
   try {
     phases = await deps.phasesRepo.listForPlan(plan.id);
-  } catch {
+  } catch (err) {
+    console.warn('[implement-spawner] phasesRepo.listForPlan failed', err);
     return;
   }
 
   const pending = phasesToImplement(phases, taskId);
-  for (const p of pending) {
-    try {
-      await deps.spawn(taskId, p.id);
-    } catch {
-      // One failed spawn shouldn't block sibling spawns.
-    }
-  }
+  await Promise.all(
+    pending.map(async (p) => {
+      try {
+        await deps.spawn(taskId, p.id);
+      } catch (err) {
+        console.warn('[implement-spawner] spawn failed for phase', p.id, err);
+      }
+    }),
+  );
 }

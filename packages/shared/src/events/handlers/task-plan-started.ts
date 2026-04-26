@@ -40,7 +40,7 @@ export function registerTaskPlanStartedHandler(bus: EventBus, db: Database): voi
     // sync passes can attach source_kind/source_ref and emit phase events
     // without needing a separate "first sub-issue seen" trigger.
     db.prepare(
-      "INSERT INTO plans (task_id, source_path) SELECT ?, '' WHERE NOT EXISTS (SELECT 1 FROM plans WHERE task_id = ?)",
-    ).run(event.task_id, event.task_id);
+      "INSERT INTO plans (task_id, source_path) VALUES (?, '') ON CONFLICT(task_id) DO NOTHING",
+    ).run(event.task_id);
   });
 }
