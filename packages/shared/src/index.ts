@@ -125,6 +125,11 @@ export {
   type DiscoverOutput,
   type PhaseUpsert,
 } from './plan-discovery';
+export {
+  detectPlanSource,
+  type DetectPlanSourceInput,
+  type DetectPlanSourceOutput,
+} from './plan-source-detection';
 
 // ── Psmux ──
 export { PsmuxBridge } from './psmux/index';
