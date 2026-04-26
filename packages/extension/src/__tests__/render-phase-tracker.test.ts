@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import type { Task, Phase, Plan } from '@tackle/shared';
+import type { Task, Phase, Plan, Session } from '@tackle/shared';
 import { renderPhaseTracker } from '../sidebar/render-phase-tracker';
 
 const task = (over: Partial<Task> = {}): Task => ({
@@ -41,6 +41,26 @@ const plan = (over: Partial<Plan> = {}): Plan => ({
   source_ref: 'plans/42-foo.md',
   extracted_at: null,
   created_at: '',
+  ...over,
+});
+
+const sess = (id: number, phase_id: number | null, over: Partial<Session> = {}): Session => ({
+  id,
+  task_id: 1,
+  phase_id,
+  name: `s${id}`,
+  kind: 'implement',
+  status: 'running',
+  psmux_name: `p${id}`,
+  tab_label: `t${id}`,
+  agent: null,
+  worktree_path: null,
+  sort_order: 0,
+  claude_session_id: null,
+  agent_state: 'idle',
+  prior_claude_session_ids: null,
+  started_at: '',
+  ended_at: null,
   ...over,
 });
 
@@ -266,6 +286,66 @@ describe('renderPhaseTracker', () => {
         });
         expect(html, `status=${status}`).not.toContain('data-action="startImplementation"');
       }
+    });
+  });
+
+  describe('Phase activity lights (#82)', () => {
+    it('marks a phase row as activity=working when it has a running session with agent_state=working', () => {
+      const html = renderPhaseTracker({
+        task: task(),
+        phases: [phase({ id: 10, external_id: '101', sort_order: 0 })],
+        plans: [plan()],
+        sessions: [sess(1, 10, { agent_state: 'working' })],
+      });
+      expect(html).toMatch(/data-phase-id="10"[^>]*data-activity="working"/);
+    });
+
+    it('marks a phase row as activity=idle when it has no running sessions', () => {
+      const html = renderPhaseTracker({
+        task: task(),
+        phases: [phase({ id: 10, external_id: '101', sort_order: 0 })],
+        plans: [plan()],
+        sessions: [],
+      });
+      expect(html).toMatch(/data-phase-id="10"[^>]*data-activity="idle"/);
+    });
+
+    it('prefers working > waiting > idle when a phase has multiple running sessions', () => {
+      const html = renderPhaseTracker({
+        task: task(),
+        phases: [phase({ id: 10, external_id: '101', sort_order: 0 })],
+        plans: [plan()],
+        sessions: [
+          sess(1, 10, { agent_state: 'idle' }),
+          sess(2, 10, { agent_state: 'waiting' }),
+          sess(3, 10, { agent_state: 'working' }),
+        ],
+      });
+      expect(html).toMatch(/data-phase-id="10"[^>]*data-activity="working"/);
+    });
+
+    it('ignores non-running sessions when computing activity', () => {
+      const html = renderPhaseTracker({
+        task: task(),
+        phases: [phase({ id: 10, external_id: '101', sort_order: 0 })],
+        plans: [plan()],
+        sessions: [sess(1, 10, { agent_state: 'working', status: 'stopped' })],
+      });
+      expect(html).toMatch(/data-phase-id="10"[^>]*data-activity="idle"/);
+    });
+
+    it('ignores sessions linked to a different phase', () => {
+      const html = renderPhaseTracker({
+        task: task(),
+        phases: [
+          phase({ id: 10, external_id: '101', sort_order: 0 }),
+          phase({ id: 11, external_id: '102', sort_order: 1 }),
+        ],
+        plans: [plan()],
+        sessions: [sess(1, 11, { agent_state: 'working' })],
+      });
+      expect(html).toMatch(/data-phase-id="10"[^>]*data-activity="idle"/);
+      expect(html).toMatch(/data-phase-id="11"[^>]*data-activity="working"/);
     });
   });
 });

@@ -111,6 +111,7 @@ export function renderDetail(state: SidebarState): string {
     task,
     phases: state.phases ?? [],
     plans: state.plans ?? [],
+    sessions: state.sessions ?? [],
   });
   const description = `${phaseTracker}<div class="detail-description">${descHtml}</div>`;
 

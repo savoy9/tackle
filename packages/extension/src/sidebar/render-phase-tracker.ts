@@ -12,13 +12,38 @@
 // Pure function; no DOM, no IO. Caller passes in the Task plus the locally
 // mirrored Phases and Plans.
 
-import type { Task, Phase, Plan } from '@tackle/shared';
+import type { Task, Phase, Plan, Session } from '@tackle/shared';
 import { escapeHtml } from './html';
 
 export interface RenderPhaseTrackerInput {
   task: Task;
   phases: Phase[];
   plans: Plan[];
+  /**
+   * Sessions are optional for back-compat with older callers; when omitted,
+   * activity lights default to 'idle'.
+   */
+  sessions?: Session[];
+}
+
+type PhaseActivity = 'idle' | 'working' | 'waiting';
+
+const ACTIVITY_RANK: Record<PhaseActivity, number> = { idle: 0, waiting: 1, working: 2 };
+
+function activityForPhase(phaseId: number, sessions: Session[]): PhaseActivity {
+  let best: PhaseActivity = 'idle';
+  for (const s of sessions) {
+    if (s.phase_id !== phaseId) continue;
+    if (s.status !== 'running') continue;
+    const candidate: PhaseActivity =
+      s.agent_state === 'working'
+        ? 'working'
+        : s.agent_state === 'waiting'
+          ? 'waiting'
+          : 'idle';
+    if (ACTIVITY_RANK[candidate] > ACTIVITY_RANK[best]) best = candidate;
+  }
+  return best;
 }
 
 /**
@@ -26,6 +51,7 @@ export interface RenderPhaseTrackerInput {
  */
 export function renderPhaseTracker(input: RenderPhaseTrackerInput): string {
   const { task, phases, plans } = input;
+  const sessions = input.sessions ?? [];
   const phasesForTask = phases
     .filter((p) => p.task_id === task.id)
     .sort((a, b) => a.sort_order - b.sort_order);
@@ -74,10 +100,11 @@ export function renderPhaseTracker(input: RenderPhaseTrackerInput): string {
       .map((p) => {
         const extId = p.external_id ? escapeHtml(p.external_id) : '';
         const idLink = p.external_id ? `<span class="phase-tracker-row-id">#${extId}</span>` : '';
+        const activity = activityForPhase(p.id, sessions);
         return (
           `<div class="phase-tracker-row" data-action="scrollToPhaseSession" data-phase-id="${p.id}" data-status="${escapeHtml(
             p.status,
-          )}">` +
+          )}" data-activity="${activity}">` +
           `<span class="phase-tracker-row-glyph" aria-hidden="true"></span>` +
           `<span class="phase-tracker-row-title">${escapeHtml(p.name)}</span>` +
           idLink +
