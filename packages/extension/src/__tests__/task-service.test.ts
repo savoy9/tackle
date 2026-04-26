@@ -7,6 +7,7 @@ import {
   TaskService,
   computeExternalStatusEvents,
   computeSyncDiscovery,
+  filterIssuesByLabels,
 } from '../task/task-service';
 import type { Task, LocalPhaseSnapshot } from '@tackle/shared';
 
@@ -56,6 +57,37 @@ describe('computeExternalStatusEvents (Sync diff)', () => {
     const incoming = [{ external_id: '999', state: 'open' }];
     const events = computeExternalStatusEvents(existing, incoming);
     expect(events).toHaveLength(0);
+  });
+});
+
+describe('filterIssuesByLabels', () => {
+  type LabeledIssue = { number: number; labels: Array<{ name: string }> };
+  const labeled = (n: number, names: string[]): LabeledIssue => ({
+    number: n,
+    labels: names.map((name) => ({ name })),
+  });
+
+  it('returns all issues when allowed labels list is empty (no filter configured)', () => {
+    const issues = [labeled(1, ['bug']), labeled(2, [])];
+    expect(filterIssuesByLabels(issues, [])).toEqual(issues);
+  });
+
+  it('keeps only issues having at least one allowed label', () => {
+    const issues = [
+      labeled(1, ['bug', 'tackle']),
+      labeled(2, ['bug']),
+      labeled(3, ['tackle']),
+    ];
+    expect(filterIssuesByLabels(issues, ['tackle']).map((i) => i.number)).toEqual([1, 3]);
+  });
+
+  it('label match is case-insensitive', () => {
+    const issues = [labeled(1, ['Tackle']), labeled(2, ['TACKLE'])];
+    expect(filterIssuesByLabels(issues, ['tackle']).map((i) => i.number)).toEqual([1, 2]);
+  });
+
+  it('issue with no labels is excluded when filter is configured', () => {
+    expect(filterIssuesByLabels([labeled(1, [])], ['tackle'])).toEqual([]);
   });
 });
 

@@ -34,6 +34,12 @@
           "type": "string",
           "default": "",
           "description": "GitHub repository to sync issues from, in `owner/repo` form (e.g. 'octocat/hello-world'). When set, this overrides auto-detection from the workspace's git remotes — useful when the workspace isn't itself a git repo but you still want to track issues against a specific GitHub repository."
+        },
+        "tackle.labels.enabled": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Allow-list of GitHub issue labels: when non-empty, Sync only ingests issues carrying at least one of these labels (case-insensitive). Use this to scope Tackle to a subset of your repository's issues. Empty (default) means no filtering — every open issue becomes a Task."
         }
       }
     },

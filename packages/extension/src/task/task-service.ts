@@ -51,6 +51,26 @@ export function computeExternalStatusEvents(
 }
 
 /**
+ * Filter incoming GitHub issues by the user's configured Tackle label allow-
+ * list. If the allow-list is empty (no filter configured), all issues pass.
+ * Otherwise an issue passes iff at least one of its labels matches one of
+ * the allowed labels (case-insensitive, trimmed).
+ *
+ * Pure helper. The caller pulls allowed labels from VS Code settings.
+ */
+export function filterIssuesByLabels<T extends { labels: Array<{ name: string }> }>(
+  issues: T[],
+  allowedLabels: string[],
+): T[] {
+  if (allowedLabels.length === 0) return issues;
+  const allow = new Set(allowedLabels.map((s) => s.trim().toLowerCase()).filter(Boolean));
+  if (allow.size === 0) return issues;
+  return issues.filter((issue) =>
+    issue.labels.some((l) => allow.has(l.name.trim().toLowerCase())),
+  );
+}
+
+/**
  * Pure helper for the Plan Discovery + Plan Source side of Sync. For ONE task,
  * given the freshly fetched sub-issues and the local phase mirror, return:
  *   - the events the bus should dispatch (phase.created / phase.removed)
@@ -139,9 +159,21 @@ export class TaskService {
       body: string | null;
       state: string;
       assignee: { login: string } | null;
+      labels: Array<{ name: string }>;
     }>;
 
-    const tasks: UpsertTask[] = issues.map((issue) => ({
+    // Apply Label Config filter (#79). When `tackle.labels.enabled` is
+    // configured, only issues carrying at least one of the listed labels
+    // become Tasks; an empty list disables the filter entirely.
+    const allowedLabels = vscode.workspace
+      .getConfiguration('tackle')
+      .get<string[]>('labels.enabled', []);
+    const filteredIssues = filterIssuesByLabels(
+      issues.map((i) => ({ ...i, labels: i.labels ?? [] })),
+      allowedLabels ?? [],
+    );
+
+    const tasks: UpsertTask[] = filteredIssues.map((issue) => ({
       external_id: String(issue.number),
       external_system: 'github' as const,
       title: issue.title,
@@ -157,7 +189,7 @@ export class TaskService {
     const existing = await this.taskRepo.list();
     const events = computeExternalStatusEvents(
       existing,
-      issues.map((i) => ({ external_id: String(i.number), state: i.state })),
+      filteredIssues.map((i) => ({ external_id: String(i.number), state: i.state })),
     );
 
     await this.taskRepo.upsertBatch(tasks);
