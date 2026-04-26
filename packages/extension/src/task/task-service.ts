@@ -1,11 +1,19 @@
 import * as vscode from 'vscode';
 import { execFileSync } from 'node:child_process';
-import type {
-  EventBus,
-  ExternalStatusChangedEvent,
-  Task,
-  TaskRepository,
-  UpsertTask,
+import {
+  computePhaseDiscoveryEvents,
+  detectPlanSource,
+  type DetectPlanSourceOutput,
+  type EventBus,
+  type ExternalChildItem,
+  type ExternalStatusChangedEvent,
+  type LocalPhaseSnapshot,
+  type PhaseCreatedEvent,
+  type PhaseRemovedEvent,
+  type PhaseUpsert,
+  type Task,
+  type TaskRepository,
+  type UpsertTask,
 } from '@tackle/shared';
 
 interface IncomingIssue {
@@ -40,6 +48,56 @@ export function computeExternalStatusEvents(
     });
   }
   return events;
+}
+
+/**
+ * Pure helper for the Plan Discovery + Plan Source side of Sync. For ONE task,
+ * given the freshly fetched sub-issues and the local phase mirror, return:
+ *   - the events the bus should dispatch (phase.created / phase.removed)
+ *   - the phase title/order upserts to apply directly via the phases repo
+ *   - the detected plan source kind/ref to record on the plans row
+ *
+ * No IO. The caller fetches sub-issues and lists `plans/`.
+ */
+export interface SyncDiscoveryInput {
+  task: Pick<Task, 'id' | 'external_id'>;
+  /**
+   * The local Plan id for this task, or null if no plan exists yet. Required
+   * to emit phase.created events; if null, sub-issues are deferred until a
+   * plan row is created.
+   */
+  planId: number | null;
+  localPhases: LocalPhaseSnapshot[];
+  subIssues: ExternalChildItem[];
+  planFiles: string[];
+  description: string;
+}
+
+export interface SyncDiscoveryOutput {
+  events: Array<PhaseCreatedEvent | PhaseRemovedEvent>;
+  phaseUpserts: PhaseUpsert[];
+  planSource: DetectPlanSourceOutput;
+}
+
+export function computeSyncDiscovery(input: SyncDiscoveryInput): SyncDiscoveryOutput {
+  const planSource = detectPlanSource({
+    external_id: input.task.external_id,
+    planFiles: input.planFiles,
+    description: input.description,
+  });
+
+  if (input.planId === null) {
+    return { events: [], phaseUpserts: [], planSource };
+  }
+
+  const { events, upserts } = computePhaseDiscoveryEvents({
+    task_id: input.task.id,
+    plan_id: input.planId,
+    local: input.localPhases,
+    incoming: input.subIssues,
+    source: 'sync',
+  });
+  return { events, phaseUpserts: upserts, planSource };
 }
 
 export class TaskService {
