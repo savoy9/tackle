@@ -12,7 +12,7 @@ export function partitionTasks(tasks: Task[]): { open: Task[]; closed: Task[] } 
   const open: Task[] = [];
   const closed: Task[] = [];
   for (const t of tasks) {
-    if (isClosedStatus(t.status)) closed.push(t);
+    if (isClosedStatus(t.external_status)) closed.push(t);
     else open.push(t);
   }
   return { open, closed };

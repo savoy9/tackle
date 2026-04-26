@@ -5,7 +5,7 @@ export interface UpsertTask {
   external_system: 'github' | 'ado';
   title: string;
   description: string;
-  status: string;
+  external_status: string;
   assignee: string | null;
   parent_external_id?: string | null;
 }

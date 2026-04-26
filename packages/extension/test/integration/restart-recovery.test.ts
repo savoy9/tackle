@@ -27,7 +27,7 @@ suite('Integration: restart recovery', () => {
 
     const db = createDatabase(c.dbPath);
     const taskRepo = new SqliteTaskRepository(db);
-    await taskRepo.upsert({ external_id: '66-e', external_system: 'github', title: 'Task E', description: '', status: 'open', assignee: null });
+    await taskRepo.upsert({ external_id: '66-e', external_system: 'github', title: 'Task E', description: '', external_status: 'open', assignee: null });
     const tasks = await taskRepo.list();
     db.close();
     const task = tasks[0]!;

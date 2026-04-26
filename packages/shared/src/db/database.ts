@@ -90,12 +90,16 @@ const SCHEMA = `
     external_system TEXT NOT NULL CHECK(external_system IN ('github', 'ado')),
     title TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
-    status TEXT NOT NULL DEFAULT 'open',
+    external_status TEXT NOT NULL DEFAULT 'open',
     assignee TEXT,
     parent_external_id TEXT,
     worktree_path TEXT,
     worktree_branch TEXT,
     worktree_base_branch TEXT,
+    tackle_status TEXT NOT NULL DEFAULT 'not_started' CHECK(tackle_status IN (
+      'not_started','plan_started','plan_awaiting_approval','plan_approved',
+      'implementation_started','in_review','pr_created','merged'
+    )),
     synced_at TEXT NOT NULL DEFAULT (datetime('now')),
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -127,6 +131,8 @@ const SCHEMA = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     task_id INTEGER NOT NULL REFERENCES tasks(id),
     source_path TEXT NOT NULL,
+    source_kind TEXT CHECK(source_kind IN ('markdown','issue_body')),
+    source_ref TEXT,
     extracted_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   );
@@ -138,6 +144,7 @@ const SCHEMA = `
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     plan_id INTEGER NOT NULL REFERENCES plans(id),
     task_id INTEGER NOT NULL REFERENCES tasks(id),
+    external_id TEXT,
     name TEXT NOT NULL,
     description TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'in_progress', 'done', 'failed')),
@@ -194,6 +201,13 @@ function migrate(db: Database): void {
     }
   }
   if (tableExists('tasks')) {
+    // Slice 2 (#75): rename legacy `status` to `external_status`. Done first
+    // so subsequent additive migrations see the canonical column name.
+    if (columnExists('tasks', 'status') && !columnExists('tasks', 'external_status')) {
+      // SQLite ≥ 3.25 supports `ALTER TABLE ... RENAME COLUMN`. The runtimes
+      // we target (bun:sqlite, node:sqlite, better-sqlite3) all ship newer.
+      db.exec('ALTER TABLE tasks RENAME COLUMN status TO external_status');
+    }
     if (!columnExists('tasks', 'parent_external_id')) {
       db.exec('ALTER TABLE tasks ADD COLUMN parent_external_id TEXT');
     }
@@ -205,6 +219,29 @@ function migrate(db: Database): void {
     }
     if (!columnExists('tasks', 'worktree_base_branch')) {
       db.exec('ALTER TABLE tasks ADD COLUMN worktree_base_branch TEXT');
+    }
+    if (!columnExists('tasks', 'tackle_status')) {
+      db.exec(
+        `ALTER TABLE tasks ADD COLUMN tackle_status TEXT NOT NULL DEFAULT 'not_started' CHECK(tackle_status IN (
+          'not_started','plan_started','plan_awaiting_approval','plan_approved',
+          'implementation_started','in_review','pr_created','merged'
+        ))`,
+      );
+    }
+  }
+  if (tableExists('plans')) {
+    if (!columnExists('plans', 'source_kind')) {
+      db.exec(
+        "ALTER TABLE plans ADD COLUMN source_kind TEXT CHECK(source_kind IN ('markdown','issue_body'))",
+      );
+    }
+    if (!columnExists('plans', 'source_ref')) {
+      db.exec('ALTER TABLE plans ADD COLUMN source_ref TEXT');
+    }
+  }
+  if (tableExists('phases')) {
+    if (!columnExists('phases', 'external_id')) {
+      db.exec('ALTER TABLE phases ADD COLUMN external_id TEXT');
     }
   }
 }

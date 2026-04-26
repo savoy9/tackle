@@ -1,9 +1,212 @@
 import * as vscode from 'vscode';
 import { execFileSync } from 'node:child_process';
-import type { TaskRepository, UpsertTask } from '@tackle/shared';
+import {
+  computePhaseDiscoveryEvents,
+  detectPlanSource,
+  type DetectPlanSourceOutput,
+  type EventBus,
+  type ExternalChildItem,
+  type ExternalStatusChangedEvent,
+  type LocalPhaseSnapshot,
+  type PhaseCreatedEvent,
+  type PhaseRemovedEvent,
+  type PhaseRepository,
+  type PhaseUpsert,
+  type Plan,
+  type PlanRepository,
+  type Task,
+  type TaskRepository,
+  type UpsertTask,
+} from '@tackle/shared';
+
+interface IncomingIssue {
+  external_id: string;
+  state: string;
+}
+
+/**
+ * Pure diff: given the current local Task rows and the incoming external
+ * issues from Sync, return the `external.status_changed` events that need
+ * to be dispatched. First-time-seen issues are NOT eventized (they're
+ * created by upsertBatch instead).
+ */
+export function computeExternalStatusEvents(
+  existing: Pick<Task, 'id' | 'external_id' | 'external_status'>[],
+  incoming: IncomingIssue[],
+): ExternalStatusChangedEvent[] {
+  const byExtId = new Map<string, { id: number; external_status: string }>();
+  for (const t of existing) {
+    byExtId.set(t.external_id, { id: t.id, external_status: t.external_status });
+  }
+  const events: ExternalStatusChangedEvent[] = [];
+  for (const issue of incoming) {
+    const local = byExtId.get(issue.external_id);
+    if (!local) continue; // newly created — handled by upsertBatch
+    if (local.external_status === issue.state) continue;
+    events.push({
+      type: 'external.status_changed',
+      task_id: local.id,
+      to: issue.state,
+      source: 'sync',
+    });
+  }
+  return events;
+}
+
+/**
+ * Filter incoming GitHub issues by the user's configured Tackle label allow-
+ * list. If the allow-list is empty (no filter configured), all issues pass.
+ * Otherwise an issue passes iff at least one of its labels matches one of
+ * the allowed labels (case-insensitive, trimmed).
+ *
+ * Pure helper. The caller pulls allowed labels from VS Code settings.
+ */
+export function filterIssuesByLabels<T extends { labels: Array<{ name: string }> }>(
+  issues: T[],
+  allowedLabels: string[],
+): T[] {
+  if (allowedLabels.length === 0) return issues;
+  const allow = new Set(allowedLabels.map((s) => s.trim().toLowerCase()).filter(Boolean));
+  if (allow.size === 0) return issues;
+  return issues.filter((issue) => issue.labels.some((l) => allow.has(l.name.trim().toLowerCase())));
+}
+
+/**
+ * Pure helper for the Plan Discovery + Plan Source side of Sync. For ONE task,
+ * given the freshly fetched sub-issues and the local phase mirror, return:
+ *   - the events the bus should dispatch (phase.created / phase.removed)
+ *   - the phase title/order upserts to apply directly via the phases repo
+ *   - the detected plan source kind/ref to record on the plans row
+ *
+ * No IO. The caller fetches sub-issues and lists `plans/`.
+ */
+export interface SyncDiscoveryInput {
+  task: Pick<Task, 'id' | 'external_id'>;
+  /**
+   * The local Plan id for this task, or null if no plan exists yet. Required
+   * to emit phase.created events; if null, sub-issues are deferred until a
+   * plan row is created.
+   */
+  planId: number | null;
+  localPhases: LocalPhaseSnapshot[];
+  subIssues: ExternalChildItem[];
+  planFiles: string[];
+  description: string;
+}
+
+export interface SyncDiscoveryOutput {
+  events: Array<PhaseCreatedEvent | PhaseRemovedEvent>;
+  phaseUpserts: PhaseUpsert[];
+  planSource: DetectPlanSourceOutput;
+}
+
+export function computeSyncDiscovery(input: SyncDiscoveryInput): SyncDiscoveryOutput {
+  const planSource = detectPlanSource({
+    external_id: input.task.external_id,
+    planFiles: input.planFiles,
+  });
+
+  if (input.planId === null) {
+    return { events: [], phaseUpserts: [], planSource };
+  }
+
+  const { events, upserts } = computePhaseDiscoveryEvents({
+    task_id: input.task.id,
+    plan_id: input.planId,
+    local: input.localPhases,
+    incoming: input.subIssues,
+    source: 'sync',
+  });
+  return { events, phaseUpserts: upserts, planSource };
+}
+
+/**
+ * Optional Plan-Discovery-related dependencies. The base TaskService is
+ * usable without them (Sync still produces tasks + external_status events);
+ * pass these to enable Plan Source detection + sub-issue mirroring.
+ */
+export interface PlanDiscoveryDeps {
+  plansRepo: PlanRepository;
+  phasesRepo: PhaseRepository;
+  /** Returns the GH sub-issues for a parent issue's external_id. */
+  fetchSubIssues: (parentExternalId: string) => Promise<ExternalChildItem[]>;
+  /** Returns the basenames of files in the workspace `plans/` directory. */
+  listPlanFiles: () => Promise<string[]>;
+}
 
 export class TaskService {
-  constructor(private taskRepo: TaskRepository) {}
+  constructor(
+    private taskRepo: TaskRepository,
+    private eventBus?: EventBus,
+    private deps?: PlanDiscoveryDeps,
+  ) {}
+
+  /**
+   * For each Task that already has a plans row (i.e. plan_started has fired),
+   * fetch its GitHub sub-issues, list the workspace `plans/` directory, run
+   * Plan Discovery, dispatch the resulting phase events, apply phase
+   * title/order upserts, and upsert the detected Plan Source onto the
+   * plans row.
+   *
+   * No-op when PlanDiscoveryDeps were not supplied at construction.
+   */
+  async applyPlanDiscovery(): Promise<void> {
+    if (!this.deps) return;
+    const { plansRepo, phasesRepo, fetchSubIssues, listPlanFiles } = this.deps;
+    const [tasks, planFiles] = await Promise.all([this.taskRepo.list(), listPlanFiles()]);
+
+    await Promise.all(
+      tasks.map(async (task) => {
+        const plan: Plan | undefined = await plansRepo.get(task.id);
+        if (!plan) return; // No plan_started yet — skip discovery for this task.
+
+        const [phaseRows, subIssues] = await Promise.all([
+          phasesRepo.listForPlan(plan.id),
+          fetchSubIssues(task.external_id),
+        ]);
+        const localPhases: LocalPhaseSnapshot[] = phaseRows.map((p) => ({
+          id: p.id,
+          task_id: p.task_id,
+          plan_id: p.plan_id,
+          external_id: p.external_id,
+          name: p.name,
+          sort_order: p.sort_order,
+        }));
+
+        const result = computeSyncDiscovery({
+          task: { id: task.id, external_id: task.external_id },
+          planId: plan.id,
+          localPhases,
+          subIssues,
+          planFiles,
+          description: task.description,
+        });
+
+        await Promise.all([
+          plansRepo.save({
+            task_id: task.id,
+            source_path: plan.source_path,
+            source_kind: result.planSource.source_kind,
+            source_ref: result.planSource.source_ref,
+            extracted_at: plan.extracted_at,
+          }),
+          ...result.phaseUpserts.map((u) =>
+            phasesRepo.update(u.phase_id, { name: u.name, sort_order: u.sort_order }),
+          ),
+        ]);
+
+        if (this.eventBus) {
+          for (const ev of result.events) {
+            try {
+              this.eventBus.dispatch(ev);
+            } catch (err) {
+              console.warn('[tackle] phase event dispatch failed', err);
+            }
+          }
+        }
+      }),
+    );
+  }
 
   async syncFromGitHub(): Promise<number> {
     const session = await vscode.authentication.getSession('github', ['repo'], {
@@ -38,18 +241,62 @@ export class TaskService {
       body: string | null;
       state: string;
       assignee: { login: string } | null;
+      labels: Array<{ name: string }>;
     }>;
 
-    const tasks: UpsertTask[] = issues.map((issue) => ({
+    // Apply Label Config filter (#79). When `tackle.labels.enabled` is
+    // configured, only issues carrying at least one of the listed labels
+    // become Tasks; an empty list disables the filter entirely.
+    const allowedLabels = vscode.workspace
+      .getConfiguration('tackle')
+      .get<string[]>('labels.enabled', []);
+    const filteredIssues = filterIssuesByLabels(
+      issues.map((i) => ({ ...i, labels: i.labels ?? [] })),
+      allowedLabels ?? [],
+    );
+
+    const tasks: UpsertTask[] = filteredIssues.map((issue) => ({
       external_id: String(issue.number),
       external_system: 'github' as const,
       title: issue.title,
       description: issue.body ?? '',
-      status: issue.state,
+      external_status: issue.state,
       assignee: issue.assignee?.login ?? null,
     }));
 
+    // Diff BEFORE upsertBatch so we know which Tasks transitioned. The
+    // upsert deliberately does not overwrite `external_status` on conflict
+    // (see UPSERT_TASK_SQL) — the Event Bus is the canonical writer for
+    // that column, so the dispatch loop below is what actually applies the
+    // status change (plus audit row + refresh).
+    const existing = await this.taskRepo.list();
+    const events = computeExternalStatusEvents(
+      existing,
+      filteredIssues.map((i) => ({ external_id: String(i.number), state: i.state })),
+    );
+
     await this.taskRepo.upsertBatch(tasks);
+
+    if (this.eventBus) {
+      for (const ev of events) {
+        try {
+          this.eventBus.dispatch(ev);
+        } catch {
+          // Audit/refresh failure must not break Sync.
+        }
+      }
+    }
+
+    // Phase Tracker discovery: for each Task that has a plans row, mirror its
+    // sub-issues and detect its Plan Source. No-op if PlanDiscoveryDeps
+    // weren't supplied at construction (kept optional so unit tests / older
+    // call sites don't have to provide GH HTTP and fs deps).
+    try {
+      await this.applyPlanDiscovery();
+    } catch {
+      // A discovery failure shouldn't fail Sync; the next pass will retry.
+    }
+
     return tasks.length;
   }
 
@@ -70,6 +317,17 @@ export class TaskService {
   static redactRemoteUrl(url: string): string {
     const redacted = url.replace(/^([a-z][a-z0-9+.-]*:\/\/)[^@\s/]+@/i, '$1');
     return redacted.length > 200 ? redacted.slice(0, 197) + '...' : redacted;
+  }
+
+  /**
+   * Public wrapper around the same remote resolution Sync uses. Returns
+   * `null` when no GitHub remote can be resolved (rather than throwing) —
+   * cross-cutting features like the Label Projector and sub-issues fetch
+   * use this and silently no-op when GH isn't reachable.
+   */
+  async resolveRemote(): Promise<{ owner: string; repo: string } | null> {
+    const { remote } = await this.getRemote();
+    return remote;
   }
 
   private async getRemote(): Promise<{

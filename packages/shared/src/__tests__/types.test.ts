@@ -9,7 +9,7 @@ describe('shared types', () => {
       external_system: 'github',
       title: 'Test task',
       description: 'A test task description',
-      status: 'open',
+      external_status: 'open',
       assignee: 'alice',
       synced_at: '2026-04-18T00:00:00Z',
       created_at: '2026-04-18T00:00:00Z',
@@ -17,6 +17,7 @@ describe('shared types', () => {
       worktree_path: null,
       worktree_branch: null,
       worktree_base_branch: null,
+      tackle_status: 'not_started',
     };
 
     expect(task.id).toBe(1);

@@ -34,7 +34,7 @@ suite('Integration: activate', () => {
       external_system: 'github',
       title: 'Fixture Task A',
       description: 'first seeded task',
-      status: 'open',
+      external_status: 'open',
       assignee: null,
     });
     db.close();

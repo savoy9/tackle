@@ -24,7 +24,7 @@ describe('commands', () => {
       external_system: 'github',
       title: 'Fix bug',
       description: 'desc',
-      status: 'open',
+      external_status: 'open',
       assignee: null,
     });
     await taskRepo.upsert({
@@ -32,7 +32,7 @@ describe('commands', () => {
       external_system: 'github',
       title: 'Add feature',
       description: 'desc2',
-      status: 'closed',
+      external_status: 'closed',
       assignee: 'alice',
     });
     const output = await taskList(taskRepo);
@@ -48,7 +48,7 @@ describe('commands', () => {
       external_system: 'ado',
       title: 'My Task',
       description: 'A description',
-      status: 'active',
+      external_status: 'active',
       assignee: 'bob',
     });
     const tasks = await taskRepo.list();
@@ -69,7 +69,7 @@ describe('commands', () => {
       external_system: 'github',
       title: 'T',
       description: '',
-      status: 'open',
+      external_status: 'open',
       assignee: null,
     });
     const tasks = await taskRepo.list();
@@ -93,7 +93,7 @@ describe('commands', () => {
       external_system: 'github',
       title: 'T',
       description: '',
-      status: 'open',
+      external_status: 'open',
       assignee: null,
     });
     const tasks = await taskRepo.list();

@@ -9,12 +9,13 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   external_system: 'github',
   title,
   description: '',
-  status: 'open',
+  external_status: 'open',
   assignee: null,
   parent_external_id: null,
   worktree_path: null,
   worktree_branch: null,
   worktree_base_branch: null,
+  tackle_status: 'not_started',
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,
@@ -46,9 +47,9 @@ describe('render — Closed Issues Folder (#30)', () => {
       ...initialState,
       tasks: [
         task(1, 'A'),
-        task(2, 'B', { status: 'closed' }),
-        task(3, 'C', { status: 'done' }),
-        task(4, 'D', { status: 'open' }),
+        task(2, 'B', { external_status: 'closed' }),
+        task(3, 'C', { external_status: 'done' }),
+        task(4, 'D', { external_status: 'open' }),
       ],
     };
     const html = render(state);
@@ -58,7 +59,7 @@ describe('render — Closed Issues Folder (#30)', () => {
   it('zero-count header still renders with 0 open · 0 closed when tasks empty? only when list has entries', () => {
     const state: SidebarState = {
       ...initialState,
-      tasks: [task(1, 'A', { status: 'closed' })],
+      tasks: [task(1, 'A', { external_status: 'closed' })],
     };
     const html = render(state);
     expect(html).toContain('0 open · 1 closed');
@@ -67,7 +68,7 @@ describe('render — Closed Issues Folder (#30)', () => {
   it('excludes closed tasks from the main card list', () => {
     const state: SidebarState = {
       ...initialState,
-      tasks: [task(1, 'OpenTask'), task(2, 'ClosedOne', { status: 'closed' })],
+      tasks: [task(1, 'OpenTask'), task(2, 'ClosedOne', { external_status: 'closed' })],
     };
     const html = render(state);
     // Main list should contain OpenTask as a card, not ClosedOne as a card.
@@ -80,7 +81,11 @@ describe('render — Closed Issues Folder (#30)', () => {
   it('renders collapsed folder row with ▸ and (N) count, clickable to toggle', () => {
     const state: SidebarState = {
       ...initialState,
-      tasks: [task(1, 'A'), task(2, 'C1', { status: 'closed' }), task(3, 'C2', { status: 'done' })],
+      tasks: [
+        task(1, 'A'),
+        task(2, 'C1', { external_status: 'closed' }),
+        task(3, 'C2', { external_status: 'done' }),
+      ],
       closedFolderOpen: false,
     };
     const html = render(state);
@@ -96,8 +101,8 @@ describe('render — Closed Issues Folder (#30)', () => {
       ...initialState,
       tasks: [
         task(1, 'A'),
-        task(2, 'ClosedOne', { status: 'closed', synced_at: '2026-03-15' }),
-        task(3, 'ClosedTwo', { status: 'done', synced_at: '2026-03-20' }),
+        task(2, 'ClosedOne', { external_status: 'closed', synced_at: '2026-03-15' }),
+        task(3, 'ClosedTwo', { external_status: 'done', synced_at: '2026-03-20' }),
       ],
       closedFolderOpen: true,
     };
@@ -115,7 +120,7 @@ describe('render — Closed Issues Folder (#30)', () => {
   it('compressed row click enters detail for the task', () => {
     const state: SidebarState = {
       ...initialState,
-      tasks: [task(2, 'ClosedOne', { status: 'closed' })],
+      tasks: [task(2, 'ClosedOne', { external_status: 'closed' })],
       closedFolderOpen: true,
     };
     const html = render(state);
@@ -129,8 +134,8 @@ describe('render — Closed Issues Folder (#30)', () => {
     const state: SidebarState = {
       ...initialState,
       tasks: [
-        task(10, 'Older', { status: 'closed', synced_at: '2026-01-01' }),
-        task(11, 'Newer', { status: 'closed', synced_at: '2026-02-01' }),
+        task(10, 'Older', { external_status: 'closed', synced_at: '2026-01-01' }),
+        task(11, 'Newer', { external_status: 'closed', synced_at: '2026-02-01' }),
       ],
       closedFolderOpen: true,
     };
@@ -153,7 +158,10 @@ describe('render — Closed Issues Folder (#30)', () => {
   it('expanded closed rows carry the card--closed modifier (#46)', () => {
     const state: SidebarState = {
       ...initialState,
-      tasks: [task(1, 'A'), task(2, 'ClosedOne', { status: 'closed', synced_at: '2026-03-15' })],
+      tasks: [
+        task(1, 'A'),
+        task(2, 'ClosedOne', { external_status: 'closed', synced_at: '2026-03-15' }),
+      ],
       closedFolderOpen: true,
     };
     const html = render(state);

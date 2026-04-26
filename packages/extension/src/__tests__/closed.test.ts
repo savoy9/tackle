@@ -2,18 +2,19 @@ import { describe, it, expect } from 'vitest';
 import type { Task } from '@tackle/shared';
 import { isClosedStatus, partitionTasks } from '../sidebar/closed';
 
-const task = (id: number, status: string): Task => ({
+const task = (id: number, external_status: string): Task => ({
   id,
   external_id: String(id),
   external_system: 'github',
   title: `T${id}`,
   description: '',
-  status,
+  external_status,
   assignee: null,
   parent_external_id: null,
   worktree_path: null,
   worktree_branch: null,
   worktree_base_branch: null,
+  tackle_status: 'not_started',
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
 });

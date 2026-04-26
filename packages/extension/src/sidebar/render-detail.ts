@@ -27,6 +27,7 @@ import { isClosedStatus } from './closed';
 import { escapeHtml, EXT_ICON } from './html';
 import { edgeBarClassFor, EDGE_BAR_CLASS } from './edge-bar';
 import { renderSessionRow, SESSION_ROW_DETAIL_CLASS } from './render-session-row';
+import { renderPhaseTracker } from './render-phase-tracker';
 
 export { SESSION_ROW_DETAIL_CLASS };
 
@@ -73,12 +74,13 @@ export function renderDetail(state: SidebarState): string {
   const title = escapeHtml(task.title);
   const extIcon = EXT_ICON[task.external_system];
   const extId = escapeHtml(task.external_id);
-  const status = escapeHtml(task.status);
+  const status = escapeHtml(task.external_status);
   const assignee = task.assignee ? escapeHtml(task.assignee) : '';
 
   const header = `<div class="detail-header">
     <button class="detail-back" data-action="exitDetail" title="Back">◀ Back</button>
     <span class="detail-title">${title}</span>
+    <span class="tackle-status-badge" data-tackle-status="${escapeHtml(task.tackle_status ?? 'not_started')}" title="Tackle Status">${escapeHtml(task.tackle_status ?? 'not_started')}</span>
     <button class="detail-overflow" title="More" data-action="taskOverflow" data-task-id="${task.id}">⋯</button>
   </div>`;
 
@@ -100,12 +102,18 @@ export function renderDetail(state: SidebarState): string {
 
   const runningCount = taskSessions.filter((s) => s.status === 'running').length;
   const closedIndicator =
-    isClosedStatus(task.status) && runningCount >= 1
+    isClosedStatus(task.external_status) && runningCount >= 1
       ? `<div class="detail-closed-indicator">Externally closed — ${runningCount} session${runningCount === 1 ? '' : 's'} still running</div>`
       : '';
 
   const descHtml = state.descriptionsByTaskId?.[task.id] ?? '';
-  const description = `<div class="detail-description">${descHtml}</div>`;
+  const phaseTracker = renderPhaseTracker({
+    task,
+    phases: state.phases ?? [],
+    plans: state.plans ?? [],
+    sessions: state.sessions ?? [],
+  });
+  const description = `${phaseTracker}<div class="detail-description">${descHtml}</div>`;
 
   const sessionsBody =
     taskSessions.length > 0

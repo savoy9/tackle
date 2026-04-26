@@ -1,14 +1,29 @@
 import * as vscode from 'vscode';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { ModeManager } from './mode';
 import {
   SqliteTaskRepository,
   SqliteSessionRepository,
   SqliteLayoutStateRepository,
+  SqlitePlanRepository,
+  SqlitePhaseRepository,
   PsmuxBridge,
+  createEventBus,
+  registerTaskPlanStartedHandler,
+  registerExternalStatusChangedHandler,
+  registerPlanApprovedHandler,
+  registerTaskImplementationStartedHandler,
+  registerPhaseCreatedHandler,
+  registerPhaseRemovedHandler,
+  type EventBus,
+  type ExternalChildItem,
 } from '@tackle/shared';
-import { TaskService, TaskRemover, type RemovePromptFn } from './task';
+import { TaskService, TaskRemover, registerLabelProjector, type RemovePromptFn } from './task';
+import { registerImplementSpawner } from './task/implement-spawn';
+import { resolveGitHubContext } from './github/gh-context';
 import { TerminalOrchestrator } from './terminal';
-import { WorktreeProvisioner, createVscodeWorktreeConfigReader } from './worktree';
+import { WorktreeProvisioner, createVscodeWorktreeConfigReader, slugifyTitle } from './worktree';
 import { createVscodeAgentRegistry } from './agent';
 import {
   SessionActions,
@@ -39,6 +54,7 @@ export function activate(context: vscode.ExtensionContext): void {
   let taskRemover: TaskRemover | undefined;
   let taskRepoRef: SqliteTaskRepository | undefined;
   let worktreeProvisionerRef: WorktreeProvisioner | undefined;
+  let eventBusRef: EventBus | undefined;
 
   // Placeholder task repo for the sidebar until activation fills it in.
   const placeholderTaskRepo = {
@@ -99,9 +115,91 @@ export function activate(context: vscode.ExtensionContext): void {
       const baseSessionRepo = new SqliteSessionRepository(db);
       const sessionRepo = new ObservableSessionRepository(baseSessionRepo);
       const layoutRepo = new SqliteLayoutStateRepository(db);
+      const plansRepo = new SqlitePlanRepository(db);
+      const phasesRepo = new SqlitePhaseRepository(db);
       const psmux = new PsmuxBridge();
 
-      taskService = new TaskService(taskRepo);
+      // Event Bus — sole writer of Tackle Status / Phase Status.
+      const eventBus = createEventBus();
+      registerTaskPlanStartedHandler(eventBus, db);
+      registerExternalStatusChangedHandler(eventBus, db);
+      registerPlanApprovedHandler(eventBus, db);
+      registerTaskImplementationStartedHandler(eventBus, db);
+      registerPhaseCreatedHandler(eventBus, db);
+      registerPhaseRemovedHandler(eventBus, db);
+      eventBusRef = eventBus;
+
+      // Plan Discovery deps for TaskService — fetch GH sub-issues for one
+      // parent issue and list workspace plans/ files. Both are no-ops when
+      // the workspace is not configured for GH or has no plans/ directory.
+      // The closures use a forward reference to taskService (assigned just
+      // below) — by the time these are invoked taskService is set.
+      const fetchSubIssues = async (parentExtId: string): Promise<ExternalChildItem[]> => {
+        try {
+          const ctx = await resolveGitHubContext(taskService!);
+          if (!ctx) return [];
+          const res = await fetch(
+            `https://api.github.com/repos/${ctx.owner}/${ctx.repo}/issues/${parentExtId}/sub_issues?per_page=100`,
+            { headers: ctx.headers },
+          );
+          if (!res.ok) return [];
+          const subs = (await res.json()) as Array<{ number: number; title: string }>;
+          return subs.map((s, i) => ({
+            external_id: String(s.number),
+            title: s.title,
+            sort_order: i,
+          }));
+        } catch (err) {
+          console.warn('[tackle] fetchSubIssues failed', err);
+          return [];
+        }
+      };
+
+      const listPlanFiles = async (): Promise<string[]> => {
+        try {
+          const dir = path.join(workspaceRoot, 'plans');
+          const entries = await fs.readdir(dir);
+          return entries.filter((e) => e.endsWith('.md'));
+        } catch {
+          // Most workspaces don't have a plans/ directory; not an error.
+          return [];
+        }
+      };
+
+      taskService = new TaskService(taskRepo, eventBus, {
+        plansRepo,
+        phasesRepo,
+        fetchSubIssues,
+        listPlanFiles,
+      });
+
+      // Label Projector: mirror local Tackle Status onto GitHub labels via
+      // the Event Bus's onMutation hook. PUT is idempotent — replaces the
+      // entire label set.
+      const fetchLabels = async (extId: string): Promise<string[]> => {
+        const ctx = await resolveGitHubContext(taskService!);
+        if (!ctx) return [];
+        const res = await fetch(
+          `https://api.github.com/repos/${ctx.owner}/${ctx.repo}/issues/${extId}/labels?per_page=100`,
+          { headers: ctx.headers },
+        );
+        if (!res.ok) return [];
+        const json = (await res.json()) as Array<{ name: string }>;
+        return json.map((l) => l.name);
+      };
+      const setLabels = async (extId: string, labels: string[]): Promise<void> => {
+        const ctx = await resolveGitHubContext(taskService!);
+        if (!ctx) return;
+        await fetch(
+          `https://api.github.com/repos/${ctx.owner}/${ctx.repo}/issues/${extId}/labels`,
+          {
+            method: 'PUT',
+            headers: { ...ctx.headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ labels }),
+          },
+        );
+      };
+      registerLabelProjector(eventBus, { taskRepo, fetchLabels, setLabels });
       const worktreeProvisioner = new WorktreeProvisioner({
         workspaceRoot,
         taskRepo,
@@ -124,6 +222,30 @@ export function activate(context: vscode.ExtensionContext): void {
         },
       );
       activeOrchestrator = terminalOrchestrator;
+
+      // Implement Action: spawn one `implement` Session per pending Phase
+      // when task.implementation_started fires (#81 wiring).
+      const implementSpawn = async (taskId: number, phaseId: number): Promise<void> => {
+        if (!terminalOrchestrator) return;
+        const task = await taskRepo.get(taskId);
+        if (!task) return;
+        try {
+          await terminalOrchestrator.createTerminal({
+            taskId,
+            taskSlug: slugifyTitle(task.title),
+            kind: 'implement',
+            phaseId,
+            source: 'implement-action',
+          });
+        } catch (err) {
+          console.warn('[tackle] implement-action: spawn failed for phase', phaseId, err);
+        }
+      };
+      registerImplementSpawner(eventBus, {
+        plansRepo,
+        phasesRepo,
+        spawn: implementSpawn,
+      });
 
       sessionRepoRef = sessionRepo;
       sessionActions = new SessionActions({
@@ -287,6 +409,7 @@ export function activate(context: vscode.ExtensionContext): void {
         },
         taskRepo: taskRepoRef,
         worktreeProvisioner: worktreeProvisionerRef,
+        eventBus: eventBusRef,
       });
 
       try {
@@ -526,7 +649,7 @@ export function activate(context: vscode.ExtensionContext): void {
           external_system: 'github',
           title,
           description: '',
-          status: 'open',
+          external_status: 'open',
           assignee: null,
         });
         const all = await taskRepoRef.list();

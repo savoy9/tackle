@@ -13,12 +13,13 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   external_system: 'github',
   title,
   description: '',
-  status: 'open',
+  external_status: 'open',
   assignee: null,
   parent_external_id: null,
   worktree_path: null,
   worktree_branch: null,
   worktree_base_branch: null,
+  tackle_status: 'not_started',
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,
@@ -95,9 +96,9 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
       ...activatedState,
       tasks: [
         task(1, 'Open A', { synced_at: '2026-04-10' }),
-        task(2, 'Closed A', { status: 'closed', synced_at: '2026-03-20' }),
+        task(2, 'Closed A', { external_status: 'closed', synced_at: '2026-03-20' }),
         task(3, 'Open B', { synced_at: '2026-04-05' }),
-        task(4, 'Closed B', { status: 'done', synced_at: '2026-03-15' }),
+        task(4, 'Closed B', { external_status: 'done', synced_at: '2026-03-15' }),
       ],
       closedFolderOpen: false,
     };
@@ -109,9 +110,9 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
       ...activatedState,
       tasks: [
         task(1, 'Open A', { synced_at: '2026-04-10' }),
-        task(2, 'Closed A', { status: 'closed', synced_at: '2026-03-20' }),
+        task(2, 'Closed A', { external_status: 'closed', synced_at: '2026-03-20' }),
         task(3, 'Open B', { synced_at: '2026-04-05' }),
-        task(4, 'Closed B', { status: 'done', synced_at: '2026-03-15' }),
+        task(4, 'Closed B', { external_status: 'done', synced_at: '2026-03-15' }),
       ],
       closedFolderOpen: true,
     };
@@ -125,7 +126,7 @@ describe('render snapshots — canonical List Mode states (#29)', () => {
         task(1, 'Active task', { synced_at: '2026-04-10' }),
         task(2, 'Running task', { synced_at: '2026-04-09' }),
         task(3, 'Idle task', { synced_at: '2026-04-08' }),
-        task(4, 'Closed task', { status: 'closed', synced_at: '2026-03-15' }),
+        task(4, 'Closed task', { external_status: 'closed', synced_at: '2026-03-15' }),
       ],
       sessions: [
         sess(10, 1, { status: 'running', agent_state: 'idle' }),

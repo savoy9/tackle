@@ -9,12 +9,13 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   external_system: 'github',
   title,
   description: '',
-  status: 'open',
+  external_status: 'open',
   assignee: null,
   parent_external_id: null,
   worktree_path: null,
   worktree_branch: null,
   worktree_base_branch: null,
+  tackle_status: 'not_started',
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,
@@ -66,12 +67,31 @@ describe('render — Detail Header', () => {
     const html = render(detailState());
     expect(html).toMatch(/data-action="taskOverflow"[^>]*data-task-id="1"/);
   });
+
+  it('renders Tackle Status badge reflecting task.tackle_status (not_started)', () => {
+    const html = render(detailState());
+    expect(html).toMatch(
+      /class="tackle-status-badge"[^>]*data-tackle-status="not_started"[^>]*>not_started</,
+    );
+  });
+
+  it('Tackle Status badge updates when status is plan_started', () => {
+    const state = detailState({
+      tasks: [task(1, 'Primary task', { external_id: '42', tackle_status: 'plan_started' })],
+    });
+    const html = render(state);
+    expect(html).toMatch(
+      /class="tackle-status-badge"[^>]*data-tackle-status="plan_started"[^>]*>plan_started</,
+    );
+  });
 });
 
 describe('render — Detail Subhead: breadcrumb + identity', () => {
   it('renders identity line: external icon + #id + status', () => {
     const state = detailState({
-      tasks: [task(1, 'X', { external_id: '42', external_system: 'github', status: 'open' })],
+      tasks: [
+        task(1, 'X', { external_id: '42', external_system: 'github', external_status: 'open' }),
+      ],
     });
     const html = render(state);
     expect(html).toContain('class="detail-identity"');
@@ -151,7 +171,7 @@ describe('render — Detail Subhead: branch line (#40)', () => {
 describe('render — Detail: externally-closed indicator', () => {
   it('renders indicator when task is closed AND has ≥1 running session', () => {
     const state = detailState({
-      tasks: [task(1, 'X', { status: 'closed' })],
+      tasks: [task(1, 'X', { external_status: 'closed' })],
       sessions: [sess(10, 1, { status: 'running' })],
     });
     const html = render(state);
@@ -170,7 +190,7 @@ describe('render — Detail: externally-closed indicator', () => {
 
   it('omits indicator when closed but no running sessions', () => {
     const state = detailState({
-      tasks: [task(1, 'X', { status: 'closed' })],
+      tasks: [task(1, 'X', { external_status: 'closed' })],
       sessions: [sess(10, 1, { status: 'stopped' })],
     });
     const html = render(state);
@@ -194,10 +214,15 @@ describe('render — Detail: description area', () => {
     expect(html).toContain('class="detail-description"');
   });
 
-  it('reserves has_plan branch (MVP always false)', () => {
-    // The description branch should not include any plan-tracker markers for MVP.
+  it('renders the Phase Tracker slot at the top of the Description region', () => {
     const html = render(detailState());
-    expect(html).not.toContain('plan-tracker');
+    expect(html).toContain('class="phase-tracker"');
+    // Tracker should appear before the description content container.
+    const trackerIdx = html.indexOf('class="phase-tracker"');
+    const descIdx = html.indexOf('class="detail-description"');
+    expect(trackerIdx).toBeGreaterThan(-1);
+    expect(descIdx).toBeGreaterThan(-1);
+    expect(trackerIdx).toBeLessThan(descIdx);
   });
 });
 

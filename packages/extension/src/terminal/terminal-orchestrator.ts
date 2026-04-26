@@ -137,6 +137,8 @@ export class TerminalOrchestrator {
     tabLabel?: string;
     agent?: string | null;
     worktreePath?: string | null;
+    /** When set, the new Session row is linked to this Phase. */
+    phaseId?: number | null;
   }): Promise<Session> {
     const source = opts.source ?? 'gh';
 
@@ -182,7 +184,7 @@ export class TerminalOrchestrator {
 
     const session = await this.sessionRepo.create({
       task_id: opts.taskId,
-      phase_id: null,
+      phase_id: opts.phaseId ?? null,
       name: tabLabel,
       kind: opts.kind,
       psmux_name: psmuxName,

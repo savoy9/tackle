@@ -28,6 +28,7 @@ function createTaskRepo(state: InMemoryTaskRepoState): TaskRepository {
         worktree_path: fields.worktree_path,
         worktree_branch: fields.worktree_branch,
         worktree_base_branch: fields.worktree_base_branch,
+        tackle_status: 'not_started',
       });
     },
   };
@@ -40,12 +41,13 @@ function makeTask(over: Partial<Task> = {}): Task {
     external_system: 'github',
     title: 'Fix the auth bug',
     description: '',
-    status: 'open',
+    external_status: 'open',
     assignee: null,
     parent_external_id: null,
     worktree_path: null,
     worktree_branch: null,
     worktree_base_branch: null,
+    tackle_status: 'not_started',
     synced_at: '',
     created_at: '',
     ...over,
