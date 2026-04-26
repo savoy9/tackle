@@ -11,6 +11,9 @@ const mkTask = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   status: 'open',
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '',
   created_at: '',
   ...over,
@@ -22,6 +25,7 @@ function makeRepo(tasks: Task[]): TaskRepository {
     get: async (id: number) => tasks.find((t) => t.id === id),
     upsert: async () => {},
     upsertBatch: async () => {},
+    setWorktree: async () => {},
   };
 }
 
@@ -68,6 +72,7 @@ describe('SidebarController — #31 detail', () => {
       get: async (id) => tasks.find((t) => t.id === id),
       upsert: async () => {},
       upsertBatch: async () => {},
+      setWorktree: async () => {},
     };
     const c = new SidebarController({
       taskRepo: repo,

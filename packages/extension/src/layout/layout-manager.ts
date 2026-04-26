@@ -4,7 +4,10 @@ import type { LayoutStateRepository, LayoutState } from '@tackle/shared';
 export class LayoutManager {
   constructor(private layoutRepo: LayoutStateRepository) {}
 
-  async saveLayoutState(taskId: string, terminalPlacements: { session_id: number; group_index: number }[]): Promise<void> {
+  async saveLayoutState(
+    taskId: string,
+    terminalPlacements: { session_id: number; group_index: number }[],
+  ): Promise<void> {
     const state: LayoutState = {
       task_id: taskId,
       editor_layout: { orientation: 0, groups: [{ size: 0.65 }, { size: 0.35 }] },
@@ -27,7 +30,9 @@ export class LayoutManager {
         try {
           const uri = vscode.Uri.parse(filePath);
           await vscode.commands.executeCommand('vscode.open', uri, { viewColumn: 2 });
-        } catch { /* file may not exist */ }
+        } catch {
+          /* file may not exist */
+        }
       }),
     );
 

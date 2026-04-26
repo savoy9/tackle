@@ -1,10 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { renderCard } from '../sidebar/render-card';
-import {
-  EDGE_BAR_CLASS,
-  EDGE_BAR_SOFT_CLASS,
-  EDGE_BAR_SOLID_CLASS,
-} from '../sidebar/edge-bar';
+import { EDGE_BAR_CLASS, EDGE_BAR_SOFT_CLASS, EDGE_BAR_SOLID_CLASS } from '../sidebar/edge-bar';
 import type { Task, Session } from '@tackle/shared';
 
 const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
@@ -16,6 +12,9 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   status: 'open',
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '',
   created_at: '',
   ...over,
@@ -36,11 +35,22 @@ describe('renderCard — idle primitive (#45)', () => {
 
   it('produces a session-rows block when expanded with sessions', () => {
     const sess: Session = {
-      id: 10, task_id: 1, phase_id: null, name: 's10', kind: 'implement',
-      status: 'running', psmux_name: 'p10', tab_label: 'tab10', agent: null,
-      worktree_path: null, sort_order: 0, claude_session_id: null,
-      agent_state: 'idle', prior_claude_session_ids: null,
-      started_at: '', ended_at: null,
+      id: 10,
+      task_id: 1,
+      phase_id: null,
+      name: 's10',
+      kind: 'implement',
+      status: 'running',
+      psmux_name: 'p10',
+      tab_label: 'tab10',
+      agent: null,
+      worktree_path: null,
+      sort_order: 0,
+      claude_session_id: null,
+      agent_state: 'idle',
+      prior_claude_session_ids: null,
+      started_at: '',
+      ended_at: null,
     };
     const html = renderCard(task(1, 'X'), [sess], false, true);
     expect(html).toContain('class="session-row"');
@@ -48,11 +58,22 @@ describe('renderCard — idle primitive (#45)', () => {
 });
 
 const runningSess = (id: number, taskId: number, over: Partial<Session> = {}): Session => ({
-  id, task_id: taskId, phase_id: null, name: `s${id}`, kind: 'implement',
-  status: 'running', psmux_name: `p${id}`, tab_label: `tab${id}`, agent: null,
-  worktree_path: null, sort_order: 0, claude_session_id: null,
-  agent_state: 'idle', prior_claude_session_ids: null,
-  started_at: '', ended_at: null,
+  id,
+  task_id: taskId,
+  phase_id: null,
+  name: `s${id}`,
+  kind: 'implement',
+  status: 'running',
+  psmux_name: `p${id}`,
+  tab_label: `tab${id}`,
+  agent: null,
+  worktree_path: null,
+  sort_order: 0,
+  claude_session_id: null,
+  agent_state: 'idle',
+  prior_claude_session_ids: null,
+  started_at: '',
+  ended_at: null,
   ...over,
 });
 

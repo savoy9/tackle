@@ -1,4 +1,5 @@
 import type { SessionKind } from '@tackle/shared';
+import * as path from 'node:path';
 import type { AgentStateDetector } from './agent-state-detector';
 
 /**
@@ -28,6 +29,12 @@ export type DetectorKind = 'ClaudeJsonlDetector';
 export interface AgentAdapter {
   name: string;
   command: string;
+  /**
+   * Positional args prepended before the resume flag (and any other
+   * orchestrator-supplied args) on every spawn. Used by the `stub` test
+   * harness adapter to pass the claude-stub.mjs path to `node`.
+   */
+  args?: string[];
   resumeFlag(sessionId: string): string[];
   detector: DetectorKind;
 }
@@ -95,15 +102,39 @@ const BUILTIN_ADAPTERS: Record<string, AgentAdapter> = {
   },
 };
 
+/**
+ * Builds the stub Agent adapter when the test harness has wired it up.
+ *
+ * Returns `null` in production builds: the stub script lives under
+ * `test/fixtures/` and is not included in the packaged extension, so we
+ * deliberately don't advertise an adapter we can't execute. The runner
+ * (`run-integration.ts`) opts in by setting `TACKLE_TEST_STUB_PATH` to
+ * the absolute path of `claude-stub.mjs` before launching VS Code.
+ */
+function buildStubAdapter(): AgentAdapter | null {
+  const stubPath = process.env.TACKLE_TEST_STUB_PATH;
+  if (!stubPath) return null;
+  return {
+    name: 'stub',
+    command: 'node',
+    args: [path.resolve(stubPath)],
+    resumeFlag: () => [],
+    detector: 'ClaudeJsonlDetector',
+  };
+}
+
 export function createAgentRegistry(
   config: ConfigReader,
   detectorFactories: DetectorFactories = {},
 ): AgentRegistry {
   const detectorInstances = new Map<DetectorKind, AgentStateDetector>();
+  const adapters: Record<string, AgentAdapter> = { ...BUILTIN_ADAPTERS };
+  const stub = buildStubAdapter();
+  if (stub) adapters[stub.name] = stub;
   const registry: AgentRegistry = {
     resolve(agentName?: string | null): AgentAdapter {
       const name = agentName ?? config.getDefault();
-      const adapter = BUILTIN_ADAPTERS[name];
+      const adapter = adapters[name];
       if (!adapter) throw new UnknownAgentError(name);
       return adapter;
     },

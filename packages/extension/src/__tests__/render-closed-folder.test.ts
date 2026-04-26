@@ -12,6 +12,9 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   status: 'open',
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '2026-04-01',
   created_at: '2026-04-01',
   ...over,
@@ -41,7 +44,12 @@ describe('render — Closed Issues Folder (#30)', () => {
   it('renders header count "N open · M closed"', () => {
     const state: SidebarState = {
       ...initialState,
-      tasks: [task(1, 'A'), task(2, 'B', { status: 'closed' }), task(3, 'C', { status: 'done' }), task(4, 'D', { status: 'open' })],
+      tasks: [
+        task(1, 'A'),
+        task(2, 'B', { status: 'closed' }),
+        task(3, 'C', { status: 'done' }),
+        task(4, 'D', { status: 'open' }),
+      ],
     };
     const html = render(state);
     expect(html).toContain('2 open · 2 closed');
@@ -112,7 +120,9 @@ describe('render — Closed Issues Folder (#30)', () => {
     };
     const html = render(state);
     // Expect a closed-row element with data-action=enterDetail and data-task-id
-    expect(html).toMatch(/class="closed-row"[^>]*data-action="enterDetail"[^>]*data-task-id="2"|data-task-id="2"[^>]*data-action="enterDetail"[^>]*class="closed-row"|data-action="enterDetail"[^>]*data-task-id="2"/);
+    expect(html).toMatch(
+      /class="closed-row"[^>]*data-action="enterDetail"[^>]*data-task-id="2"|data-task-id="2"[^>]*data-action="enterDetail"[^>]*class="closed-row"|data-action="enterDetail"[^>]*data-task-id="2"/,
+    );
   });
 
   it('sorts closed tasks by updated_at descending', () => {
@@ -143,10 +153,7 @@ describe('render — Closed Issues Folder (#30)', () => {
   it('expanded closed rows carry the card--closed modifier (#46)', () => {
     const state: SidebarState = {
       ...initialState,
-      tasks: [
-        task(1, 'A'),
-        task(2, 'ClosedOne', { status: 'closed', synced_at: '2026-03-15' }),
-      ],
+      tasks: [task(1, 'A'), task(2, 'ClosedOne', { status: 'closed', synced_at: '2026-03-15' })],
       closedFolderOpen: true,
     };
     const html = render(state);

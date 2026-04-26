@@ -1,4 +1,10 @@
-import type { Session, SessionRepository, CreateSession, UpdateSession, AgentState } from '@tackle/shared';
+import type {
+  Session,
+  SessionRepository,
+  CreateSession,
+  UpdateSession,
+  AgentState,
+} from '@tackle/shared';
 
 type Listener = () => void;
 
@@ -27,9 +33,15 @@ export class ObservableSessionRepository implements SessionRepository {
     for (const l of this.listeners) l();
   }
 
-  list(): Promise<Session[]> { return this.inner.list(); }
-  get(id: number): Promise<Session | undefined> { return this.inner.get(id); }
-  listForTask(taskId: number): Promise<Session[]> { return this.inner.listForTask(taskId); }
+  list(): Promise<Session[]> {
+    return this.inner.list();
+  }
+  get(id: number): Promise<Session | undefined> {
+    return this.inner.get(id);
+  }
+  listForTask(taskId: number): Promise<Session[]> {
+    return this.inner.listForTask(taskId);
+  }
 
   async create(session: CreateSession): Promise<Session> {
     const created = await this.inner.create(session);

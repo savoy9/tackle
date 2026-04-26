@@ -29,10 +29,7 @@ export interface RenderSessionRowOptions {
 
 export const SESSION_ROW_DETAIL_CLASS = 'session-row--detail';
 
-export function renderSessionRow(
-  sess: Session,
-  opts: RenderSessionRowOptions = {},
-): string {
+export function renderSessionRow(sess: Session, opts: RenderSessionRowOptions = {}): string {
   const surface = opts.surface ?? 'list-expanded';
   const glyph = sessionGlyph(sess);
   const kind = KIND_ICON[sess.kind];
@@ -50,10 +47,7 @@ export function renderSessionRow(
 </div>`;
 }
 
-export function renderSessionRows(
-  sessions: Session[],
-  opts: RenderSessionRowOptions = {},
-): string {
+export function renderSessionRows(sessions: Session[], opts: RenderSessionRowOptions = {}): string {
   const active = sessions.filter((s) => s.status === 'running');
   const inactive = sessions.filter((s) => s.status !== 'running');
   const parts: string[] = [];

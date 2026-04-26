@@ -56,7 +56,8 @@ export class NewSessionFlow {
   constructor(private readonly deps: NewSessionFlowDeps) {}
 
   async start(taskId: number): Promise<Session | undefined> {
-    const { sessions, orchestrator, scope, pickKind, pickIsolate, taskRepo, worktreeProvisioner } = this.deps;
+    const { sessions, orchestrator, scope, pickKind, pickIsolate, taskRepo, worktreeProvisioner } =
+      this.deps;
 
     if (scope.getActiveTaskId() !== taskId && scope.switchTask) {
       await scope.switchTask(taskId);
@@ -103,4 +104,3 @@ export class NewSessionFlow {
     return created;
   }
 }
-

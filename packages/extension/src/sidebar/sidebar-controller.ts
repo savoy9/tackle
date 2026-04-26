@@ -1,5 +1,11 @@
 import type { TaskRepository, SessionRepository, Task } from '@tackle/shared';
-import { reducer, initialState, type SidebarAction, type SidebarState, type SidebarMode } from './sidebar-state';
+import {
+  reducer,
+  initialState,
+  type SidebarAction,
+  type SidebarState,
+  type SidebarMode,
+} from './sidebar-state';
 import { render } from './render';
 import type { InboundMessage } from './messages';
 import { kindToDataTheme, type ThemeKind } from './theme';
@@ -63,9 +69,7 @@ export interface SessionRepoEvents {
 /** Subset of `vscode.window` we need for theme transport. Injected for tests. */
 export interface SidebarColorTheme {
   readonly activeColorTheme: { readonly kind: number };
-  onDidChangeActiveColorTheme(
-    listener: (theme: { kind: number }) => void,
-  ): { dispose(): void };
+  onDidChangeActiveColorTheme(listener: (theme: { kind: number }) => void): { dispose(): void };
 }
 
 export interface SidebarControllerDeps {

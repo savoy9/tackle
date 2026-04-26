@@ -1,1 +1,1 @@
-export { checkSingleRootWorkspace, ensureTackleDir } from './workspace-guard';
+export { checkSingleRootWorkspace, ensureTackleDir, resolveWorkspaceRoot } from './workspace-guard';

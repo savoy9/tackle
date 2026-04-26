@@ -16,10 +16,7 @@ describe('PlanService', () => {
       `INSERT INTO tasks (external_id, external_system, title, status) VALUES (?, ?, ?, ?)`,
     ).run('42', 'github', 'Auth feature', 'open');
 
-    service = new PlanService(
-      new PlanRepository(db),
-      new PhaseRepository(db),
-    );
+    service = new PlanService(new PlanRepository(db), new PhaseRepository(db));
   });
 
   afterEach(() => {

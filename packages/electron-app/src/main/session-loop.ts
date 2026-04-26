@@ -26,9 +26,7 @@ export class SessionLoop {
    */
   suggestNext(history: SessionHistoryEntry[]): LoopStep | null {
     // Filter to only loop-relevant sessions
-    const loopSessions = history.filter((s) =>
-      LOOP_STEPS.includes(s.kind as LoopStep),
-    );
+    const loopSessions = history.filter((s) => LOOP_STEPS.includes(s.kind as LoopStep));
 
     // If anything is still running, don't suggest
     if (loopSessions.some((s) => s.status === 'running')) {
@@ -43,9 +41,7 @@ export class SessionLoop {
 
     // Find the first step that hasn't been completed
     for (const step of LOOP_STEPS) {
-      const completed = loopSessions.some(
-        (s) => s.kind === step && s.status === 'completed',
-      );
+      const completed = loopSessions.some((s) => s.kind === step && s.status === 'completed');
       if (!completed) {
         return step;
       }

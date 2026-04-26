@@ -14,6 +14,9 @@ describe('shared types', () => {
       synced_at: '2026-04-18T00:00:00Z',
       created_at: '2026-04-18T00:00:00Z',
       parent_external_id: null,
+      worktree_path: null,
+      worktree_branch: null,
+      worktree_base_branch: null,
     };
 
     expect(task.id).toBe(1);

@@ -173,16 +173,12 @@ const SCHEMA = `
 function migrate(db: Database): void {
   // Idempotent additive migrations for older DB files.
   function columnExists(table: string, column: string): boolean {
-    const rows = db
-      .prepare<{ name: string }>(`PRAGMA table_info('${table}')`)
-      .all();
+    const rows = db.prepare<{ name: string }>(`PRAGMA table_info('${table}')`).all();
     return rows.some((r) => r.name === column);
   }
   function tableExists(table: string): boolean {
     const row = db
-      .prepare<{ name: string }>(
-        "SELECT name FROM sqlite_master WHERE type='table' AND name = ?",
-      )
+      .prepare<{ name: string }>("SELECT name FROM sqlite_master WHERE type='table' AND name = ?")
       .get(table);
     return !!row;
   }

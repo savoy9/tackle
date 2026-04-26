@@ -1,8 +1,5 @@
 export { TaskService } from './task-service';
-export {
-  TaskRemover,
-  assessWorktreeCleanliness,
-} from './task-remover';
+export { TaskRemover, assessWorktreeCleanliness } from './task-remover';
 export type {
   TaskRemoverDeps,
   RemovePromptFn,

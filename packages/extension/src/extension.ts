@@ -1,15 +1,25 @@
 import * as vscode from 'vscode';
 import { ModeManager } from './mode';
-import { SqliteTaskRepository, SqliteSessionRepository, SqliteLayoutStateRepository, PsmuxBridge } from '@tackle/shared';
+import {
+  SqliteTaskRepository,
+  SqliteSessionRepository,
+  SqliteLayoutStateRepository,
+  PsmuxBridge,
+} from '@tackle/shared';
 import { TaskService, TaskRemover, type RemovePromptFn } from './task';
 import { TerminalOrchestrator } from './terminal';
 import { WorktreeProvisioner, createVscodeWorktreeConfigReader } from './worktree';
 import { createVscodeAgentRegistry } from './agent';
-import { SessionActions, ObservableSessionRepository, NewSessionFlow, buildKindQuickPickItems } from './session';
+import {
+  SessionActions,
+  ObservableSessionRepository,
+  NewSessionFlow,
+  buildKindQuickPickItems,
+} from './session';
 import { LayoutManager } from './layout';
 import { ScopeManager } from './scope';
 import { SidebarController, SidebarViewProvider } from './sidebar';
-import { checkSingleRootWorkspace, ensureTackleDir } from './guards';
+import { checkSingleRootWorkspace, ensureTackleDir, resolveWorkspaceRoot } from './guards';
 import { runLatencyBenchmark, formatResult } from './bench';
 
 // Module-level reference so `deactivate()` can release detectors and
@@ -31,7 +41,13 @@ export function activate(context: vscode.ExtensionContext): void {
   let worktreeProvisionerRef: WorktreeProvisioner | undefined;
 
   // Placeholder task repo for the sidebar until activation fills it in.
-  const placeholderTaskRepo = { list: async () => [], get: async () => undefined, upsert: async () => {}, upsertBatch: async () => {} };
+  const placeholderTaskRepo = {
+    list: async () => [],
+    get: async () => undefined,
+    upsert: async () => {},
+    upsertBatch: async () => {},
+    setWorktree: async () => {},
+  };
 
   // The sidebar needs a scope-like object even before activation; build a stub
   // that the real ScopeManager replaces on activation.
@@ -60,13 +76,16 @@ export function activate(context: vscode.ExtensionContext): void {
     console.log('Tackle: tackle.activate command fired');
     try {
       const folders = vscode.workspace.workspaceFolders;
-      console.log('Tackle: workspaceFolders =', folders?.map(f => f.uri.fsPath));
-      if (!await checkSingleRootWorkspace()) {
+      console.log(
+        'Tackle: workspaceFolders =',
+        folders?.map((f) => f.uri.fsPath),
+      );
+      if (!(await checkSingleRootWorkspace())) {
         console.log('Tackle: workspace check failed');
         return;
       }
 
-      const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+      const workspaceRoot = resolveWorkspaceRoot()!;
       await ensureTackleDir(workspaceRoot);
       await modeManager.activate();
 
@@ -92,13 +111,18 @@ export function activate(context: vscode.ExtensionContext): void {
       });
       taskRepoRef = taskRepo;
       worktreeProvisionerRef = worktreeProvisioner;
-      terminalOrchestrator = new TerminalOrchestrator(sessionRepo, psmux, createVscodeAgentRegistry(), {
-        ensureForTask: async (taskId: number) => {
-          const task = await taskRepo.get(taskId);
-          if (!task) throw new Error(`Task ${taskId} not found`);
-          return worktreeProvisioner.ensureWorktreeForTask(task);
+      terminalOrchestrator = new TerminalOrchestrator(
+        sessionRepo,
+        psmux,
+        createVscodeAgentRegistry(),
+        {
+          ensureForTask: async (taskId: number) => {
+            const task = await taskRepo.get(taskId);
+            if (!task) throw new Error(`Task ${taskId} not found`);
+            return worktreeProvisioner.ensureWorktreeForTask(task);
+          },
         },
-      });
+      );
       activeOrchestrator = terminalOrchestrator;
 
       sessionRepoRef = sessionRepo;
@@ -117,8 +141,7 @@ export function activate(context: vscode.ExtensionContext): void {
         const summary = cleanliness.clean
           ? 'The worktree is clean (no uncommitted changes, nothing ahead of base).'
           : `The worktree is dirty: ${cleanliness.reason}.`;
-        const message =
-          `Remove worktree for task "${task.title}" at ${task.worktree_path}?\n\n${summary}`;
+        const message = `Remove worktree for task "${task.title}" at ${task.worktree_path}?\n\n${summary}`;
         const defaultRemove = cleanliness.clean;
         // Modal preselects the first action; order matches the safe default.
         const items: string[] = defaultRemove
@@ -141,7 +164,8 @@ export function activate(context: vscode.ExtensionContext): void {
         sessionRepo,
         scope: scopeManager,
         workspaceState: context.workspaceState,
-        executeCommand: (cmd, ...args) => Promise.resolve(vscode.commands.executeCommand(cmd, ...args)),
+        executeCommand: (cmd, ...args) =>
+          Promise.resolve(vscode.commands.executeCommand(cmd, ...args)),
         colorTheme: vscode.window,
         isActivated: true,
       });
@@ -166,7 +190,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
       vscode.window.showInformationMessage('Tackle activated!');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.stack ?? err.message : String(err);
+      const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
       vscode.window.showErrorMessage(`Tackle activation failed: ${message}`);
       console.error('Tackle activation error:', err);
     }
@@ -192,96 +216,125 @@ export function activate(context: vscode.ExtensionContext): void {
     }
   });
 
-  const activateTaskCmd = vscode.commands.registerCommand('tackle.activateTask', async (taskId: number) => {
-    if (!scopeManager) return;
-    await scopeManager.switchTask(taskId);
-    await vscode.commands.executeCommand('setContext', 'tackle.activeTaskId', taskId);
-  });
+  const activateTaskCmd = vscode.commands.registerCommand(
+    'tackle.activateTask',
+    async (taskId: number) => {
+      if (!scopeManager) return;
+      await scopeManager.switchTask(taskId);
+      await vscode.commands.executeCommand('setContext', 'tackle.activeTaskId', taskId);
+    },
+  );
 
-  const focusSessionCmd = vscode.commands.registerCommand('tackle.focusSession', async (sessionId: number) => {
-    if (!terminalOrchestrator) return;
-    const existing = terminalOrchestrator.getTerminalForSession(sessionId);
-    if (existing) {
-      existing.show();
-      return;
-    }
-    try {
-      await terminalOrchestrator.reattachSession(sessionId);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      vscode.window.showErrorMessage(`Failed to reattach session: ${message}`);
-    }
-  });
+  const focusSessionCmd = vscode.commands.registerCommand(
+    'tackle.focusSession',
+    async (sessionId: number) => {
+      if (!terminalOrchestrator) return;
+      const existing = terminalOrchestrator.getTerminalForSession(sessionId);
+      if (existing) {
+        existing.show();
+        return;
+      }
+      try {
+        await terminalOrchestrator.reattachSession(sessionId);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Failed to reattach session: ${message}`);
+      }
+    },
+  );
 
-  const newSessionCmd = vscode.commands.registerCommand('tackle.newSession', async (arg?: { taskId?: number }) => {
-    if (!terminalOrchestrator || !scopeManager || !sessionRepoRef) {
-      vscode.window.showErrorMessage('Tackle must be activated first.');
-      return;
-    }
-    const targetTaskId = arg?.taskId ?? scopeManager.getActiveTaskId();
-    if (targetTaskId === undefined) {
-      vscode.window.showErrorMessage('No active task. Select a task in the Tackle sidebar first.');
-      return;
-    }
-
-    const flow = new NewSessionFlow({
-      sessions: sessionRepoRef,
-      orchestrator: terminalOrchestrator,
-      scope: scopeManager,
-      pickKind: async () => {
-        const items = buildKindQuickPickItems();
-        const picked = await vscode.window.showQuickPick(items, { placeHolder: 'Session kind' });
-        return picked?.kind;
-      },
-      pickIsolate: async (kind) => {
-        const picked = await vscode.window.showQuickPick(
-          [
-            { label: 'Share Task worktree', description: 'Default — siblings see each other\'s edits', isolate: false },
-            { label: '✂️  Isolate in new worktree', description: `Spawn ${kind} in a parallel sub-worktree`, isolate: true },
-          ],
-          { placeHolder: 'Worktree isolation' },
+  const newSessionCmd = vscode.commands.registerCommand(
+    'tackle.newSession',
+    async (arg?: { taskId?: number }) => {
+      if (!terminalOrchestrator || !scopeManager || !sessionRepoRef) {
+        vscode.window.showErrorMessage('Tackle must be activated first.');
+        return;
+      }
+      const targetTaskId = arg?.taskId ?? scopeManager.getActiveTaskId();
+      if (targetTaskId === undefined) {
+        vscode.window.showErrorMessage(
+          'No active task. Select a task in the Tackle sidebar first.',
         );
-        return picked?.isolate;
-      },
-      taskRepo: taskRepoRef,
-      worktreeProvisioner: worktreeProvisionerRef,
-    });
-
-    try {
-      const created = await flow.start(targetTaskId);
-      if (created) {
-        const term = terminalOrchestrator.getTerminalForSession(created.id);
-        term?.show();
+        return;
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      vscode.window.showErrorMessage(`Failed to create session: ${message}`);
-    }
-  });
 
-  context.subscriptions.push(activateCmd, deactivateCmd, syncTasksCmd, activateTaskCmd, focusSessionCmd, newSessionCmd);
+      const flow = new NewSessionFlow({
+        sessions: sessionRepoRef,
+        orchestrator: terminalOrchestrator,
+        scope: scopeManager,
+        pickKind: async () => {
+          const items = buildKindQuickPickItems();
+          const picked = await vscode.window.showQuickPick(items, { placeHolder: 'Session kind' });
+          return picked?.sessionKind;
+        },
+        pickIsolate: async (kind) => {
+          const picked = await vscode.window.showQuickPick(
+            [
+              {
+                label: 'Share Task worktree',
+                description: "Default — siblings see each other's edits",
+                isolate: false,
+              },
+              {
+                label: '✂️  Isolate in new worktree',
+                description: `Spawn ${kind} in a parallel sub-worktree`,
+                isolate: true,
+              },
+            ],
+            { placeHolder: 'Worktree isolation' },
+          );
+          return picked?.isolate;
+        },
+        taskRepo: taskRepoRef,
+        worktreeProvisioner: worktreeProvisionerRef,
+      });
 
-  const removeTaskCmd = vscode.commands.registerCommand('tackle.removeTask', async (arg?: unknown) => {
-    if (!taskRemover) {
-      vscode.window.showErrorMessage('Tackle must be activated first.');
-      return;
-    }
-    const taskId = extractTaskId(arg);
-    if (taskId === undefined) {
-      vscode.window.showErrorMessage('Tackle: removeTask requires a task id.');
-      return;
-    }
-    try {
-      const result = await taskRemover.removeTask(taskId);
-      if (result.worktreeRemoved) {
-        await sidebarController?.refresh();
-        vscode.window.showInformationMessage('Tackle: worktree removed.');
+      try {
+        const created = await flow.start(targetTaskId);
+        if (created) {
+          const term = terminalOrchestrator.getTerminalForSession(created.id);
+          term?.show();
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Failed to create session: ${message}`);
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : String(err);
-      vscode.window.showErrorMessage(`Tackle: failed to remove task worktree: ${message}`);
-    }
-  });
+    },
+  );
+
+  context.subscriptions.push(
+    activateCmd,
+    deactivateCmd,
+    syncTasksCmd,
+    activateTaskCmd,
+    focusSessionCmd,
+    newSessionCmd,
+  );
+
+  const removeTaskCmd = vscode.commands.registerCommand(
+    'tackle.removeTask',
+    async (arg?: unknown) => {
+      if (!taskRemover) {
+        vscode.window.showErrorMessage('Tackle must be activated first.');
+        return;
+      }
+      const taskId = extractTaskId(arg);
+      if (taskId === undefined) {
+        vscode.window.showErrorMessage('Tackle: removeTask requires a task id.');
+        return;
+      }
+      try {
+        const result = await taskRemover.removeTask(taskId);
+        if (result.worktreeRemoved) {
+          await sidebarController?.refresh();
+          vscode.window.showInformationMessage('Tackle: worktree removed.');
+        }
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        vscode.window.showErrorMessage(`Tackle: failed to remove task worktree: ${message}`);
+      }
+    },
+  );
   context.subscriptions.push(removeTaskCmd);
 
   async function pickSessionId(placeHolder: string): Promise<number | undefined> {
@@ -306,7 +359,12 @@ export function activate(context: vscode.ExtensionContext): void {
 
   async function resolveId(arg: unknown, placeHolder: string): Promise<number | undefined> {
     if (typeof arg === 'number') return arg;
-    if (arg && typeof arg === 'object' && 'id' in (arg as any) && typeof (arg as any).id === 'number') {
+    if (
+      arg &&
+      typeof arg === 'object' &&
+      'id' in (arg as any) &&
+      typeof (arg as any).id === 'number'
+    ) {
       return (arg as any).id;
     }
     return pickSessionId(placeHolder);
@@ -336,35 +394,57 @@ export function activate(context: vscode.ExtensionContext): void {
     return sessionActions;
   }
 
-  const stopSessionCmd = vscode.commands.registerCommand('tackle.stopSession', async (arg?: unknown) => {
-    const actions = ensureActions(); if (!actions) return;
-    const id = await resolveId(arg, 'Select a session to stop'); if (id === undefined) return;
-    await actions.stop(id);
-  });
+  const stopSessionCmd = vscode.commands.registerCommand(
+    'tackle.stopSession',
+    async (arg?: unknown) => {
+      const actions = ensureActions();
+      if (!actions) return;
+      const id = await resolveId(arg, 'Select a session to stop');
+      if (id === undefined) return;
+      await actions.stop(id);
+    },
+  );
 
-  const restartSessionCmd = vscode.commands.registerCommand('tackle.restartSession', async (arg?: unknown) => {
-    const actions = ensureActions(); if (!actions) return;
-    const id = await resolveId(arg, 'Select a session to restart'); if (id === undefined) return;
-    await actions.restart(id);
-  });
+  const restartSessionCmd = vscode.commands.registerCommand(
+    'tackle.restartSession',
+    async (arg?: unknown) => {
+      const actions = ensureActions();
+      if (!actions) return;
+      const id = await resolveId(arg, 'Select a session to restart');
+      if (id === undefined) return;
+      await actions.restart(id);
+    },
+  );
 
-  const removeSessionCmd = vscode.commands.registerCommand('tackle.removeSession', async (arg?: unknown) => {
-    const actions = ensureActions(); if (!actions) return;
-    const id = await resolveId(arg, 'Select a session to remove'); if (id === undefined) return;
-    await actions.remove(id);
-  });
+  const removeSessionCmd = vscode.commands.registerCommand(
+    'tackle.removeSession',
+    async (arg?: unknown) => {
+      const actions = ensureActions();
+      if (!actions) return;
+      const id = await resolveId(arg, 'Select a session to remove');
+      if (id === undefined) return;
+      await actions.remove(id);
+    },
+  );
 
-  const markSessionDoneCmd = vscode.commands.registerCommand('tackle.markSessionDone', async (arg?: unknown) => {
-    const actions = ensureActions(); if (!actions) return;
-    const id = await resolveId(arg, 'Select a session to mark done'); if (id === undefined) return;
-    await actions.markDone(id);
-  });
+  const markSessionDoneCmd = vscode.commands.registerCommand(
+    'tackle.markSessionDone',
+    async (arg?: unknown) => {
+      const actions = ensureActions();
+      if (!actions) return;
+      const id = await resolveId(arg, 'Select a session to mark done');
+      if (id === undefined) return;
+      await actions.markDone(id);
+    },
+  );
 
   const renameSessionCmd = vscode.commands.registerCommand(
     'tackle.renameSession',
     async (arg?: unknown, newLabelArg?: string) => {
-      const actions = ensureActions(); if (!actions) return;
-      const id = await resolveId(arg, 'Select a session to rename'); if (id === undefined) return;
+      const actions = ensureActions();
+      if (!actions) return;
+      const id = await resolveId(arg, 'Select a session to rename');
+      if (id === undefined) return;
       let label = newLabelArg;
       if (!label) {
         const current = await sessionRepoRef?.get(id);
@@ -402,11 +482,97 @@ export function activate(context: vscode.ExtensionContext): void {
         out.appendLine(`  ${s.method.padEnd(18)} iter=${s.iteration}  ${s.latencyMs.toFixed(1)}ms`);
       }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.stack ?? err.message : String(err);
+      const message = err instanceof Error ? (err.stack ?? err.message) : String(err);
       out.appendLine(`\nBenchmark failed: ${message}`);
     }
   });
   context.subscriptions.push(benchCmd);
+
+  // ---------------------------------------------------------------------
+  // Perf shims (test-only, gated on TACKLE_TEST_STUB_PATH).
+  //
+  // The perf scenarios in `test/perf/scenarios.ts` need a deterministic,
+  // QuickPick-free way to seed tasks and spawn sessions so the timing
+  // harness measures the activate-task path, not human interaction. We
+  // wire two internal commands here:
+  //
+  //   tackle._perfSeedTask(title)             → returns numeric task id
+  //   tackle._perfSpawnSession({ taskId, kind: 'agent' | 'shell' })
+  //
+  // They're registered only when the harness env var is set, matching
+  // the `stub` agent's gating in `agent-registry.ts`. Production builds
+  // never see these commands.
+  // ---------------------------------------------------------------------
+  if (process.env.TACKLE_TEST_STUB_PATH) {
+    const ensureActivated = async (): Promise<void> => {
+      if (!taskRepoRef || !terminalOrchestrator) {
+        await vscode.commands.executeCommand('tackle.activate');
+      }
+    };
+
+    const perfSeedTaskCmd = vscode.commands.registerCommand(
+      'tackle._perfSeedTask',
+      async (title: string): Promise<number> => {
+        await ensureActivated();
+        if (!taskRepoRef) {
+          throw new Error('tackle._perfSeedTask: task repo unavailable after activate.');
+        }
+        // External_id must be safe for git branch names (the worktree
+        // provisioner builds a branch from it). Avoid `:` and other
+        // refspec metacharacters; the title is already deterministic.
+        const externalId = `perf-${title}`;
+        await taskRepoRef.upsert({
+          external_id: externalId,
+          external_system: 'github',
+          title,
+          description: '',
+          status: 'open',
+          assignee: null,
+        });
+        const all = await taskRepoRef.list();
+        const found = all.find((t) => t.external_id === externalId);
+        if (!found) {
+          throw new Error(`tackle._perfSeedTask: row missing after upsert (${externalId}).`);
+        }
+        await sidebarController?.refresh();
+        return found.id;
+      },
+    );
+
+    const perfSpawnSessionCmd = vscode.commands.registerCommand(
+      'tackle._perfSpawnSession',
+      async (arg: { taskId: number; kind: 'agent' | 'shell' }): Promise<void> => {
+        await ensureActivated();
+        if (!terminalOrchestrator || !taskRepoRef) {
+          throw new Error('tackle._perfSpawnSession: orchestrator unavailable after activate.');
+        }
+        const task = await taskRepoRef.get(arg.taskId);
+        if (!task) {
+          throw new Error(`tackle._perfSpawnSession: unknown taskId ${arg.taskId}.`);
+        }
+        // Map the harness-level kind to a real SessionKind. 'agent' picks
+        // 'implement' (any non-shell kind triggers the agent launch via
+        // AgentRegistry.shouldLaunch).
+        const kind = arg.kind === 'shell' ? 'shell' : 'implement';
+        // Slug is a label component (psmux tab label only); derive a
+        // safe-ish one from the task title.
+        const slug =
+          task.title
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '') || 'task';
+        await terminalOrchestrator.createTerminal({
+          taskId: task.id,
+          taskSlug: slug,
+          kind,
+          source: 'perf',
+          agent: 'stub',
+        });
+      },
+    );
+
+    context.subscriptions.push(perfSeedTaskCmd, perfSpawnSessionCmd);
+  }
 }
 
 export function deactivate(): void {

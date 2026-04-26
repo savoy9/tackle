@@ -60,7 +60,12 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
         task(3, 'Other B', { external_id: '3', synced_at: '2026-04-06' }),
       ],
       sessions: [
-        sess(10, 1, { status: 'running', agent_state: 'working', worktree_path: '/wt/feature-main', tab_label: 'impl' }),
+        sess(10, 1, {
+          status: 'running',
+          agent_state: 'working',
+          worktree_path: '/wt/feature-main',
+          tab_label: 'impl',
+        }),
         sess(11, 1, { status: 'completed', tab_label: 'done' }),
       ],
       descriptionsByTaskId: {
@@ -85,7 +90,13 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
     const state: SidebarState = {
       ...activatedState,
       mode: { kind: 'detail', taskId: 1 },
-      tasks: [task(1, 'Closed task', { status: 'closed', worktree_branch: 'feat-zz', synced_at: '2026-04-10' })],
+      tasks: [
+        task(1, 'Closed task', {
+          status: 'closed',
+          worktree_branch: 'feat-zz',
+          synced_at: '2026-04-10',
+        }),
+      ],
       sessions: [
         sess(10, 1, { status: 'running', worktree_path: '/wt/feat-zz' }),
         sess(11, 1, { status: 'running', worktree_path: '/wt/feat-zz' }),
@@ -110,9 +121,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
       ...activatedState,
       mode: { kind: 'detail', taskId: 1 },
       tasks: [task(1, 'Running detail', { external_id: '9', synced_at: '2026-04-10' })],
-      sessions: [
-        sess(10, 1, { status: 'running', agent_state: 'working', tab_label: 'impl' }),
-      ],
+      sessions: [sess(10, 1, { status: 'running', agent_state: 'working', tab_label: 'impl' })],
       descriptionsByTaskId: { 1: '' },
       activeTaskId: 1,
     };
@@ -128,9 +137,7 @@ describe('render snapshots — canonical Detail Mode states (#31)', () => {
         task(2, 'Sibling running', { external_id: '2', synced_at: '2026-04-09' }),
         task(3, 'Sibling idle', { external_id: '3', synced_at: '2026-04-08' }),
       ],
-      sessions: [
-        sess(20, 2, { status: 'running' }),
-      ],
+      sessions: [sess(20, 2, { status: 'running' })],
       descriptionsByTaskId: { 1: '' },
     };
     expect(render(state)).toMatchSnapshot();

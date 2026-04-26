@@ -58,7 +58,15 @@ async function main() {
   const [
     { createDatabase },
     { TaskRepository },
-    { registerTaskHandlers, registerSyncHandlers, registerSessionHandlers, registerTerminalHandlers, registerWorkspaceHandlers, registerPlanHandlers, registerFileHandlers },
+    {
+      registerTaskHandlers,
+      registerSyncHandlers,
+      registerSessionHandlers,
+      registerTerminalHandlers,
+      registerWorkspaceHandlers,
+      registerPlanHandlers,
+      registerFileHandlers,
+    },
     { GitHubSyncService },
     { Octokit },
     { PsmuxManager },

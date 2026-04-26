@@ -4,7 +4,10 @@
 import type { OutboundMessage } from '../messages';
 
 interface MinimalRoot {
-  dataset: Record<string, string>;
+  // Loose enough to accept the real DOM's `DOMStringMap` (where indexed access
+  // returns `string | undefined`) as well as test fakes built from a plain
+  // `Record<string, string>`.
+  dataset: Record<string, string | undefined>;
 }
 interface MinimalEl {
   innerHTML: string;

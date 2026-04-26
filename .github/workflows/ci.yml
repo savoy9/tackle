@@ -1,0 +1,318 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# Cancel in-flight runs on the same PR / branch when a new push lands.
+# Saves runner minutes and keeps PR status reflecting the latest commit.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    name: changes
+    runs-on: ubuntu-latest
+    outputs:
+      extension: ${{ steps.filter.outputs.extension }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            extension:
+              - 'packages/extension/**'
+              - 'packages/shared/**'
+              - '.github/workflows/ci.yml'
+              - 'package.json'
+              - 'bun.lock'
+
+  quality:
+    name: quality
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Typecheck
+        run: bun run typecheck
+      - name: Lint
+        run: bun run lint
+      - name: Format check
+        run: bun run format:check
+      - name: Build extension
+        run: bun run compile
+        working-directory: packages/extension
+
+  unit:
+    name: unit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Run unit tests
+        run: bun run test
+
+  integration:
+    name: integration (advisory)
+    runs-on: windows-latest
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
+    # Per ADR-0012 the integration suite is advisory: real VS Code +
+    # real psmux is inherently flaky in CI, so a failure here surfaces
+    # in logs but does NOT block merge.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: oven-sh/setup-bun@v2
+      - name: Install psmux via winget (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          retry_wait_seconds: 120
+          shell: pwsh
+          command: |
+            winget install --id marlocarlo.psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+      - name: Cache @vscode/test-electron VS Code download
+        uses: actions/cache@v4
+        with:
+          path: ~/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Compile extension + test bundles
+        run: |
+          bun run compile
+          bun run compile:tests
+        working-directory: packages/extension
+      - name: Run integration suite
+        timeout-minutes: 15
+        shell: pwsh
+        run: |
+          $env:Path = $env:Path + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          node out-test/runner/run-integration.js 2>&1 | Tee-Object -FilePath integration.log
+        working-directory: packages/extension
+      - name: Upload integration log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integration-log
+          path: packages/extension/integration.log
+          if-no-files-found: warn
+
+  visual:
+    name: visual
+    runs-on: windows-latest
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: oven-sh/setup-bun@v2
+      - name: Install psmux via winget (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          retry_wait_seconds: 120
+          shell: pwsh
+          command: |
+            winget install --id marlocarlo.psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+      - name: Cache @vscode/test-electron VS Code download
+        uses: actions/cache@v4
+        with:
+          path: ~/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Build extension + visual suite
+        working-directory: packages/extension
+        run: |
+          bun run compile
+          bun run compile:visual
+      - name: Run visual snapshot suite
+        id: visual
+        working-directory: packages/extension
+        shell: pwsh
+        run: |
+          $env:Path = $env:Path + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          node out-test/runner/run-visual.js
+      - name: Build diff index (on failure)
+        if: failure() && steps.visual.outcome == 'failure'
+        working-directory: packages/extension
+        run: node out-test/visual/build-diff-index.js
+      - name: Upload visual diffs artifact
+        if: failure() && steps.visual.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-diffs
+          path: packages/extension/out-test/visual-diffs/**
+          if-no-files-found: ignore
+      - name: Find existing visual-diff comment
+        id: find-visual-comment
+        if: failure() && steps.visual.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '<!-- visual-diff-comment -->'
+      - name: Comment on PR with diff link
+        if: failure() && steps.visual.outcome == 'failure' && github.event_name == 'pull_request'
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-visual-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            <!-- visual-diff-comment -->
+            **Visual snapshot mismatch.**
+
+            Download the side-by-side diffs (`visual-diffs.zip`) from the
+            `visual` job's artifacts on this run:
+            <https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}>
+
+            If the change is intentional, regenerate snapshots locally with
+            `UPDATE_SNAPSHOTS=1 bun --filter tackle test:visual` and commit.
+          edit-mode: replace
+
+  # Perf — windows-only, advisory (never gates merge per ADR-0012).
+  # Posts a single PR comment keyed by `<!-- perf-comment -->` (updated
+  # in place across re-runs).
+  perf:
+    name: perf (advisory)
+    runs-on: windows-latest
+    needs: changes
+    if: needs.changes.outputs.extension == 'true'
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: oven-sh/setup-bun@v2
+      - name: Install psmux via winget (with retry)
+        uses: nick-fields/retry@v3
+        with:
+          max_attempts: 3
+          timeout_minutes: 5
+          retry_wait_seconds: 120
+          shell: pwsh
+          command: |
+            winget install --id marlocarlo.psmux --silent --accept-source-agreements --accept-package-agreements --disable-interactivity
+      - name: Verify psmux is on PATH
+        shell: pwsh
+        run: |
+          $env:Path = $env:Path + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          if (-not (Get-Command psmux -ErrorAction SilentlyContinue)) {
+            Write-Error "psmux not found on PATH after winget install"
+            exit 1
+          }
+          psmux -V
+      - name: Cache @vscode/test-electron VS Code download
+        uses: actions/cache@v4
+        with:
+          path: ~/.vscode-test
+          key: vscode-test-${{ runner.os }}-${{ hashFiles('packages/extension/package.json') }}
+          restore-keys: |
+            vscode-test-${{ runner.os }}-
+      - name: Cache bun install
+        uses: actions/cache@v4
+        with:
+          path: ~/.bun/install/cache
+          key: ${{ runner.os }}-bun-${{ hashFiles('bun.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-bun-
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Run perf suite (advisory — does not gate merge)
+        shell: pwsh
+        run: |
+          $env:Path = $env:Path + ';' + [System.Environment]::GetEnvironmentVariable('Path','User')
+          bun run test:perf
+        working-directory: packages/extension
+        continue-on-error: true
+      - name: Upload perf-results.json artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-results
+          path: packages/extension/perf-results.json
+          if-no-files-found: warn
+      - name: Format PR comment body
+        if: github.event_name == 'pull_request' && always()
+        shell: bash
+        run: |
+          if [ -f packages/extension/perf-results.json ]; then
+            node scripts/format-perf-comment.cjs packages/extension/perf-results.json > perf-comment.md
+          else
+            {
+              echo '<!-- perf-comment -->'
+              echo '## Tackle perf measurement'
+              echo ''
+              echo '_Perf suite did not produce results — see job logs._'
+              echo ''
+              echo '> Perf is **advisory** (ADR-0012). This does not gate merge.'
+            } > perf-comment.md
+          fi
+      - name: Find existing perf comment
+        id: find-perf-comment
+        if: github.event_name == 'pull_request' && always()
+        uses: peter-evans/find-comment@v3
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          body-includes: '<!-- perf-comment -->'
+      - name: Post / update perf PR comment
+        if: github.event_name == 'pull_request' && always()
+        uses: peter-evans/create-or-update-comment@v4
+        with:
+          comment-id: ${{ steps.find-perf-comment.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body-path: perf-comment.md
+          edit-mode: replace

@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { join } from 'node:path';
 import { createDatabase, PsmuxBridge } from '@tackle/shared';
 import type { Database } from '@tackle/shared';
+import { TestOverride } from '../test-overrides';
 
 const SAVED_SETTINGS_KEY = 'tackle.savedSettings';
 const ACTIVE_KEY = 'tackle.active';
@@ -38,7 +39,7 @@ export class ModeManager {
 
     const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
     if (workspaceFolder) {
-      const dbPath = join(workspaceFolder.uri.fsPath, '.tackle', 'tackle.db');
+      const dbPath = TestOverride.db ?? join(workspaceFolder.uri.fsPath, '.tackle', 'tackle.db');
       this.db = createDatabase(dbPath);
     }
 

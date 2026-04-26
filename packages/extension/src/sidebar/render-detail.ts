@@ -25,10 +25,7 @@ import type { Task } from '@tackle/shared';
 import { sortTasks } from './sort';
 import { isClosedStatus } from './closed';
 import { escapeHtml, EXT_ICON } from './html';
-import {
-  edgeBarClassFor,
-  EDGE_BAR_CLASS,
-} from './edge-bar';
+import { edgeBarClassFor, EDGE_BAR_CLASS } from './edge-bar';
 import { renderSessionRow, SESSION_ROW_DETAIL_CLASS } from './render-session-row';
 
 export { SESSION_ROW_DETAIL_CLASS };

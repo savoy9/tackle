@@ -3,13 +3,15 @@ import { LayoutManager } from '../layout/layout-manager';
 import { executeCommandCalls, resetMocks } from './vscode-mock';
 import type { LayoutState } from '@tackle/shared';
 
-vi.mock('vscode', () => import('./vscode-mock').then(m => m.default));
+vi.mock('vscode', () => import('./vscode-mock').then((m) => m.default));
 
 describe('LayoutManager', () => {
   const store = new Map<string, LayoutState>();
   const mockLayoutRepo = {
     get: vi.fn(async (taskId: string) => store.get(taskId)),
-    save: vi.fn(async (state: LayoutState) => { store.set(state.task_id, state); }),
+    save: vi.fn(async (state: LayoutState) => {
+      store.set(state.task_id, state);
+    }),
   };
 
   let layoutManager: LayoutManager;

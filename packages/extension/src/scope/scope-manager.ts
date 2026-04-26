@@ -23,9 +23,10 @@ export class ScopeManager {
   async switchTask(newTaskId: number): Promise<void> {
     const prevTaskId = this.activeTaskId;
 
-    const saving = prevTaskId !== undefined
-      ? this.deps.layoutManager.saveLayoutState(String(prevTaskId), [])
-      : undefined;
+    const saving =
+      prevTaskId !== undefined
+        ? this.deps.layoutManager.saveLayoutState(String(prevTaskId), [])
+        : undefined;
 
     this.deps.terminalOrchestrator.disposeAll();
     await saving;

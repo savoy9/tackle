@@ -12,6 +12,9 @@ const task = (id: number, title: string, over: Partial<Task> = {}): Task => ({
   status: 'open',
   assignee: null,
   parent_external_id: null,
+  worktree_path: null,
+  worktree_branch: null,
+  worktree_base_branch: null,
   synced_at: '',
   created_at: '',
   ...over,
@@ -97,12 +100,18 @@ describe('render — Card Line 1 (glyph + title + activate + overflow)', () => {
   it('renders task title as a click target that enters detail', () => {
     const state: SidebarState = { ...initialState, tasks: [task(1, 'Hello')] };
     const html = render(state);
-    expect(html).toMatch(/data-action="enterDetail"[^>]*data-task-id="1"|data-task-id="1"[^>]*data-action="enterDetail"/);
+    expect(html).toMatch(
+      /data-action="enterDetail"[^>]*data-task-id="1"|data-task-id="1"[^>]*data-action="enterDetail"/,
+    );
     expect(html).toContain('Hello');
   });
 
   it('renders Activate button on non-Active cards', () => {
-    const state: SidebarState = { ...initialState, tasks: [task(1, 'A'), task(2, 'B')], activeTaskId: 2 };
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'A'), task(2, 'B')],
+      activeTaskId: 2,
+    };
     const html = render(state);
     // Card 1 non-active: Activate button present with data-action=activateTask data-task-id=1
     expect(html).toMatch(/data-action="activateTask"[^>]*data-task-id="1"/);
@@ -175,7 +184,11 @@ describe('render — Active marker class (state matrix is #46)', () => {
   });
 
   it('non-active task does not have .active class', () => {
-    const state: SidebarState = { ...initialState, tasks: [task(1, 'A'), task(2, 'B')], activeTaskId: 1 };
+    const state: SidebarState = {
+      ...initialState,
+      tasks: [task(1, 'A'), task(2, 'B')],
+      activeTaskId: 1,
+    };
     const html = render(state);
     expect(html).toMatch(/class="card"[^>]*data-task-id="2"/);
   });

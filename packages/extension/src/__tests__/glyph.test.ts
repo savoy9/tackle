@@ -64,21 +64,16 @@ describe('rollupGlyph', () => {
   });
   it('● beats ✔️-only and 🚫-only', () => {
     expect(
-      rollupGlyph([
-        s({ agent_state: 'idle', status: 'running' }),
-        s({ status: 'completed' }),
-      ]),
+      rollupGlyph([s({ agent_state: 'idle', status: 'running' }), s({ status: 'completed' })]),
     ).toBe('●' as Glyph);
   });
   it('✔️-only when all sessions are completed', () => {
-    expect(
-      rollupGlyph([s({ status: 'completed' }), s({ status: 'completed' })]),
-    ).toBe('✔️' as Glyph);
+    expect(rollupGlyph([s({ status: 'completed' }), s({ status: 'completed' })])).toBe(
+      '✔️' as Glyph,
+    );
   });
   it('✔️-only beats 🚫-only when mixed completed+stopped', () => {
-    expect(
-      rollupGlyph([s({ status: 'completed' }), s({ status: 'stopped' })]),
-    ).toBe('✔️' as Glyph);
+    expect(rollupGlyph([s({ status: 'completed' }), s({ status: 'stopped' })])).toBe('✔️' as Glyph);
   });
   it('🚫-only when all sessions are stopped', () => {
     expect(rollupGlyph([s({ status: 'stopped' })])).toBe('🚫' as Glyph);

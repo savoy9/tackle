@@ -18,11 +18,7 @@ import type { Task, Session } from '@tackle/shared';
 import { rollupGlyph, sessionGlyph } from './glyph';
 import { KIND_ICON } from '../session/kind-icon';
 import { escapeHtml, EXT_ICON } from './html';
-import {
-  deriveEdgeBarState,
-  edgeBarClassFor,
-  EDGE_BAR_CLASS,
-} from './edge-bar';
+import { deriveEdgeBarState, edgeBarClassFor, EDGE_BAR_CLASS } from './edge-bar';
 import {
   renderSessionRow as renderSessionRowImpl,
   renderSessionRows as renderSessionRowsImpl,
@@ -46,17 +42,11 @@ export function sessionsByTask(sessions: Session[]): Map<number, Session[]> {
 // Re-exports keep the old module surface working for callers that still
 // import from render-card. The split into render-session-row.ts (#47) lets
 // Detail Mode opt into hover-revealed action buttons via the surface flag.
-export function renderSessionRow(
-  sess: Session,
-  opts: RenderSessionRowOptions = {},
-): string {
+export function renderSessionRow(sess: Session, opts: RenderSessionRowOptions = {}): string {
   return renderSessionRowImpl(sess, opts);
 }
 
-export function renderSessionRows(
-  sessions: Session[],
-  opts: RenderSessionRowOptions = {},
-): string {
+export function renderSessionRows(sessions: Session[], opts: RenderSessionRowOptions = {}): string {
   return renderSessionRowsImpl(sessions, opts);
 }
 

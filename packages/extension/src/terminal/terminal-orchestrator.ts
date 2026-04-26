@@ -3,6 +3,7 @@ import { PsmuxBridge } from '@tackle/shared';
 import type { SessionRepository, Session, SessionKind } from '@tackle/shared';
 import type { AgentRegistry } from '../agent/agent-registry';
 import type { AgentStateDetector } from '../agent/agent-state-detector';
+import { TestOverride } from '../test-overrides';
 
 /**
  * Pure helper: resolve cwd for a session, preferring its worktree_path
@@ -29,6 +30,16 @@ export function resolveCwd(
  */
 export function shellQuote(s: string): string {
   return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+
+/**
+ * Formats an adapter's command line: `<command> [args...]`. Each arg is
+ * shell-quoted so paths with spaces (notably the bundled stub script
+ * path on Windows) round-trip through psmux send-keys correctly.
+ */
+function formatAdapterCommand(command: string, args: readonly string[] | undefined): string {
+  if (!args || args.length === 0) return command;
+  return `${command} ${args.map(shellQuote).join(' ')}`;
 }
 
 export interface SessionWorktreeProvider {
@@ -130,11 +141,18 @@ export class TerminalOrchestrator {
     const source = opts.source ?? 'gh';
 
     const existing = await this.sessionRepo.listForTask(opts.taskId);
-    const n = existing.filter(s => s.kind === opts.kind).length + 1;
+    const n = existing.filter((s) => s.kind === opts.kind).length + 1;
 
-    const psmuxName = PsmuxBridge.generateSessionName(source, String(opts.taskId), opts.kind, n);
-    const tabLabel = opts.tabLabel
-      ?? PsmuxBridge.generateTabLabel(String(opts.taskId), opts.taskSlug, opts.kind, n, opts.label);
+    const psmuxName = PsmuxBridge.generateSessionName(
+      source,
+      String(opts.taskId),
+      opts.kind,
+      n,
+      TestOverride.psmuxPrefix,
+    );
+    const tabLabel =
+      opts.tabLabel ??
+      PsmuxBridge.generateTabLabel(String(opts.taskId), opts.taskSlug, opts.kind, n, opts.label);
 
     this.psmux.createSession(psmuxName);
 
@@ -147,9 +165,9 @@ export class TerminalOrchestrator {
     // provisioning (no Agent → spawn in workspaceRoot).
     let effectiveWorktreePath: string | null = opts.worktreePath ?? null;
     if (
-      effectiveWorktreePath === null
-      && this.agentRegistry.shouldLaunch(opts.kind)
-      && this.worktreeProvider
+      effectiveWorktreePath === null &&
+      this.agentRegistry.shouldLaunch(opts.kind) &&
+      this.worktreeProvider
     ) {
       const wt = await this.worktreeProvider.ensureForTask(opts.taskId);
       effectiveWorktreePath = wt.path;
@@ -177,7 +195,10 @@ export class TerminalOrchestrator {
     if (this.agentRegistry.shouldLaunch(opts.kind)) {
       const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath ?? '';
       const cwd = resolveCwd(session, workspaceRoot);
-      this.psmux.sendKeys(psmuxName, `cd ${shellQuote(cwd)} && ${adapter.command}`);
+      this.psmux.sendKeys(
+        psmuxName,
+        `cd ${shellQuote(cwd)} && ${formatAdapterCommand(adapter.command, adapter.args)}`,
+      );
     }
 
     this.trackTerminal(session.id, terminal);
@@ -202,7 +223,7 @@ export class TerminalOrchestrator {
 
   async reattachForTask(taskId: number): Promise<void> {
     const sessions = await this.sessionRepo.listForTask(taskId);
-    for (const session of sessions.filter(s => s.status === 'running')) {
+    for (const session of sessions.filter((s) => s.status === 'running')) {
       this.attachSession(session);
     }
   }
@@ -306,7 +327,10 @@ export class TerminalOrchestrator {
       const resumeArgs = session.claude_session_id
         ? ' ' + adapter.resumeFlag(session.claude_session_id).join(' ')
         : '';
-      this.psmux.sendKeys(session.psmux_name, `cd ${shellQuote(cwd)} && ${adapter.command}${resumeArgs}`);
+      this.psmux.sendKeys(
+        session.psmux_name,
+        `cd ${shellQuote(cwd)} && ${formatAdapterCommand(adapter.command, adapter.args)}${resumeArgs}`,
+      );
     }
 
     await this.sessionRepo.update(sessionId, { status: 'running', ended_at: null });

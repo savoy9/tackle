@@ -27,9 +27,9 @@ export class PlanRepository {
   }
 
   getForTask(taskId: number): Plan | undefined {
-    return this.db
-      .prepare<Plan>('SELECT * FROM plans WHERE task_id = ?')
-      .get(taskId) as Plan | undefined;
+    return this.db.prepare<Plan>('SELECT * FROM plans WHERE task_id = ?').get(taskId) as
+      | Plan
+      | undefined;
   }
 
   deleteForTask(taskId: number): void {

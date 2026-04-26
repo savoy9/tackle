@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import vscodeModule, { resetMocks } from './vscode-mock';
 
 vi.mock('vscode', () => vscodeModule);
@@ -59,6 +59,50 @@ describe('agent-registry', () => {
 
     it('claude declares ClaudeJsonlDetector', () => {
       expect(registry.resolve('claude').detector).toBe('ClaudeJsonlDetector');
+    });
+  });
+
+  describe('stub agent (test harness)', () => {
+    const ORIGINAL_STUB_PATH = process.env.TACKLE_TEST_STUB_PATH;
+    beforeAll(() => {
+      // Production builds drop the stub adapter unless the harness opts in.
+      process.env.TACKLE_TEST_STUB_PATH = '/tmp/fixtures/claude-stub.mjs';
+    });
+    afterAll(() => {
+      if (ORIGINAL_STUB_PATH === undefined) delete process.env.TACKLE_TEST_STUB_PATH;
+      else process.env.TACKLE_TEST_STUB_PATH = ORIGINAL_STUB_PATH;
+    });
+
+    it('is registered when TACKLE_TEST_STUB_PATH is set', () => {
+      const registry = createAgentRegistry({ getDefault: () => 'agency-cc' });
+      const adapter = registry.resolve('stub');
+      expect(adapter.name).toBe('stub');
+      expect(adapter.command).toBe('node');
+    });
+
+    it('passes the claude-stub.mjs path as a positional arg', () => {
+      const registry = createAgentRegistry({ getDefault: () => 'agency-cc' });
+      const adapter = registry.resolve('stub');
+      expect(adapter.args).toBeDefined();
+      expect(adapter.args!.length).toBe(1);
+      expect(adapter.args![0]).toMatch(/claude-stub\.mjs$/);
+    });
+
+    it('emits an empty resumeFlag (the stub does not honor session ids)', () => {
+      const registry = createAgentRegistry({ getDefault: () => 'agency-cc' });
+      const adapter = registry.resolve('stub');
+      expect(adapter.resumeFlag('whatever')).toEqual([]);
+    });
+
+    it('declares ClaudeJsonlDetector so the existing detector path is exercised', () => {
+      const registry = createAgentRegistry({ getDefault: () => 'agency-cc' });
+      expect(registry.resolve('stub').detector).toBe('ClaudeJsonlDetector');
+    });
+
+    it('is NOT registered when TACKLE_TEST_STUB_PATH is unset (production builds)', () => {
+      delete process.env.TACKLE_TEST_STUB_PATH;
+      const registry = createAgentRegistry({ getDefault: () => 'agency-cc' });
+      expect(() => registry.resolve('stub')).toThrow(UnknownAgentError);
     });
   });
 

@@ -82,5 +82,8 @@ export interface PlanRepository {
 export interface PhaseRepository {
   listForPlan(planId: number): Promise<Phase[]>;
   get(id: number): Promise<Phase | undefined>;
-  update(id: number, fields: Partial<Pick<Phase, 'name' | 'description' | 'status' | 'sort_order'>>): Promise<void>;
+  update(
+    id: number,
+    fields: Partial<Pick<Phase, 'name' | 'description' | 'status' | 'sort_order'>>,
+  ): Promise<void>;
 }

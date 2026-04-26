@@ -72,20 +72,23 @@ export default function App() {
     }
   }, [loadTasks]);
 
-  const handleTaskClick = useCallback(async (task: Task) => {
-    setSelectedTask(task);
-    setSelectedPhaseId(null); // Reset phase filter on task switch
-    // Switch workspace — swaps psmux session and scopes everything to this task
-    if (window.chartroom?.workspace) {
-      await window.chartroom.workspace.switchTask(task.id);
-    }
-    // Load plan path for review panel
-    if (window.chartroom?.plans) {
-      const plan = await window.chartroom.plans.getForTask(task.id);
-      setPlanPath(plan?.source_path ?? null);
-    }
-    loadSessions();
-  }, [loadSessions]);
+  const handleTaskClick = useCallback(
+    async (task: Task) => {
+      setSelectedTask(task);
+      setSelectedPhaseId(null); // Reset phase filter on task switch
+      // Switch workspace — swaps psmux session and scopes everything to this task
+      if (window.chartroom?.workspace) {
+        await window.chartroom.workspace.switchTask(task.id);
+      }
+      // Load plan path for review panel
+      if (window.chartroom?.plans) {
+        const plan = await window.chartroom.plans.getForTask(task.id);
+        setPlanPath(plan?.source_path ?? null);
+      }
+      loadSessions();
+    },
+    [loadSessions],
+  );
 
   // --- Resize logic ---
   const widthsRef = useRef({ taskWidth, reviewWidth });
@@ -155,9 +158,7 @@ export default function App() {
           onSelectTask={handleTaskClick}
           onDeselectTask={() => setSelectedTask(null)}
           onRefresh={handleRefresh}
-          onNewSession={(taskId) =>
-            handleNewSession({ name: `Task ${taskId} session`, taskId })
-          }
+          onNewSession={(taskId) => handleNewSession({ name: `Task ${taskId} session`, taskId })}
           onSelectPhase={handleSelectPhase}
         />
       </div>

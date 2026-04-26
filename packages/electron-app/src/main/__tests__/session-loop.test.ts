@@ -10,9 +10,7 @@ describe('SessionLoop', () => {
   });
 
   it('suggests "review" after a completed build session', () => {
-    const next = loop.suggestNext([
-      { kind: 'build', status: 'completed' },
-    ]);
+    const next = loop.suggestNext([{ kind: 'build', status: 'completed' }]);
     expect(next).toBe('review');
   });
 
@@ -51,9 +49,7 @@ describe('SessionLoop', () => {
   });
 
   it('suggests retrying the current step if it is still running', () => {
-    const next = loop.suggestNext([
-      { kind: 'build', status: 'running' },
-    ]);
+    const next = loop.suggestNext([{ kind: 'build', status: 'running' }]);
     expect(next).toBeNull(); // wait, don't suggest anything
   });
 

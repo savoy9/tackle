@@ -10,6 +10,7 @@ declare module 'vscode' {
     readonly terminal: Terminal;
     readonly data: string;
   }
+  // eslint-disable-next-line @typescript-eslint/no-namespace -- required for VS Code API augmentation
   export namespace window {
     export const onDidWriteTerminalData: Event<TerminalDataWriteEvent>;
   }
@@ -84,7 +85,9 @@ export async function runLatencyBenchmark(
     for (let i = 0; i < iterations; i++) {
       const lineSentinel = `BD${i}L${randomId()}`;
       const tLine = performance.now();
-      execSync(`${psmux.binary} send-keys -t "${sessionName}" "${lineSentinel}" Enter`, { timeout: 5000 });
+      execSync(`${psmux.binary} send-keys -t "${sessionName}" "${lineSentinel}" Enter`, {
+        timeout: 5000,
+      });
       samples.push({
         iteration: i,
         method: 'psmux-direct-line',
@@ -97,7 +100,9 @@ export async function runLatencyBenchmark(
       for (let c = 0; c < keySentinel.length; c++) {
         const prefix = keySentinel.slice(0, c + 1);
         const t = performance.now();
-        execSync(`${psmux.binary} send-keys -l -t "${sessionName}" "${keySentinel[c]}"`, { timeout: 5000 });
+        execSync(`${psmux.binary} send-keys -l -t "${sessionName}" "${keySentinel[c]}"`, {
+          timeout: 5000,
+        });
         samples.push({
           iteration: i,
           method: 'psmux-direct-key',
@@ -144,7 +149,11 @@ export async function runLatencyBenchmark(
       samples,
     });
   } finally {
-    try { psmux.killSession(sessionName); } catch { /* best effort */ }
+    try {
+      psmux.killSession(sessionName);
+    } catch {
+      /* best effort */
+    }
   }
 
   return { samples, summary: summarize(samples) };
@@ -212,8 +221,16 @@ async function measureTerminalRoundTrip(opts: MeasureOptions): Promise<void> {
         terminal.sendText(ch, false);
       }
       const burst = await dataBuf.waitForBurst(burstSentinel, tBurst);
-      opts.samples.push({ iteration: i, method: opts.methods.burstFirst, latencyMs: burst.firstCharMs });
-      opts.samples.push({ iteration: i, method: opts.methods.burstLast, latencyMs: burst.lastCharMs });
+      opts.samples.push({
+        iteration: i,
+        method: opts.methods.burstFirst,
+        latencyMs: burst.firstCharMs,
+      });
+      opts.samples.push({
+        iteration: i,
+        method: opts.methods.burstLast,
+        latencyMs: burst.lastCharMs,
+      });
       opts.samples.push({ iteration: i, method: opts.methods.burstGap, latencyMs: burst.maxGapMs });
       resetInputLine(terminal);
     }
@@ -257,7 +274,8 @@ function resetInputLine(terminal: vscode.Terminal): void {
 class DataBuffer {
   private disposable: vscode.Disposable;
   private buffer = '';
-  private pendingChar: { ch: string; resolve: (t: number) => void; startedAt: number } | null = null;
+  private pendingChar: { ch: string; resolve: (t: number) => void; startedAt: number } | null =
+    null;
   private lastDataAtMs = 0;
 
   // Burst recording: when active, record every char-arrival timestamp so we can compute first/last/max-gap.
@@ -317,7 +335,9 @@ class DataBuffer {
       if (this.buffer.includes(sentinel)) return performance.now() - startedAt;
       await sleep(2);
     }
-    throw new Error(`Timed out waiting for sentinel ${sentinel} after ${timeoutMs}ms (buffer tail: ${JSON.stringify(this.buffer.slice(-80))})`);
+    throw new Error(
+      `Timed out waiting for sentinel ${sentinel} after ${timeoutMs}ms (buffer tail: ${JSON.stringify(this.buffer.slice(-80))})`,
+    );
   }
 
   waitForChar(ch: string, startedAt: number, timeoutMs = 10_000): Promise<number> {
@@ -330,7 +350,10 @@ class DataBuffer {
         }
       }, timeoutMs);
       const orig = this.pendingChar.resolve;
-      this.pendingChar.resolve = (t) => { clearTimeout(timer); orig(t); };
+      this.pendingChar.resolve = (t) => {
+        clearTimeout(timer);
+        orig(t);
+      };
     });
   }
 
@@ -363,7 +386,7 @@ class DataBuffer {
     this.burstRecording = false;
     throw new Error(
       `Timed out waiting for burst ${JSON.stringify(sentinel)} after ${timeoutMs}ms ` +
-      `(arrivals: ${this.burstArrivals.map((a) => a.ch).join('')})`,
+        `(arrivals: ${this.burstArrivals.map((a) => a.ch).join('')})`,
     );
   }
 
@@ -407,7 +430,9 @@ async function waitForSentinelInPane(
         timeout: 5000,
       });
       if (output.includes(sentinel)) return performance.now() - startedAt;
-    } catch { /* retry */ }
+    } catch {
+      /* retry */
+    }
     await sleep(1);
   }
   throw new Error(`Timed out waiting for sentinel ${sentinel} in pane after ${timeoutMs}ms`);
@@ -424,7 +449,10 @@ function randomId(): string {
 function summarize(samples: BenchSample[]): BenchSummary[] {
   const methods = Array.from(new Set(samples.map((s) => s.method)));
   return methods.map((method) => {
-    const ms = samples.filter((s) => s.method === method).map((s) => s.latencyMs).sort((a, b) => a - b);
+    const ms = samples
+      .filter((s) => s.method === method)
+      .map((s) => s.latencyMs)
+      .sort((a, b) => a - b);
     return {
       method,
       count: ms.length,

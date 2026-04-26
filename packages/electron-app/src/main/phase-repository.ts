@@ -18,7 +18,13 @@ export class PhaseRepository {
         `INSERT INTO phases (plan_id, task_id, name, description, sort_order, created_at)
          VALUES (?, ?, ?, ?, ?, datetime('now'))`,
       )
-      .run(options.plan_id, options.task_id, options.name, options.description ?? '', options.sort_order);
+      .run(
+        options.plan_id,
+        options.task_id,
+        options.name,
+        options.description ?? '',
+        options.sort_order,
+      );
 
     return {
       id: Number(result.lastInsertRowid),
@@ -33,9 +39,7 @@ export class PhaseRepository {
   }
 
   get(id: number): Phase | undefined {
-    return this.db
-      .prepare<Phase>('SELECT * FROM phases WHERE id = ?')
-      .get(id) as Phase | undefined;
+    return this.db.prepare<Phase>('SELECT * FROM phases WHERE id = ?').get(id) as Phase | undefined;
   }
 
   listForPlan(planId: number): Phase[] {
@@ -51,9 +55,7 @@ export class PhaseRepository {
   }
 
   updateStatus(id: number, status: Phase['status']): void {
-    this.db
-      .prepare('UPDATE phases SET status = ? WHERE id = ?')
-      .run(status, id);
+    this.db.prepare('UPDATE phases SET status = ? WHERE id = ?').run(status, id);
   }
 
   deleteForPlan(planId: number): void {

@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { TestOverride } from '../test-overrides';
 
 /**
  * Returns true if the workspace is single-root (safe to activate).
@@ -22,6 +23,14 @@ export async function checkSingleRootWorkspace(): Promise<boolean> {
   }
 
   return true;
+}
+
+/**
+ * Resolves the workspace root path. Test-mode override (`TestOverride.workspace`)
+ * takes precedence; otherwise reads from the active VS Code workspace.
+ */
+export function resolveWorkspaceRoot(): string | undefined {
+  return TestOverride.workspace ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
 }
 
 /**

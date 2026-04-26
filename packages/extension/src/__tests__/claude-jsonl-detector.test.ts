@@ -5,6 +5,7 @@ import * as os from 'node:os';
 import type { Session } from '@tackle/shared';
 import {
   createClaudeJsonlDetector,
+  defaultJsonlPathResolver,
   deriveStateFromEntry,
   type JsonlPathResolver,
 } from '../agent/claude-jsonl-detector';
@@ -173,9 +174,9 @@ describe('deriveStateFromEntry (conservative defaults)', () => {
     );
   });
   it('returns idle only on assistant end_turn / stop_sequence', () => {
-    expect(
-      deriveStateFromEntry({ type: 'assistant', message: { stop_reason: 'end_turn' } }),
-    ).toBe('idle');
+    expect(deriveStateFromEntry({ type: 'assistant', message: { stop_reason: 'end_turn' } })).toBe(
+      'idle',
+    );
     expect(
       deriveStateFromEntry({ type: 'assistant', message: { stop_reason: 'stop_sequence' } }),
     ).toBe('idle');
@@ -234,9 +235,9 @@ describe('deriveStateFromEntry — waiting state (#42)', () => {
     // Documented assumption: when Claude Code surfaces a tool-approval
     // pause it writes a system entry with a recognisable subtype. If
     // this shape ever changes the detector falls back to `working`.
-    expect(
-      deriveStateFromEntry({ type: 'system', subtype: 'tool_approval_request' }),
-    ).toBe('waiting');
+    expect(deriveStateFromEntry({ type: 'system', subtype: 'tool_approval_request' })).toBe(
+      'waiting',
+    );
   });
 
   it('stays working for an assistant entry that has tool_use but no AskUserQuestion', () => {
@@ -257,12 +258,8 @@ describe('deriveStateFromEntry — waiting state (#42)', () => {
   it('stays working for ambiguous system subtypes', () => {
     // Conservative: anything we don't recognise as an explicit pause
     // signal must NOT flip to waiting.
-    expect(deriveStateFromEntry({ type: 'system', subtype: 'turn_duration' })).toBe(
-      'working',
-    );
-    expect(deriveStateFromEntry({ type: 'system', subtype: 'away_summary' })).toBe(
-      'working',
-    );
+    expect(deriveStateFromEntry({ type: 'system', subtype: 'turn_duration' })).toBe('working');
+    expect(deriveStateFromEntry({ type: 'system', subtype: 'away_summary' })).toBe('working');
   });
 });
 
@@ -320,13 +317,7 @@ describe('ClaudeJsonlDetector — waiting transitions (#42)', () => {
 
     detector.stop(baseSession({ id: 42 }));
 
-    expect(events.map((e) => e.state)).toEqual([
-      'idle',
-      'working',
-      'waiting',
-      'working',
-      'idle',
-    ]);
+    expect(events.map((e) => e.state)).toEqual(['idle', 'working', 'waiting', 'working', 'idle']);
     for (const e of events) expect(e.sessionId).toBe(42);
   });
 
@@ -358,5 +349,32 @@ describe('ClaudeJsonlDetector — waiting transitions (#42)', () => {
     const states = events.map((e) => e.state);
     expect(states).toEqual(['idle', 'working']);
     expect(states).not.toContain('waiting');
+  });
+});
+
+describe('defaultJsonlPathResolver', () => {
+  afterEach(() => {
+    delete process.env.TACKLE_TEST_JSONL_DIR;
+  });
+
+  it('uses TACKLE_TEST_JSONL_DIR when set, replacing the projects/<hash>/ part', () => {
+    process.env.TACKLE_TEST_JSONL_DIR = '/tmp/jsonl-override';
+    const resolver = defaultJsonlPathResolver(() => '/some/cwd');
+    const out = resolver.resolve(baseSession({ claude_session_id: 'abc' }));
+    expect(out).toBe(path.join('/tmp/jsonl-override', 'abc.jsonl'));
+  });
+
+  it('falls back to ~/.claude/projects/<hash>/<id>.jsonl when env var unset', () => {
+    delete process.env.TACKLE_TEST_JSONL_DIR;
+    const resolver = defaultJsonlPathResolver(() => '/some/cwd');
+    const out = resolver.resolve(baseSession({ claude_session_id: 'abc' }));
+    expect(out).toContain(path.join('.claude', 'projects'));
+    expect(out!.endsWith('abc.jsonl')).toBe(true);
+  });
+
+  it('returns null when claude_session_id is missing, regardless of env', () => {
+    process.env.TACKLE_TEST_JSONL_DIR = '/tmp/jsonl-override';
+    const resolver = defaultJsonlPathResolver(() => '/some/cwd');
+    expect(resolver.resolve(baseSession({ claude_session_id: null }))).toBeNull();
   });
 });

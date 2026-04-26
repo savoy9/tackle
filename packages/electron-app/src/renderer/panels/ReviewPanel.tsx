@@ -17,7 +17,10 @@ export function ReviewPanel({ onCollapse, planPath }: ReviewPanelProps) {
   // Load directory listing
   useEffect(() => {
     if (mode === 'browse' && window.chartroom?.files) {
-      window.chartroom.files.list(browsingPath).then(setDirEntries).catch(() => setDirEntries([]));
+      window.chartroom.files
+        .list(browsingPath)
+        .then(setDirEntries)
+        .catch(() => setDirEntries([]));
     }
   }, [browsingPath, mode]);
 
@@ -26,7 +29,10 @@ export function ReviewPanel({ onCollapse, planPath }: ReviewPanelProps) {
     if (planPath && window.chartroom?.files) {
       setCurrentPath(planPath);
       setMode('file');
-      window.chartroom.files.read(planPath).then(setFileContent).catch(() => setFileContent(null));
+      window.chartroom.files
+        .read(planPath)
+        .then(setFileContent)
+        .catch(() => setFileContent(null));
     }
   }, [planPath]);
 
@@ -44,7 +50,7 @@ export function ReviewPanel({ onCollapse, planPath }: ReviewPanelProps) {
   }, []);
 
   const navigateDir = useCallback((name: string) => {
-    setBrowsingPath((prev) => prev === '.' ? name : `${prev}/${name}`);
+    setBrowsingPath((prev) => (prev === '.' ? name : `${prev}/${name}`));
   }, []);
 
   const navigateUp = useCallback(() => {
@@ -73,11 +79,7 @@ export function ReviewPanel({ onCollapse, planPath }: ReviewPanelProps) {
             >
               {mode === 'browse' ? '📄' : '📁'}
             </button>
-            <button
-              onClick={onCollapse}
-              style={collapseButtonStyle}
-              title="Collapse review panel"
-            >
+            <button onClick={onCollapse} style={collapseButtonStyle} title="Collapse review panel">
               ›
             </button>
           </div>
@@ -115,23 +117,29 @@ export function ReviewPanel({ onCollapse, planPath }: ReviewPanelProps) {
               onMouseEnter={(e) => (e.currentTarget.style.background = '#22222a')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
             >
-              {entry.isDirectory ? '📁 ' : '  '}{entry.name}
+              {entry.isDirectory ? '📁 ' : '  '}
+              {entry.name}
             </div>
           ))}
         </div>
       ) : (
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           {currentPath && (
-            <div style={{
-              padding: '4px 12px',
-              fontSize: 11,
-              color: '#999',
-              borderBottom: '1px solid #2a2a2e',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-            }}>
-              <span>{currentPath}{dirty ? ' •' : ''}</span>
+            <div
+              style={{
+                padding: '4px 12px',
+                fontSize: 11,
+                color: '#999',
+                borderBottom: '1px solid #2a2a2e',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+              }}
+            >
+              <span>
+                {currentPath}
+                {dirty ? ' •' : ''}
+              </span>
               {dirty && (
                 <button
                   onClick={handleSave}
@@ -171,14 +179,16 @@ export function ReviewPanel({ onCollapse, planPath }: ReviewPanelProps) {
               spellCheck={false}
             />
           ) : (
-            <div style={{
-              flex: 1,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#666',
-              fontSize: 14,
-            }}>
+            <div
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#666',
+                fontSize: 14,
+              }}
+            >
               No file open
             </div>
           )}

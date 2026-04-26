@@ -50,9 +50,8 @@ describe('ModeManager', () => {
       await manager.activate();
 
       // Verify settings were saved
-      const saved = mockExtensionContext.globalState.get<Record<string, unknown>>(
-        'tackle.savedSettings',
-      );
+      const saved =
+        mockExtensionContext.globalState.get<Record<string, unknown>>('tackle.savedSettings');
       expect(saved).toBeDefined();
 
       // Verify tackle settings were applied
@@ -65,9 +64,7 @@ describe('ModeManager', () => {
       await manager.deactivate();
 
       // Verify context cleared
-      const clearCall = executeCommandCalls.find(
-        (c) => c[0] === 'setContext' && c[2] === false,
-      );
+      const clearCall = executeCommandCalls.find((c) => c[0] === 'setContext' && c[2] === false);
       expect(clearCall).toEqual(['setContext', 'tackle.active', false]);
     });
   });
@@ -88,6 +85,18 @@ describe('ModeManager', () => {
       await manager.activate();
       await manager.deactivate();
       expect(manager.getDatabase()).toBeUndefined();
+    });
+
+    it('uses TACKLE_TEST_DB env var when set', async () => {
+      const prev = process.env.TACKLE_TEST_DB;
+      try {
+        process.env.TACKLE_TEST_DB = '/tmp/override-tackle.db';
+        await manager.activate();
+        expect(createDatabase).toHaveBeenCalledWith('/tmp/override-tackle.db');
+      } finally {
+        if (prev === undefined) delete process.env.TACKLE_TEST_DB;
+        else process.env.TACKLE_TEST_DB = prev;
+      }
     });
   });
 });

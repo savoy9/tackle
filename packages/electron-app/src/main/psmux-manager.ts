@@ -43,11 +43,14 @@ export class PsmuxManager {
   listSessions(): string[] {
     const output = this.exec('tmux list-sessions');
     if (!output) return [];
-    return output.split('\n').filter(Boolean).map((line) => {
-      // Format: "session-name: N windows (created ...)"
-      const colonIdx = line.indexOf(':');
-      return colonIdx >= 0 ? line.substring(0, colonIdx) : line;
-    });
+    return output
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        // Format: "session-name: N windows (created ...)"
+        const colonIdx = line.indexOf(':');
+        return colonIdx >= 0 ? line.substring(0, colonIdx) : line;
+      });
   }
 
   createWindow(sessionName: string, windowName: string): void {
@@ -62,47 +65,47 @@ export class PsmuxManager {
     const output = this.exec(`tmux list-windows -t "${sessionName}"`);
     if (!output) return [];
     // Format: "0: name* (1 panes) [120x30]" — * means active, - means last
-    return output.split('\n').filter(Boolean).map((line) => {
-      const match = line.match(/^(\d+):\s+(\S+?)([*-]?)\s+\(/);
-      if (!match) return { index: 0, name: line, active: false };
-      return {
-        index: parseInt(match[1], 10),
-        name: match[2],
-        active: match[3] === '*',
-      };
-    });
+    return output
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const match = line.match(/^(\d+):\s+(\S+?)([*-]?)\s+\(/);
+        if (!match) return { index: 0, name: line, active: false };
+        return {
+          index: parseInt(match[1], 10),
+          name: match[2],
+          active: match[3] === '*',
+        };
+      });
   }
 
   createPane(sessionName: string, windowTarget?: string): void {
-    const target = windowTarget
-      ? `"${sessionName}:${windowTarget}"`
-      : `"${sessionName}"`;
+    const target = windowTarget ? `"${sessionName}:${windowTarget}"` : `"${sessionName}"`;
     this.exec(`tmux split-window -t ${target}`);
   }
 
   listPanes(sessionName: string, windowTarget?: string): PsmuxPane[] {
-    const target = windowTarget
-      ? `"${sessionName}:${windowTarget}"`
-      : `"${sessionName}"`;
+    const target = windowTarget ? `"${sessionName}:${windowTarget}"` : `"${sessionName}"`;
     const output = this.exec(`tmux list-panes -t ${target}`);
     if (!output) return [];
     // Format: "0: [120x30] [history ...] %1 (active)"
-    return output.split('\n').filter(Boolean).map((line) => {
-      const indexMatch = line.match(/^(\d+):/);
-      const pidMatch = line.match(/%(\d+)/);
-      const active = line.includes('(active)');
-      return {
-        index: indexMatch ? parseInt(indexMatch[1], 10) : 0,
-        pid: pidMatch ? parseInt(pidMatch[1], 10) : 0,
-        active,
-      };
-    });
+    return output
+      .split('\n')
+      .filter(Boolean)
+      .map((line) => {
+        const indexMatch = line.match(/^(\d+):/);
+        const pidMatch = line.match(/%(\d+)/);
+        const active = line.includes('(active)');
+        return {
+          index: indexMatch ? parseInt(indexMatch[1], 10) : 0,
+          pid: pidMatch ? parseInt(pidMatch[1], 10) : 0,
+          active,
+        };
+      });
   }
 
   sendKeys(sessionName: string, keys: string, target?: string): void {
-    const t = target
-      ? `"${sessionName}:${target}"`
-      : `"${sessionName}"`;
+    const t = target ? `"${sessionName}:${target}"` : `"${sessionName}"`;
     this.exec(`tmux send-keys -t ${t} "${keys}" Enter`);
   }
 }

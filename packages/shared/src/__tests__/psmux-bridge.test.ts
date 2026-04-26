@@ -4,35 +4,51 @@ import { PsmuxBridge } from '../psmux/psmux-bridge';
 describe('PsmuxBridge', () => {
   describe('generateSessionName', () => {
     it('produces correct format', () => {
-      expect(PsmuxBridge.generateSessionName('gh', '42', 'implement', 1))
-        .toBe('tackle-gh-42-implement1');
+      expect(PsmuxBridge.generateSessionName('gh', '42', 'implement', 1)).toBe(
+        'tackle-gh-42-implement1',
+      );
     });
 
     it('handles different sources and kinds', () => {
-      expect(PsmuxBridge.generateSessionName('ado', '99', 'plan', 0))
-        .toBe('tackle-ado-99-plan0');
+      expect(PsmuxBridge.generateSessionName('ado', '99', 'plan', 0)).toBe('tackle-ado-99-plan0');
     });
 
     it('handles special characters in taskId', () => {
-      expect(PsmuxBridge.generateSessionName('gh', 'ABC-123', 'debug', 3))
-        .toBe('tackle-gh-ABC-123-debug3');
+      expect(PsmuxBridge.generateSessionName('gh', 'ABC-123', 'debug', 3)).toBe(
+        'tackle-gh-ABC-123-debug3',
+      );
+    });
+
+    it('honors prefix override when provided', () => {
+      expect(PsmuxBridge.generateSessionName('gh', '42', 'implement', 1, 'tackletest-')).toBe(
+        'tackletest-gh-42-implement1',
+      );
+    });
+
+    it('default prefix unchanged when prefix arg omitted', () => {
+      expect(PsmuxBridge.generateSessionName('gh', '42', 'implement', 1)).toBe(
+        'tackle-gh-42-implement1',
+      );
     });
   });
 
   describe('generateTabLabel', () => {
     it('produces correct format without label', () => {
-      expect(PsmuxBridge.generateTabLabel('42', 'fix-auth', 'implement', 1))
-        .toBe('42-fix-auth|implement1');
+      expect(PsmuxBridge.generateTabLabel('42', 'fix-auth', 'implement', 1)).toBe(
+        '42-fix-auth|implement1',
+      );
     });
 
     it('produces correct format with label', () => {
-      expect(PsmuxBridge.generateTabLabel('42', 'fix-auth', 'implement', 1, 'backend'))
-        .toBe('42-fix-auth|implement1-backend');
+      expect(PsmuxBridge.generateTabLabel('42', 'fix-auth', 'implement', 1, 'backend')).toBe(
+        '42-fix-auth|implement1-backend',
+      );
     });
 
     it('handles empty label same as no label', () => {
-      expect(PsmuxBridge.generateTabLabel('42', 'fix-auth', 'implement', 1, ''))
-        .toBe('42-fix-auth|implement1');
+      expect(PsmuxBridge.generateTabLabel('42', 'fix-auth', 'implement', 1, '')).toBe(
+        '42-fix-auth|implement1',
+      );
     });
   });
 

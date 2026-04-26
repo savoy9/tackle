@@ -33,9 +33,9 @@ export class WorkspaceManager {
    * Derives a psmux session name from a task's DB row.
    */
   sessionNameForTask(taskId: number): string {
-    const task = this.db
-      .prepare<Task>('SELECT * FROM tasks WHERE id = ?')
-      .get(taskId) as Task | undefined;
+    const task = this.db.prepare<Task>('SELECT * FROM tasks WHERE id = ?').get(taskId) as
+      | Task
+      | undefined;
 
     if (!task) throw new Error(`Task ${taskId} not found`);
 
@@ -66,7 +66,10 @@ export class WorkspaceManager {
    * Derive a tmux window name from a phase: "{sort_order}-{slugified-name}"
    */
   private windowNameForPhase(phase: Phase): string {
-    const slug = phase.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const slug = phase.name
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '');
     return `${phase.sort_order}-${slug}`;
   }
 
@@ -77,13 +80,15 @@ export class WorkspaceManager {
     if (!this._currentSessionName) throw new Error('No task selected');
 
     if (this.createdWindows.has(phaseId)) {
-      const phase = this.db.prepare<Phase>('SELECT * FROM phases WHERE id = ?').get(phaseId) as Phase;
+      const phase = this.db
+        .prepare<Phase>('SELECT * FROM phases WHERE id = ?')
+        .get(phaseId) as Phase;
       return this.windowNameForPhase(phase);
     }
 
-    const phase = this.db
-      .prepare<Phase>('SELECT * FROM phases WHERE id = ?')
-      .get(phaseId) as Phase | undefined;
+    const phase = this.db.prepare<Phase>('SELECT * FROM phases WHERE id = ?').get(phaseId) as
+      | Phase
+      | undefined;
 
     if (!phase) throw new Error(`Phase ${phaseId} not found`);
 

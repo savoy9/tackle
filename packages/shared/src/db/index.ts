@@ -9,6 +9,7 @@ export type {
   UpsertTask,
   CreateSession,
   UpdateSession,
+  TaskWorktreeFields,
 } from './repositories';
 export {
   SqliteTaskRepository,

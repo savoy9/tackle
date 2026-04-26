@@ -30,16 +30,25 @@ async function main() {
       console.log(await taskList(taskRepo));
     } else if (cmd === 'task' && sub === 'show') {
       const id = Number(rest[0]);
-      if (!id) { console.error('Usage: tackle task show <id>'); process.exit(1); }
+      if (!id) {
+        console.error('Usage: tackle task show <id>');
+        process.exit(1);
+      }
       console.log(await taskShow(taskRepo, id));
     } else if (cmd === 'session' && sub === 'list') {
       const taskIdx = rest.indexOf('--task');
       const taskId = taskIdx >= 0 ? Number(rest[taskIdx + 1]) : NaN;
-      if (!taskId) { console.error('Usage: tackle session list --task <id>'); process.exit(1); }
+      if (!taskId) {
+        console.error('Usage: tackle session list --task <id>');
+        process.exit(1);
+      }
       console.log(await sessionList(sessionRepo, taskId));
     } else if (cmd === 'session' && sub === 'complete') {
       const id = Number(rest[0]);
-      if (!id) { console.error('Usage: tackle session complete <id>'); process.exit(1); }
+      if (!id) {
+        console.error('Usage: tackle session complete <id>');
+        process.exit(1);
+      }
       console.log(await sessionComplete(sessionRepo, id));
     } else {
       console.error(`Unknown command: ${cmd} ${sub ?? ''}`);

@@ -9,11 +9,7 @@ import type { SidebarState } from './sidebar-state';
 import { sortTasks } from './sort';
 import { partitionTasks } from './closed';
 import { THEME_CSS } from './theme';
-import {
-  escapeHtml,
-  renderCard,
-  sessionsByTask,
-} from './render-card';
+import { escapeHtml, renderCard, sessionsByTask } from './render-card';
 import { renderDetail } from './render-detail';
 
 // Re-export for any external import sites that still reference the old module.
@@ -297,21 +293,18 @@ function renderClosedFolder(closed: import('@tackle/shared').Task[], open: boole
   const caret = open ? '▾' : '▸';
   const folder = `<div class="closed-folder" data-action="toggleClosedFolder">${caret} Closed (${closed.length})</div>`;
   if (!open) return folder;
-  const sorted = closed
-    .slice()
-    .sort((a, b) => {
-      const ka = closedDate(a);
-      const kb = closedDate(b);
-      if (ka !== kb) return ka < kb ? 1 : -1;
-      return a.id - b.id;
-    });
+  const sorted = closed.slice().sort((a, b) => {
+    const ka = closedDate(a);
+    const kb = closedDate(b);
+    if (ka !== kb) return ka < kb ? 1 : -1;
+    return a.id - b.id;
+  });
   const rows = sorted.map(renderClosedRow).join('');
   return `${folder}<div class="closed-rows">${rows}</div>`;
 }
 
 export function render(state: SidebarState): string {
-  const body =
-    state.mode === 'list' ? renderList(state) : renderDetail(state);
+  const body = state.mode === 'list' ? renderList(state) : renderDetail(state);
   // The `<style>` block lives INSIDE the body so it survives the
   // innerHTML extraction in handle-outbound.ts (which pulls only the
   // body contents into #root). If we put it in <head> the tokens and

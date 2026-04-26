@@ -133,11 +133,17 @@
   "scripts": {
     "vscode:prepublish": "bun run compile",
     "compile": "bun build src/extension.ts --outdir dist --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite && bun build src/sidebar/webview/main.ts --outdir dist --target browser --format iife --entry-naming sidebar-webview.js",
-    "compile:tests": "bun build ./test/runner/run-bench.ts ./test/suite/index.ts ./test/bench/latency.test.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron",
+    "compile:tests": "bun build ./test/runner/run-bench.ts ./test/suite/index.ts ./test/bench/latency.test.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron && bun build ./test/runner/run-integration.ts ./test/suite/integration-index.ts ./test/integration/smoke.test.ts ./test/integration/activate.test.ts ./test/integration/task-select.test.ts ./test/integration/new-session.test.ts ./test/integration/mark-done.test.ts ./test/integration/restart-recovery.test.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron --external mocha-junit-reporter",
+    "compile:visual": "bun build ./test/runner/run-visual.ts ./test/visual/index.ts ./test/visual/snapshots.test.ts ./test/visual/build-diff-index.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron --external node-html-parser",
+    "compile:perf": "bun build ./test/runner/run-perf.ts ./test/suite/perf-index.ts ./test/perf/perf.test.ts --outdir out-test --target node --format cjs --external vscode --external better-sqlite3 --external node:sqlite --external mocha --external glob --external @vscode/test-electron",
     "typecheck": "tsc --noEmit",
     "test": "bun --bun vitest run",
     "test:watch": "bun --bun vitest",
     "test:bench": "bun run compile && bun run compile:tests && node out-test/runner/run-bench.js",
+    "test:integration": "bun run compile && bun run compile:tests && node out-test/runner/run-integration.js",
+    "test:visual": "bun run compile && bun run compile:visual && node out-test/runner/run-visual.js",
+    "test:visual:update": "UPDATE_SNAPSHOTS=1 bun run test:visual",
+    "test:perf": "bun run compile && bun run compile:perf && node out-test/runner/run-perf.js",
     "package": "npx @vscode/vsce package --no-dependencies"
   },
   "dependencies": {
@@ -154,6 +160,7 @@
     "@vscode/test-electron": "^2.4.1",
     "glob": "^11.0.0",
     "mocha": "^10.8.2",
+    "node-html-parser": "^7.1.0",
     "typescript": "^5.7.0",
     "vitest": "^4.1.4"
   }

@@ -30,7 +30,11 @@ export interface ChartroomAPI {
     onData: (callback: (data: string) => void) => () => void;
   };
   sessions: {
-    create: (options?: { name?: string; taskId?: number; kind?: 'agent' | 'terminal' }) => Promise<ManagedSessionInfo>;
+    create: (options?: {
+      name?: string;
+      taskId?: number;
+      kind?: 'agent' | 'terminal';
+    }) => Promise<ManagedSessionInfo>;
     list: () => Promise<ManagedSessionInfo[]>;
     listForTask: (taskId: number) => Promise<ManagedSessionInfo[]>;
     stop: (id: number) => Promise<void>;
@@ -42,7 +46,11 @@ export interface ChartroomAPI {
     ensurePhaseWindow: (phaseId: number) => Promise<string>;
   };
   plans: {
-    link: (taskId: number, sourcePath: string, content: string) => Promise<{ plan: Plan; phases: Phase[] }>;
+    link: (
+      taskId: number,
+      sourcePath: string,
+      content: string,
+    ) => Promise<{ plan: Plan; phases: Phase[] }>;
     getForTask: (taskId: number) => Promise<Plan | undefined>;
   };
   phases: {

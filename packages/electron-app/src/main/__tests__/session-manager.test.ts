@@ -5,7 +5,9 @@ import { SessionManager, type TerminalBackend } from '../session-manager';
 // Mock terminal backend
 let paneCount = 0;
 const mockBackend: TerminalBackend = {
-  createPane: vi.fn(() => { paneCount++; }),
+  createPane: vi.fn(() => {
+    paneCount++;
+  }),
   listPanes: vi.fn(() => Array.from({ length: paneCount + 1 }, (_, i) => ({ index: i }))),
 };
 
@@ -109,12 +111,13 @@ describe('SessionManager', () => {
     db.prepare(
       `INSERT INTO tasks (external_id, external_system, title, status) VALUES (?, ?, ?, ?)`,
     ).run('1', 'github', 'Task A', 'open');
-    db.prepare(
-      `INSERT INTO plans (task_id, source_path) VALUES (?, ?)`,
-    ).run(1, './plans/test.md');
-    db.prepare(
-      `INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)`,
-    ).run(1, 1, 'Phase 1', 0);
+    db.prepare(`INSERT INTO plans (task_id, source_path) VALUES (?, ?)`).run(1, './plans/test.md');
+    db.prepare(`INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)`).run(
+      1,
+      1,
+      'Phase 1',
+      0,
+    );
 
     const session = manager.create({ name: 'phase-session', taskId: 1, phaseId: 1 });
     expect(session.phase_id).toBe(1);
@@ -127,15 +130,19 @@ describe('SessionManager', () => {
     db.prepare(
       `INSERT INTO tasks (external_id, external_system, title, status) VALUES (?, ?, ?, ?)`,
     ).run('1', 'github', 'Task A', 'open');
-    db.prepare(
-      `INSERT INTO plans (task_id, source_path) VALUES (?, ?)`,
-    ).run(1, './plans/test.md');
-    db.prepare(
-      `INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)`,
-    ).run(1, 1, 'Phase 1', 0);
-    db.prepare(
-      `INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)`,
-    ).run(1, 1, 'Phase 2', 1);
+    db.prepare(`INSERT INTO plans (task_id, source_path) VALUES (?, ?)`).run(1, './plans/test.md');
+    db.prepare(`INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)`).run(
+      1,
+      1,
+      'Phase 1',
+      0,
+    );
+    db.prepare(`INSERT INTO phases (plan_id, task_id, name, sort_order) VALUES (?, ?, ?, ?)`).run(
+      1,
+      1,
+      'Phase 2',
+      1,
+    );
 
     manager.create({ name: 'phase-1-session', taskId: 1, phaseId: 1 });
     manager.create({ name: 'phase-2-session', taskId: 1, phaseId: 2 });
