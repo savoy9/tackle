@@ -180,6 +180,109 @@ describe('computeSyncDiscovery (Plan Discovery + Plan Source per task)', () => {
   });
 });
 
+describe('TaskService.applyPlanDiscovery (IO orchestration)', () => {
+  type FakePlan = { id: number; task_id: number; source_kind: string | null; source_ref: string | null };
+  type FakePhase = { id: number; plan_id: number; task_id: number; external_id: string | null; name: string; sort_order: number };
+
+  function makeFakeRepos(opts: { tasks: Array<Pick<Task, 'id' | 'external_id' | 'description'>>; plans: FakePlan[]; phases: FakePhase[] }) {
+    const planUpserts: Array<{ task_id: number; source_kind: string | null; source_ref: string | null }> = [];
+    const phaseUpdates: Array<{ id: number; fields: { name?: string; sort_order?: number } }> = [];
+    const taskRepo = {
+      list: async () => opts.tasks as Task[],
+      get: async (id: number) => opts.tasks.find((t) => t.id === id) as Task | undefined,
+    };
+    const plansRepo = {
+      get: async (taskId: number) => opts.plans.find((p) => p.task_id === taskId),
+      save: async (plan: { task_id: number; source_path: string; source_kind: string | null; source_ref: string | null; extracted_at: string | null }) => {
+        planUpserts.push({ task_id: plan.task_id, source_kind: plan.source_kind, source_ref: plan.source_ref });
+        const existing = opts.plans.find((p) => p.task_id === plan.task_id);
+        if (existing) {
+          existing.source_kind = plan.source_kind;
+          existing.source_ref = plan.source_ref;
+          return existing as never;
+        }
+        const created: FakePlan = { id: opts.plans.length + 1, task_id: plan.task_id, source_kind: plan.source_kind, source_ref: plan.source_ref };
+        opts.plans.push(created);
+        return created as never;
+      },
+    };
+    const phasesRepo = {
+      listForPlan: async (planId: number) => opts.phases.filter((p) => p.plan_id === planId) as never,
+      update: async (id: number, fields: { name?: string; sort_order?: number }) => {
+        phaseUpdates.push({ id, fields });
+      },
+    };
+    return { taskRepo, plansRepo, phasesRepo, planUpserts, phaseUpdates };
+  }
+
+  it('saves the detected plan source for each task with a plans row', async () => {
+    const repos = makeFakeRepos({
+      tasks: [{ id: 1, external_id: '42', description: '' } as Task],
+      plans: [{ id: 100, task_id: 1, source_kind: null, source_ref: null }],
+      phases: [],
+    });
+    const events: unknown[] = [];
+    const bus = { dispatch: (e: unknown) => events.push(e) };
+    const service = new TaskService(repos.taskRepo as never, bus as never, {
+      plansRepo: repos.plansRepo as never,
+      phasesRepo: repos.phasesRepo as never,
+      fetchSubIssues: async () => [],
+      listPlanFiles: async () => ['42-foo.md'],
+    });
+    await service.applyPlanDiscovery();
+    expect(repos.planUpserts).toEqual([
+      { task_id: 1, source_kind: 'markdown', source_ref: 'plans/42-foo.md' },
+    ]);
+  });
+
+  it('dispatches phase.created events for net-new sub-issues', async () => {
+    const repos = makeFakeRepos({
+      tasks: [{ id: 1, external_id: '42', description: '' } as Task],
+      plans: [{ id: 100, task_id: 1, source_kind: null, source_ref: null }],
+      phases: [],
+    });
+    const events: unknown[] = [];
+    const bus = { dispatch: (e: unknown) => events.push(e) };
+    const service = new TaskService(repos.taskRepo as never, bus as never, {
+      plansRepo: repos.plansRepo as never,
+      phasesRepo: repos.phasesRepo as never,
+      fetchSubIssues: async (extId: string) =>
+        extId === '42' ? [{ external_id: '201', title: 'Phase A', sort_order: 0 }] : [],
+      listPlanFiles: async () => [],
+    });
+    await service.applyPlanDiscovery();
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      type: 'phase.created',
+      task_id: 1,
+      plan_id: 100,
+      external_id: '201',
+      name: 'Phase A',
+    });
+  });
+
+  it('skips tasks that have no plans row (no plan_started yet)', async () => {
+    const repos = makeFakeRepos({
+      tasks: [{ id: 1, external_id: '42', description: '' } as Task],
+      plans: [],
+      phases: [],
+    });
+    const events: unknown[] = [];
+    const bus = { dispatch: (e: unknown) => events.push(e) };
+    const fetchSpy = vi.fn(async () => []);
+    const service = new TaskService(repos.taskRepo as never, bus as never, {
+      plansRepo: repos.plansRepo as never,
+      phasesRepo: repos.phasesRepo as never,
+      fetchSubIssues: fetchSpy as never,
+      listPlanFiles: async () => [],
+    });
+    await service.applyPlanDiscovery();
+    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(events).toEqual([]);
+    expect(repos.planUpserts).toEqual([]);
+  });
+});
+
 describe('TaskService.parseGitRemote', () => {
   it('extracts owner/repo from HTTPS URL', () => {
     const result = TaskService.parseGitRemote('https://github.com/octocat/hello-world.git');

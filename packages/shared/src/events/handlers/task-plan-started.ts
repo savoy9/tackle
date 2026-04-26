@@ -33,5 +33,14 @@ export function registerTaskPlanStartedHandler(bus: EventBus, db: Database): voi
       from,
       to,
     }));
+
+    // Create an empty plans row for the task if one doesn't exist yet. The
+    // plans row is the anchor for Plan Source detection (#77) and Plan
+    // Discovery (#76); creating it eagerly on plan_started means later
+    // sync passes can attach source_kind/source_ref and emit phase events
+    // without needing a separate "first sub-issue seen" trigger.
+    db.prepare(
+      "INSERT INTO plans (task_id, source_path) SELECT ?, '' WHERE NOT EXISTS (SELECT 1 FROM plans WHERE task_id = ?)",
+    ).run(event.task_id, event.task_id);
   });
 }

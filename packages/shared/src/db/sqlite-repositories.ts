@@ -246,13 +246,21 @@ export class SqlitePlanRepository implements PlanRepository {
   save(plan: Omit<Plan, 'id' | 'created_at'>): Promise<Plan> {
     const result = this.db
       .prepare(
-        `INSERT INTO plans (task_id, source_path, extracted_at)
-         VALUES (?, ?, ?)
+        `INSERT INTO plans (task_id, source_path, source_kind, source_ref, extracted_at)
+         VALUES (?, ?, ?, ?, ?)
          ON CONFLICT(task_id) DO UPDATE SET
            source_path = excluded.source_path,
+           source_kind = excluded.source_kind,
+           source_ref = excluded.source_ref,
            extracted_at = excluded.extracted_at`,
       )
-      .run(plan.task_id, plan.source_path, plan.extracted_at);
+      .run(
+        plan.task_id,
+        plan.source_path,
+        plan.source_kind,
+        plan.source_ref,
+        plan.extracted_at,
+      );
     const id = Number(result.lastInsertRowid);
     return Promise.resolve(this.db.prepare<Plan>('SELECT * FROM plans WHERE id = ?').get(id)!);
   }

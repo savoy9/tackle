@@ -10,7 +10,10 @@ import {
   type LocalPhaseSnapshot,
   type PhaseCreatedEvent,
   type PhaseRemovedEvent,
+  type PhaseRepository,
   type PhaseUpsert,
+  type Plan,
+  type PlanRepository,
   type Task,
   type TaskRepository,
   type UpsertTask,
@@ -120,11 +123,93 @@ export function computeSyncDiscovery(input: SyncDiscoveryInput): SyncDiscoveryOu
   return { events, phaseUpserts: upserts, planSource };
 }
 
+/**
+ * Optional Plan-Discovery-related dependencies. The base TaskService is
+ * usable without them (Sync still produces tasks + external_status events);
+ * pass these to enable Plan Source detection + sub-issue mirroring.
+ */
+export interface PlanDiscoveryDeps {
+  plansRepo: PlanRepository;
+  phasesRepo: PhaseRepository;
+  /** Returns the GH sub-issues for a parent issue's external_id. */
+  fetchSubIssues: (parentExternalId: string) => Promise<ExternalChildItem[]>;
+  /** Returns the basenames of files in the workspace `plans/` directory. */
+  listPlanFiles: () => Promise<string[]>;
+}
+
 export class TaskService {
   constructor(
     private taskRepo: TaskRepository,
     private eventBus?: EventBus,
+    private deps?: PlanDiscoveryDeps,
   ) {}
+
+  /**
+   * For each Task that already has a plans row (i.e. plan_started has fired),
+   * fetch its GitHub sub-issues, list the workspace `plans/` directory, run
+   * Plan Discovery, dispatch the resulting phase events, apply phase
+   * title/order upserts, and upsert the detected Plan Source onto the
+   * plans row.
+   *
+   * No-op when PlanDiscoveryDeps were not supplied at construction.
+   */
+  async applyPlanDiscovery(): Promise<void> {
+    if (!this.deps) return;
+    const { plansRepo, phasesRepo, fetchSubIssues, listPlanFiles } = this.deps;
+    const tasks = await this.taskRepo.list();
+    const planFiles = await listPlanFiles();
+
+    for (const task of tasks) {
+      const plan: Plan | undefined = await plansRepo.get(task.id);
+      if (!plan) continue; // No plan_started yet — skip discovery for this task.
+
+      const localPhases: LocalPhaseSnapshot[] = (await phasesRepo.listForPlan(plan.id)).map(
+        (p) => ({
+          id: p.id,
+          task_id: p.task_id,
+          plan_id: p.plan_id,
+          external_id: p.external_id,
+          name: p.name,
+          sort_order: p.sort_order,
+        }),
+      );
+      const subIssues = await fetchSubIssues(task.external_id);
+
+      const result = computeSyncDiscovery({
+        task: { id: task.id, external_id: task.external_id },
+        planId: plan.id,
+        localPhases,
+        subIssues,
+        planFiles,
+        description: task.description,
+      });
+
+      // Upsert plan source so the Phase Tracker can render the source link.
+      await plansRepo.save({
+        task_id: task.id,
+        source_path: plan.source_path,
+        source_kind: result.planSource.source_kind,
+        source_ref: result.planSource.source_ref,
+        extracted_at: plan.extracted_at,
+      });
+
+      // Apply non-eventful corrections directly (title/order changes).
+      for (const u of result.phaseUpserts) {
+        await phasesRepo.update(u.phase_id, { name: u.name, sort_order: u.sort_order });
+      }
+
+      // Dispatch phase.created / phase.removed via the bus (sole writer).
+      if (this.eventBus) {
+        for (const ev of result.events) {
+          try {
+            this.eventBus.dispatch(ev);
+          } catch {
+            // One bad phase event must not abort the whole sync pass.
+          }
+        }
+      }
+    }
+  }
 
   async syncFromGitHub(): Promise<number> {
     const session = await vscode.authentication.getSession('github', ['repo'], {
@@ -202,6 +287,16 @@ export class TaskService {
           // Audit/refresh failure must not break Sync.
         }
       }
+    }
+
+    // Phase Tracker discovery: for each Task that has a plans row, mirror its
+    // sub-issues and detect its Plan Source. No-op if PlanDiscoveryDeps
+    // weren't supplied at construction (kept optional so unit tests / older
+    // call sites don't have to provide GH HTTP and fs deps).
+    try {
+      await this.applyPlanDiscovery();
+    } catch {
+      // A discovery failure shouldn't fail Sync; the next pass will retry.
     }
 
     return tasks.length;

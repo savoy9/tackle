@@ -1,16 +1,23 @@
 import * as vscode from 'vscode';
+import * as fs from 'node:fs/promises';
+import * as path from 'node:path';
 import { ModeManager } from './mode';
 import {
   SqliteTaskRepository,
   SqliteSessionRepository,
   SqliteLayoutStateRepository,
+  SqlitePlanRepository,
+  SqlitePhaseRepository,
   PsmuxBridge,
   createEventBus,
   registerTaskPlanStartedHandler,
   registerExternalStatusChangedHandler,
   registerPlanApprovedHandler,
   registerTaskImplementationStartedHandler,
+  registerPhaseCreatedHandler,
+  registerPhaseRemovedHandler,
   type EventBus,
+  type ExternalChildItem,
 } from '@tackle/shared';
 import { TaskService, TaskRemover, type RemovePromptFn } from './task';
 import { TerminalOrchestrator } from './terminal';
@@ -106,6 +113,8 @@ export function activate(context: vscode.ExtensionContext): void {
       const baseSessionRepo = new SqliteSessionRepository(db);
       const sessionRepo = new ObservableSessionRepository(baseSessionRepo);
       const layoutRepo = new SqliteLayoutStateRepository(db);
+      const plansRepo = new SqlitePlanRepository(db);
+      const phasesRepo = new SqlitePhaseRepository(db);
       const psmux = new PsmuxBridge();
 
       // Event Bus — sole writer of Tackle Status / Phase Status.
@@ -114,9 +123,64 @@ export function activate(context: vscode.ExtensionContext): void {
       registerExternalStatusChangedHandler(eventBus, db);
       registerPlanApprovedHandler(eventBus, db);
       registerTaskImplementationStartedHandler(eventBus, db);
+      registerPhaseCreatedHandler(eventBus, db);
+      registerPhaseRemovedHandler(eventBus, db);
       eventBusRef = eventBus;
 
-      taskService = new TaskService(taskRepo, eventBus);
+      // Plan Discovery deps for TaskService — fetch GH sub-issues for one
+      // parent issue and list workspace plans/ files. Both are no-ops when
+      // the workspace is not configured for GH or has no plans/ directory.
+      const fetchSubIssues = async (parentExtId: string): Promise<ExternalChildItem[]> => {
+        try {
+          const session = await vscode.authentication.getSession('github', ['repo'], {
+            createIfNone: false,
+          });
+          if (!session) return [];
+          // Reuse the configured/auto-detected GH remote. We accept a
+          // double-resolve here (Sync also resolves it) because applying
+          // discovery is per-task and remote resolution caches cheaply.
+          const remoteCfg = vscode.workspace.getConfiguration('tackle').get<string>('github.repo');
+          if (!remoteCfg) return [];
+          const parsed = TaskService.parseOwnerRepo(remoteCfg.trim());
+          if (!parsed) return [];
+          const res = await fetch(
+            `https://api.github.com/repos/${parsed.owner}/${parsed.repo}/issues/${parentExtId}/sub_issues?per_page=100`,
+            {
+              headers: {
+                Authorization: `Bearer ${session.accessToken}`,
+                Accept: 'application/vnd.github+json',
+                'X-GitHub-Api-Version': '2026-03-10',
+              },
+            },
+          );
+          if (!res.ok) return [];
+          const subs = (await res.json()) as Array<{ number: number; title: string }>;
+          return subs.map((s, i) => ({
+            external_id: String(s.number),
+            title: s.title,
+            sort_order: i,
+          }));
+        } catch {
+          return [];
+        }
+      };
+
+      const listPlanFiles = async (): Promise<string[]> => {
+        try {
+          const dir = path.join(workspaceRoot, 'plans');
+          const entries = await fs.readdir(dir);
+          return entries.filter((e) => e.endsWith('.md'));
+        } catch {
+          return [];
+        }
+      };
+
+      taskService = new TaskService(taskRepo, eventBus, {
+        plansRepo,
+        phasesRepo,
+        fetchSubIssues,
+        listPlanFiles,
+      });
       const worktreeProvisioner = new WorktreeProvisioner({
         workspaceRoot,
         taskRepo,

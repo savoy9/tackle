@@ -69,4 +69,32 @@ describe('task.plan_started handler', () => {
     bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' });
     expect(refresh).toHaveBeenCalledTimes(1);
   });
+
+  it('creates an empty plans row for the task if none exists', () => {
+    const bus = createEventBus();
+    registerTaskPlanStartedHandler(bus, db);
+    bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' });
+    const row = db
+      .prepare<{ id: number; task_id: number; source_kind: string | null; source_ref: string | null }>(
+        'SELECT id, task_id, source_kind, source_ref FROM plans WHERE task_id = 1',
+      )
+      .get();
+    expect(row).toBeDefined();
+    expect(row?.task_id).toBe(1);
+    expect(row?.source_kind).toBeNull();
+    expect(row?.source_ref).toBeNull();
+  });
+
+  it('does not duplicate the plans row if one already exists', () => {
+    const bus = createEventBus();
+    registerTaskPlanStartedHandler(bus, db);
+    db.prepare(
+      "INSERT INTO plans (task_id, source_path) VALUES (1, '')",
+    ).run();
+    bus.dispatch({ type: 'task.plan_started', task_id: 1, source: 'ui' });
+    const count = db
+      .prepare<{ c: number }>('SELECT COUNT(*) AS c FROM plans WHERE task_id = 1')
+      .get();
+    expect(count?.c).toBe(1);
+  });
 });
