@@ -434,7 +434,9 @@ describe('TaskService.syncFromGitHub — pagination + state=all (#86)', () => {
   function mkResponse(body: unknown, link: string | null = null): Response {
     return new Response(JSON.stringify(body), {
       status: 200,
-      headers: link ? { Link: link, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+      headers: link
+        ? { Link: link, 'Content-Type': 'application/json' }
+        : { 'Content-Type': 'application/json' },
     });
   }
 
@@ -449,7 +451,12 @@ describe('TaskService.syncFromGitHub — pagination + state=all (#86)', () => {
       const link = page.nextUrl ? `<${page.nextUrl}>; rel="next"` : null;
       return mkResponse(page.body, link);
     }) as typeof fetch;
-    return { calls, restore: () => { globalThis.fetch = orig; } };
+    return {
+      calls,
+      restore: () => {
+        globalThis.fetch = orig;
+      },
+    };
   }
 
   function setupVscode() {
