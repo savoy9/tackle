@@ -3,6 +3,7 @@ import { PsmuxBridge } from '@tackle/shared';
 import type { SessionRepository, Session, SessionKind } from '@tackle/shared';
 import type { AgentRegistry } from '../agent/agent-registry';
 import type { AgentStateDetector } from '../agent/agent-state-detector';
+import { IMPL_LIKE_KINDS } from '../session/pick-kind';
 import { TestOverride } from '../test-overrides';
 
 /**
@@ -161,14 +162,16 @@ export class TerminalOrchestrator {
     const adapter = this.agentRegistry.resolve(opts.agent);
 
     // Resolve effective worktree_path for this Session. If the caller passed
-    // an explicit override (α-isolation path), honor it; otherwise — for any
-    // kind that launches an Agent — ask the worktree provider to ensure the
-    // Task's worktree exists and use its path. Shell kind never triggers
-    // provisioning (no Agent → spawn in workspaceRoot).
+    // an explicit override (α-isolation path), honor it; otherwise — for
+    // impl-like kinds only — ask the worktree provider to ensure the Task's
+    // worktree exists and use its path. plan/review/shell kinds never trigger
+    // provisioning: they're read-mostly, the worktree may not exist yet (plan
+    // is the FIRST kind run on a Task), and forcing a `git worktree add` here
+    // surfaces as silent New Session failure on non-git workspaces (#87).
     let effectiveWorktreePath: string | null = opts.worktreePath ?? null;
     if (
       effectiveWorktreePath === null &&
-      this.agentRegistry.shouldLaunch(opts.kind) &&
+      IMPL_LIKE_KINDS.includes(opts.kind) &&
       this.worktreeProvider
     ) {
       const wt = await this.worktreeProvider.ensureForTask(opts.taskId);
@@ -230,6 +233,13 @@ export class TerminalOrchestrator {
     }
   }
 
+  private async markSessionStopped(sessionId: number): Promise<void> {
+    await this.sessionRepo.update(sessionId, {
+      status: 'stopped',
+      ended_at: new Date().toISOString(),
+    });
+  }
+
   /**
    * VS Code activation-time recovery. psmux Sessions survive VS Code
    * restarts (per ADR-0003), so any DB row still marked `running` has a
@@ -240,8 +250,18 @@ export class TerminalOrchestrator {
    */
   async resumeRunningDetectors(): Promise<void> {
     const all = await this.sessionRepo.list();
+    // Single `psmux list-sessions` exec instead of one `has-session` exec
+    // per running row — keeps activation cheap when many sessions exist.
+    const live = new Set(this.psmux.listSessions());
     for (const session of all) {
       if (session.status !== 'running') continue;
+      if (!live.has(session.psmux_name)) {
+        // Dead-psmux recovery (#88): the underlying psmux session is gone
+        // (host reboot, daemon crash). Mark stopped so the sidebar reflects
+        // reality and we don't watch a JSONL file that will never grow.
+        await this.markSessionStopped(session.id);
+        continue;
+      }
       this.startDetectorFor(session);
     }
   }
@@ -249,6 +269,16 @@ export class TerminalOrchestrator {
   async reattachSession(sessionId: number): Promise<void> {
     const session = await this.sessionRepo.get(sessionId);
     if (!session) throw new Error(`Session ${sessionId} not found`);
+    if (!this.psmux.hasSession(session.psmux_name)) {
+      // Dead-psmux recovery (#88): don't spawn a VS Code terminal that would
+      // immediately exit — flip the row and surface the condition so the user
+      // can Restart Session.
+      await this.markSessionStopped(sessionId);
+      throw new Error(
+        `psmux session "${session.psmux_name}" no longer exists. ` +
+          `Marked stopped — use Restart Session to spawn a fresh one.`,
+      );
+    }
     if (session.status !== 'running') {
       await this.sessionRepo.update(sessionId, { status: 'running', ended_at: null });
     }
@@ -354,10 +384,7 @@ export class TerminalOrchestrator {
       terminal.dispose();
     }
     this.psmux.killSession(session.psmux_name);
-    await this.sessionRepo.update(sessionId, {
-      status: 'stopped',
-      ended_at: new Date().toISOString(),
-    });
+    await this.markSessionStopped(sessionId);
   }
 
   getTerminalForSession(sessionId: number): vscode.Terminal | undefined {

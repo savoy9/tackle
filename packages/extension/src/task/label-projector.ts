@@ -15,7 +15,9 @@
 
 import {
   computeLabelProjection,
+  DEFAULT_TACKLE_LABEL_MAPPING,
   type EventBus,
+  type StatusLabelMapping,
   type Task,
   type TackleEvent,
   type TaskRepository,
@@ -34,6 +36,13 @@ export interface LabelProjectorDeps {
   taskRepo: Pick<TaskRepository, 'get'>;
   fetchLabels: (externalId: string) => Promise<string[]>;
   setLabels: (externalId: string, labels: string[]) => Promise<void>;
+  /**
+   * Per-repo configurable status→label mapping (#85, ADR-0013). Defaults to
+   * the reserved `tackle:*` namespace. The full config-loading flow
+   * (.tackle/config.json + setup-time inspection) is tracked separately;
+   * this deps slot is the wire-up point.
+   */
+  mapping?: StatusLabelMapping;
 }
 
 export function registerLabelProjector(bus: EventBus, deps: LabelProjectorDeps): void {
@@ -65,6 +74,7 @@ async function project(taskId: number, deps: LabelProjectorDeps): Promise<void> 
   const projection = computeLabelProjection({
     currentLabels,
     target: task.tackle_status,
+    mapping: deps.mapping ?? DEFAULT_TACKLE_LABEL_MAPPING,
   });
 
   if (projection.add.length === 0 && projection.remove.length === 0) return;

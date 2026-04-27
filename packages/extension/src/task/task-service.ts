@@ -19,9 +19,41 @@ import {
   type UpsertTask,
 } from '@tackle/shared';
 
+/**
+ * Parse a GitHub Link header and return the `rel="next"` URL, if any.
+ * Returns null when the header is empty/missing or no next page exists.
+ *
+ * GitHub paginates the issues listing endpoint with RFC 5988 Link headers
+ * of the form:
+ *   <https://api.github.com/.../issues?page=2>; rel="next",
+ *   <https://api.github.com/.../issues?page=5>; rel="last"
+ *
+ * Pure helper. Exported for testing.
+ */
+export function parseNextPageUrl(linkHeader: string | null | undefined): string | null {
+  if (!linkHeader) return null;
+  for (const part of linkHeader.split(',')) {
+    const m = part.match(/<([^>]+)>\s*;\s*rel="next"/);
+    if (m) return m[1];
+  }
+  return null;
+}
+
 interface IncomingIssue {
   external_id: string;
   state: string;
+}
+
+/**
+ * Subset of the GitHub REST `GET /repos/{o}/{r}/issues` response we consume.
+ */
+export interface GitHubIssue {
+  number: number;
+  title: string;
+  body: string | null;
+  state: string;
+  assignee: { login: string } | null;
+  labels: Array<{ name: string }>;
 }
 
 /**
@@ -221,28 +253,12 @@ export class TaskService {
       throw new Error(`Could not determine GitHub repository from workspace. ${diagnostics}`);
     }
 
-    const response = await fetch(
-      `https://api.github.com/repos/${remote.owner}/${remote.repo}/issues?state=open&per_page=100`,
-      {
-        headers: {
-          Authorization: `Bearer ${session.accessToken}`,
-          Accept: 'application/vnd.github+json',
-        },
-      },
-    );
-
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
-    }
-
-    const issues = (await response.json()) as Array<{
-      number: number;
-      title: string;
-      body: string | null;
-      state: string;
-      assignee: { login: string } | null;
-      labels: Array<{ name: string }>;
-    }>;
+    // #86: fetch BOTH open and closed issues across ALL pages so closures
+    // on GitHub produce `external.status_changed` events. Previously this
+    // fetched `state=open&per_page=100` once, so closed issues never
+    // appeared in the diff and Tackle's local `external_status` stayed
+    // 'open' forever.
+    const issues = await this.fetchAllIssues(remote, session.accessToken);
 
     // Apply Label Config filter (#79). When `tackle.labels.enabled` is
     // configured, only issues carrying at least one of the listed labels
@@ -298,6 +314,43 @@ export class TaskService {
     }
 
     return tasks.length;
+  }
+
+  /**
+   * Fetch every issue (open + closed) across all paginated pages from the
+   * GitHub REST API. Walks `Link: ...; rel="next"` until exhausted.
+   *
+   * Why open + closed: Tackle's Sync diff treats the incoming set as the
+   * authoritative external state. Fetching only open issues means closures
+   * never appear in the diff, so `external.status_changed` never fires and
+   * the local `external_status` column stays stale (#86).
+   *
+   * Pagination is capped at 50 pages (5,000 issues at per_page=100) as a
+   * defensive bound.
+   */
+  protected async fetchAllIssues(
+    remote: { owner: string; repo: string },
+    accessToken: string,
+  ): Promise<GitHubIssue[]> {
+    const headers = {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: 'application/vnd.github+json',
+    };
+    let url: string | null =
+      `https://api.github.com/repos/${remote.owner}/${remote.repo}/issues?state=all&per_page=100`;
+    const all: GitHubIssue[] = [];
+    let pages = 0;
+    while (url && pages < 50) {
+      const response: Response = await fetch(url, { headers });
+      if (!response.ok) {
+        throw new Error(`GitHub API error: ${response.status} ${response.statusText}`);
+      }
+      const page = (await response.json()) as GitHubIssue[];
+      all.push(...page);
+      url = parseNextPageUrl(response.headers.get('Link'));
+      pages++;
+    }
+    return all;
   }
 
   /**

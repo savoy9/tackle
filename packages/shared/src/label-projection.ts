@@ -1,17 +1,20 @@
 // Bidirectional sync: project local Tackle Status onto GitHub labels (#80).
 //
-// Each Tackle Status maps to a single canonical `tackle:*` label. Local
-// status mutations are projected onto the issue's label set: the canonical
-// label for the new status is added, and any *other* `tackle:*` labels are
-// removed (so an issue carries exactly one Tackle label at a time).
-//
-// Pure function — no HTTP, no IO. The caller fetches the current label set
-// and applies the returned add/remove list via the GitHub API.
+// Per-repo configurable label namespace per ADR-0013 / #85: Tackle owns the
+// status workflow but adopts whatever label vocabulary the repo already uses;
+// the `tackle:*` prefix is just the fallback when no team convention exists.
 
 import type { TackleStatus } from './index';
+import { FORWARD_CHAIN, ORDINAL } from './events/status-transition';
 
-/** Canonical GH label for each Tackle Status. */
-export const TACKLE_LABEL_BY_STATUS: Record<TackleStatus, string> = {
+/** Per-status label name, configured per-repo (#85, ADR-0013). */
+export type StatusLabelMapping = Record<TackleStatus, string>;
+
+/**
+ * Default fallback mapping using the reserved `tackle:` prefix.
+ * Used when a repo has no `.tackle/config.json` mapping configured.
+ */
+export const DEFAULT_TACKLE_LABEL_MAPPING: StatusLabelMapping = {
   not_started: 'tackle:not-started',
   plan_started: 'tackle:plan-started',
   plan_awaiting_approval: 'tackle:plan-awaiting-approval',
@@ -22,12 +25,10 @@ export const TACKLE_LABEL_BY_STATUS: Record<TackleStatus, string> = {
   merged: 'tackle:merged',
 };
 
-/** All Tackle-managed labels (so we can detect / clean up stale ones). */
-const ALL_TACKLE_LABELS: ReadonlySet<string> = new Set(Object.values(TACKLE_LABEL_BY_STATUS));
-
 export interface LabelProjectionInput {
   currentLabels: string[];
   target: TackleStatus;
+  mapping: StatusLabelMapping;
 }
 
 export interface LabelProjectionOutput {
@@ -36,16 +37,47 @@ export interface LabelProjectionOutput {
 }
 
 export function computeLabelProjection(input: LabelProjectionInput): LabelProjectionOutput {
-  const targetLabel = TACKLE_LABEL_BY_STATUS[input.target];
-  const current = new Set(input.currentLabels);
+  const { currentLabels, target, mapping } = input;
+  const targetLabel = mapping[target];
+  const managed: ReadonlySet<string> = new Set(Object.values(mapping));
+  const current = new Set(currentLabels);
 
   const add: string[] = [];
   if (!current.has(targetLabel)) add.push(targetLabel);
 
   const remove: string[] = [];
-  for (const l of input.currentLabels) {
-    if (l !== targetLabel && ALL_TACKLE_LABELS.has(l)) remove.push(l);
+  for (const l of currentLabels) {
+    if (l !== targetLabel && managed.has(l)) remove.push(l);
   }
 
   return { add, remove };
+}
+
+/**
+ * Mutex-on-sync (ADR-0013, #85): when an issue carries multiple configured
+ * status labels (race between Tackle's two-call "remove old, add new" and a
+ * teammate's manual edit), the most-advanced state wins so local DB
+ * converges forward, never backward. Returns null if none present.
+ */
+export function resolveStatusFromLabels(
+  currentLabels: string[],
+  mapping: StatusLabelMapping,
+): TackleStatus | null {
+  const labelToStatus = new Map<string, TackleStatus>();
+  for (const status of FORWARD_CHAIN) {
+    labelToStatus.set(mapping[status], status);
+  }
+
+  let winner: TackleStatus | null = null;
+  let winnerRank = -1;
+  for (const l of currentLabels) {
+    const status = labelToStatus.get(l);
+    if (!status) continue;
+    const rank = ORDINAL[status];
+    if (rank > winnerRank) {
+      winner = status;
+      winnerRank = rank;
+    }
+  }
+  return winner;
 }

@@ -4,7 +4,7 @@ import type { TackleStatus } from '../index';
  * Forward-only legal next-state map for `tasks.tackle_status`.
  * Re-planning surfaces new Phases; it does not regress the Task lifecycle.
  */
-const FORWARD_CHAIN: TackleStatus[] = [
+export const FORWARD_CHAIN: readonly TackleStatus[] = [
   'not_started',
   'plan_started',
   'plan_awaiting_approval',
@@ -15,7 +15,7 @@ const FORWARD_CHAIN: TackleStatus[] = [
   'merged',
 ];
 
-const ORDINAL: Record<TackleStatus, number> = FORWARD_CHAIN.reduce(
+export const ORDINAL: Record<TackleStatus, number> = FORWARD_CHAIN.reduce(
   (acc, s, i) => {
     acc[s] = i;
     return acc;

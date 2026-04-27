@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { createEventBus } from '@tackle/shared';
+import { createEventBus, type StatusLabelMapping } from '@tackle/shared';
 import type { Task } from '@tackle/shared';
 import { registerLabelProjector } from '../task/label-projector';
 
@@ -22,7 +22,11 @@ const baseTask = (id: number, ext: string, labels: string[] = []): Task => ({
 });
 
 describe('registerLabelProjector', () => {
-  function setup(tasks: Task[], remoteLabels: Record<string, string[]>) {
+  function setup(
+    tasks: Task[],
+    remoteLabels: Record<string, string[]>,
+    mapping?: StatusLabelMapping,
+  ) {
     const bus = createEventBus();
     bus.register('task.plan_started', () => {});
     bus.register('plan.approved', () => {});
@@ -41,6 +45,7 @@ describe('registerLabelProjector', () => {
       taskRepo: taskRepo as never,
       fetchLabels,
       setLabels,
+      mapping,
     });
 
     return { bus, fetchLabels, setLabels };
@@ -91,5 +96,31 @@ describe('registerLabelProjector', () => {
     });
     await new Promise((r) => setImmediate(r));
     expect(setLabels).not.toHaveBeenCalled();
+  });
+
+  it('projects onto a configured custom mapping (no tackle:* prefix)', async () => {
+    const teamMapping: StatusLabelMapping = {
+      not_started: 'status:todo',
+      plan_started: 'status:planning',
+      plan_awaiting_approval: 'status:plan-review',
+      plan_approved: 'status:ready',
+      implementation_started: 'status:in-progress',
+      in_review: 'status:in-review',
+      pr_created: 'status:pr-open',
+      merged: 'status:done',
+    };
+    const { bus, setLabels } = setup(
+      [baseTask(1, '42', [])],
+      { '42': ['bug', 'status:planning'] },
+      teamMapping,
+    );
+    bus.dispatch({ type: 'plan.approved', task_id: 1, source: 'ui' });
+    await new Promise((r) => setImmediate(r));
+    expect(setLabels).toHaveBeenCalledTimes(1);
+    const newLabels = setLabels.mock.calls[0][1] as string[];
+    expect(newLabels).toContain('status:ready');
+    expect(newLabels).not.toContain('status:planning');
+    expect(newLabels).not.toContain('tackle:plan-approved');
+    expect(newLabels).toContain('bug');
   });
 });
