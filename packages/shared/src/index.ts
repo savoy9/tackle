@@ -136,7 +136,9 @@ export {
 } from './plan-source-detection';
 export {
   computeLabelProjection,
-  TACKLE_LABEL_BY_STATUS,
+  resolveStatusFromLabels,
+  DEFAULT_TACKLE_LABEL_MAPPING,
+  type StatusLabelMapping,
   type LabelProjectionInput,
   type LabelProjectionOutput,
 } from './label-projection';
