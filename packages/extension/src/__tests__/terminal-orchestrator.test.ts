@@ -286,6 +286,24 @@ describe('TerminalOrchestrator', () => {
       await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'shell' });
       expect(ensure).not.toHaveBeenCalled();
     });
+
+    it('does not call worktreeProvider for plan kind (#87)', async () => {
+      const ensure = vi.fn();
+      orchestrator = new TerminalOrchestrator(mockSessionRepo, mockPsmux, mockAgentRegistry, {
+        ensureForTask: ensure,
+      });
+      await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'plan' });
+      expect(ensure).not.toHaveBeenCalled();
+    });
+
+    it('does not call worktreeProvider for review kind (#87)', async () => {
+      const ensure = vi.fn();
+      orchestrator = new TerminalOrchestrator(mockSessionRepo, mockPsmux, mockAgentRegistry, {
+        ensureForTask: ensure,
+      });
+      await orchestrator.createTerminal({ taskId: 1, taskSlug: 's', kind: 'review' });
+      expect(ensure).not.toHaveBeenCalled();
+    });
   });
 
   describe('disposeAll', () => {
@@ -539,6 +557,45 @@ describe('TerminalOrchestrator', () => {
     });
   });
 
+  describe('reattachSession dead-psmux recovery (#88)', () => {
+    it('marks the session stopped and throws when psmux has no live session', async () => {
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 's',
+        kind: 'shell',
+      });
+      // Simulate a stale `running` row whose psmux session died (e.g. host reboot).
+      (mockPsmux.hasSession as any).mockReturnValue(false);
+      // Drop the in-memory terminal so reattachSession takes the psmux-attach
+      // path rather than re-showing the existing terminal.
+      orchestrator.disposeAll();
+      (vscodeModule.window.createTerminal as any).mockClear();
+
+      await expect(orchestrator.reattachSession(session.id)).rejects.toThrow(/no longer exists/i);
+
+      expect(vscodeModule.window.createTerminal).not.toHaveBeenCalled();
+      expect(mockSessionRepo.update).toHaveBeenCalledWith(
+        session.id,
+        expect.objectContaining({ status: 'stopped' }),
+      );
+    });
+
+    it('reattaches normally when psmux still has the session', async () => {
+      const session = await orchestrator.createTerminal({
+        taskId: 1,
+        taskSlug: 's',
+        kind: 'shell',
+      });
+      orchestrator.disposeAll();
+      (vscodeModule.window.createTerminal as any).mockClear();
+      (mockPsmux.hasSession as any).mockReturnValue(true);
+
+      await orchestrator.reattachSession(session.id);
+
+      expect(vscodeModule.window.createTerminal).toHaveBeenCalled();
+    });
+  });
+
   describe('resumeRunningDetectors (VS Code activation recovery)', () => {
     let fake: ReturnType<typeof createFakeDetector>;
 
@@ -549,6 +606,7 @@ describe('TerminalOrchestrator', () => {
     });
 
     it('re-starts detectors for every running agent-kind Session in the DB', async () => {
+      (mockPsmux.listSessions as any).mockReturnValue(['p1', 'p2', 'p3']);
       sessions.push(
         {
           id: 1,
@@ -615,6 +673,36 @@ describe('TerminalOrchestrator', () => {
     it('is a no-op when no Sessions are running', async () => {
       await orchestrator.resumeRunningDetectors();
       expect(fake.started).toEqual([]);
+    });
+
+    it('marks running rows whose psmux session is gone as stopped, skips their detector (#88)', async () => {
+      sessions.push({
+        id: 42,
+        task_id: 1,
+        phase_id: null,
+        name: 'dead',
+        kind: 'implement',
+        status: 'running',
+        psmux_name: 'tackle-gh-1-implement1',
+        tab_label: 'dead',
+        agent: 'agency-cc',
+        worktree_path: '/wt/x',
+        sort_order: 0,
+        claude_session_id: null,
+        agent_state: 'idle',
+        prior_claude_session_ids: null,
+        started_at: '',
+        ended_at: null,
+      });
+      (mockPsmux.listSessions as any).mockReturnValue([]);
+
+      await orchestrator.resumeRunningDetectors();
+
+      expect(fake.started).toEqual([]);
+      expect(mockSessionRepo.update).toHaveBeenCalledWith(
+        42,
+        expect.objectContaining({ status: 'stopped' }),
+      );
     });
   });
 });

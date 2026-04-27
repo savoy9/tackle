@@ -8,6 +8,7 @@ import {
   computeExternalStatusEvents,
   computeSyncDiscovery,
   filterIssuesByLabels,
+  parseNextPageUrl,
 } from '../task/task-service';
 import type { Task, LocalPhaseSnapshot } from '@tackle/shared';
 
@@ -409,5 +410,169 @@ describe('TaskService.redactRemoteUrl', () => {
     const out = TaskService.redactRemoteUrl(long);
     expect(out.length).toBeLessThanOrEqual(200);
     expect(out.endsWith('...')).toBe(true);
+  });
+});
+
+describe('TaskService.syncFromGitHub — pagination + state=all (#86)', () => {
+  type Issue = {
+    number: number;
+    title: string;
+    body: string;
+    state: string;
+    assignee: null;
+    labels: never[];
+  };
+  const mkIssue = (n: number, state: 'open' | 'closed'): Issue => ({
+    number: n,
+    title: `T${n}`,
+    body: '',
+    state,
+    assignee: null,
+    labels: [],
+  });
+
+  function mkResponse(body: unknown, link: string | null = null): Response {
+    return new Response(JSON.stringify(body), {
+      status: 200,
+      headers: link ? { Link: link, 'Content-Type': 'application/json' } : { 'Content-Type': 'application/json' },
+    });
+  }
+
+  function setupFetch(pages: Array<{ body: Issue[]; nextUrl: string | null }>) {
+    const calls: string[] = [];
+    const orig = globalThis.fetch;
+    let i = 0;
+    globalThis.fetch = vi.fn(async (url: string | URL | Request) => {
+      calls.push(String(url));
+      const page = pages[i++];
+      if (!page) throw new Error(`Unexpected extra fetch: ${url}`);
+      const link = page.nextUrl ? `<${page.nextUrl}>; rel="next"` : null;
+      return mkResponse(page.body, link);
+    }) as typeof fetch;
+    return { calls, restore: () => { globalThis.fetch = orig; } };
+  }
+
+  function setupVscode() {
+    (vscodeModule.authentication.getSession as any).mockResolvedValue({
+      accessToken: 'tok',
+    });
+    // Force the configured-remote path so getRemote() doesn't try git.
+    (vscodeModule.workspace.getConfiguration as any) = vi.fn(() => ({
+      get: (key: string, dflt?: unknown) => {
+        if (key === 'github.repo') return 'octo/repo';
+        if (key === 'labels.enabled') return [];
+        return dflt;
+      },
+    }));
+  }
+
+  function makeRepo(initial: Task[]) {
+    const rows: Task[] = [...initial];
+    return {
+      list: async () => rows,
+      upsertBatch: vi.fn(async () => {}),
+      get: async (id: number) => rows.find((r) => r.id === id),
+    } as never;
+  }
+
+  it('fetches state=all on the first page', async () => {
+    setupVscode();
+    const fx = setupFetch([{ body: [mkIssue(1, 'open')], nextUrl: null }]);
+    try {
+      const svc = new TaskService(makeRepo([]));
+      await svc.syncFromGitHub();
+      expect(fx.calls[0]).toContain('state=all');
+      expect(fx.calls[0]).toContain('per_page=100');
+    } finally {
+      fx.restore();
+    }
+  });
+
+  it('walks Link rel="next" until exhausted, accumulating pages', async () => {
+    setupVscode();
+    const page2Url = 'https://api.github.com/repos/octo/repo/issues?page=2';
+    const fx = setupFetch([
+      { body: [mkIssue(1, 'open')], nextUrl: page2Url },
+      { body: [mkIssue(2, 'closed')], nextUrl: null },
+    ]);
+    try {
+      const repo = makeRepo([]);
+      const svc = new TaskService(repo);
+      await svc.syncFromGitHub();
+      expect(fx.calls).toHaveLength(2);
+      expect(fx.calls[1]).toBe(page2Url);
+      // upsertBatch sees BOTH pages' issues
+      const upserted = (repo as any).upsertBatch.mock.calls[0][0] as Array<{ external_id: string }>;
+      expect(upserted.map((t) => t.external_id).sort()).toEqual(['1', '2']);
+    } finally {
+      fx.restore();
+    }
+  });
+
+  it('dispatches external.status_changed for issues that closed on GitHub since last sync', async () => {
+    setupVscode();
+    // Local mirror says #1 is open. Remote sends it back as closed.
+    const fx = setupFetch([{ body: [mkIssue(1, 'closed')], nextUrl: null }]);
+    try {
+      const repo = makeRepo([baseTask(1, '1', 'open')]);
+      const dispatched: unknown[] = [];
+      const eventBus = {
+        register: vi.fn(),
+        dispatch: vi.fn((e: unknown) => dispatched.push(e)),
+        onRefresh: vi.fn(),
+        onMutation: vi.fn(),
+      } as never;
+      const svc = new TaskService(repo, eventBus);
+      await svc.syncFromGitHub();
+      expect(dispatched).toEqual([
+        expect.objectContaining({
+          type: 'external.status_changed',
+          task_id: 1,
+          to: 'closed',
+          source: 'sync',
+        }),
+      ]);
+    } finally {
+      fx.restore();
+    }
+  });
+});
+
+describe('parseNextPageUrl (#86 GitHub Link header pagination)', () => {
+  it('returns null for empty / missing header', () => {
+    expect(parseNextPageUrl(null)).toBeNull();
+    expect(parseNextPageUrl(undefined)).toBeNull();
+    expect(parseNextPageUrl('')).toBeNull();
+  });
+
+  it('extracts the rel="next" URL when present', () => {
+    const header =
+      '<https://api.github.com/repos/o/r/issues?page=2>; rel="next", ' +
+      '<https://api.github.com/repos/o/r/issues?page=5>; rel="last"';
+    expect(parseNextPageUrl(header)).toBe('https://api.github.com/repos/o/r/issues?page=2');
+  });
+
+  it('returns null on the last page (no rel="next")', () => {
+    const header =
+      '<https://api.github.com/repos/o/r/issues?page=1>; rel="prev", ' +
+      '<https://api.github.com/repos/o/r/issues?page=1>; rel="first"';
+    expect(parseNextPageUrl(header)).toBeNull();
+  });
+});
+
+describe('computeExternalStatusEvents — closure detection (#86)', () => {
+  it('emits external.status_changed=closed when an issue closed on GitHub since last sync', () => {
+    // The bug pre-fix: incoming only carried open issues, so the closed
+    // issue silently dropped out of the diff and no event fired. The fix
+    // is to fetch state=all upstream — at this layer we just verify the
+    // diff produces the right event when the closed issue IS in incoming.
+    const existing = [baseTask(1, '101', 'open'), baseTask(2, '102', 'open')];
+    const incoming = [
+      { external_id: '101', state: 'open' },
+      { external_id: '102', state: 'closed' },
+    ];
+    const events = computeExternalStatusEvents(existing, incoming);
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({ task_id: 2, to: 'closed' });
   });
 });
