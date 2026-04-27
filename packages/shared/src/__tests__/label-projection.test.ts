@@ -102,9 +102,7 @@ describe('resolveStatusFromLabels (mutex-on-sync)', () => {
   });
 
   it('returns the corresponding status when exactly one configured label is present', () => {
-    expect(
-      resolveStatusFromLabels(['bug', 'tackle:plan-approved'], mapping),
-    ).toBe('plan_approved');
+    expect(resolveStatusFromLabels(['bug', 'tackle:plan-approved'], mapping)).toBe('plan_approved');
   });
 
   it('returns the most-advanced status when multiple configured labels coexist', () => {
@@ -121,18 +119,15 @@ describe('resolveStatusFromLabels (mutex-on-sync)', () => {
 
   it('respects the configured custom mapping when resolving', () => {
     expect(
-      resolveStatusFromLabels(
-        ['status:planning', 'status:in-progress', 'unrelated'],
-        TEAM_MAPPING,
-      ),
+      resolveStatusFromLabels(['status:planning', 'status:in-progress', 'unrelated'], TEAM_MAPPING),
     ).toBe('implementation_started');
   });
 
   it('ignores labels not in the configured mapping', () => {
     // A `tackle:*` label is NOT in this team's mapping — it must not
     // influence resolution.
-    expect(
-      resolveStatusFromLabels(['tackle:merged', 'status:planning'], TEAM_MAPPING),
-    ).toBe('plan_started');
+    expect(resolveStatusFromLabels(['tackle:merged', 'status:planning'], TEAM_MAPPING)).toBe(
+      'plan_started',
+    );
   });
 });
